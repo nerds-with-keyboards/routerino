@@ -1,0 +1,56 @@
+{
+  "name": "routerino",
+  "version": "1.0.0",
+  "description": "Lightweight SEO-optimized router for React CSR websites",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "generate:sitemap": "./generate-sitemap.js"
+  },
+  "type": "module",
+  "exports": {
+    "import": "./dist/routerino.js",
+    "require": "./dist/routerino.umd.cjs"
+  },
+  "scripts": {
+    "test": "echo TODO",
+    "build": "vite build",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nerds-with-keyboards/routerino.git"
+  },
+  "keywords": [
+    "router",
+    "React",
+    "SEO",
+    "prerender"
+  ],
+  "author": "Nerds With Keyboards",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nerds-with-keyboards/routerino/issues"
+  },
+  "homepage": "https://github.com/nerds-with-keyboards/routerino#readme",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.1.0",
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite": "^4.4.9"
+  },
+  "peerDependencies": {
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "volta": {
+    "node": "20.7.0",
+    "npm": "10.1.0"
+  }
+}
