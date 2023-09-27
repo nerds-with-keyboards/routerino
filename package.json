@@ -1,12 +1,27 @@
 {
   "name": "routerino",
   "version": "1.0.0",
-  "description": "Lightweight SEO-optimized router for React CSR websites",
+  "description": "Tiny, SEO-focused router for React websites",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nerds-with-keyboards/routerino.git"
+  },
+  "keywords": [
+    "router",
+    "react",
+    "seo",
+    "prerender"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nerds-with-keyboards/routerino/issues"
+  },
+  "homepage": "https://github.com/nerds-with-keyboards/routerino#readme",
   "files": [
     "dist"
   ],
   "bin": {
-    "generate:sitemap": "./generate-sitemap.js"
+    "build-sitemap": "./build-sitemap.js"
   },
   "type": "module",
   "exports": {
@@ -14,26 +29,10 @@
     "require": "./dist/routerino.umd.cjs"
   },
   "scripts": {
-    "test": "echo TODO",
     "build": "vite build",
-    "prepublishOnly": "npm run build"
+    "test": "echo TODO",
+    "prepublishOnly": "vite build"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nerds-with-keyboards/routerino.git"
-  },
-  "keywords": [
-    "router",
-    "React",
-    "SEO",
-    "prerender"
-  ],
-  "author": "Nerds With Keyboards",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/nerds-with-keyboards/routerino/issues"
-  },
-  "homepage": "https://github.com/nerds-with-keyboards/routerino#readme",
   "devDependencies": {
     "@vitejs/plugin-react": "^4.1.0",
     "prop-types": "^15.8.1",
@@ -42,12 +41,12 @@
     "vite": "^4.4.9"
   },
   "peerDependencies": {
-    "prop-types": "^15.8.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "prop-types": "^15.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=20"
   },
   "volta": {
     "node": "20.7.0",
