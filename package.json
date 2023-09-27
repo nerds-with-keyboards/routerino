@@ -46,7 +46,7 @@
     "react-dom": "^18.0.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=16"
   },
   "volta": {
     "node": "20.7.0",
