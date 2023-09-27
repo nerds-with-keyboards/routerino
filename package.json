@@ -1,6 +1,6 @@
 {
   "name": "routerino",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tiny, SEO-focused router for React websites",
   "repository": {
     "type": "git",
@@ -46,7 +46,7 @@
     "react-dom": "^18.0.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=16"
   },
   "volta": {
     "node": "20.7.0",
