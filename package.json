@@ -4,7 +4,7 @@
   "description": "Tiny, SEO-focused router for React websites",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nerds-with-keyboards/routerino.git"
+    "url": "git+https://github.com/nerds-with-keyboards/routerino.git"
   },
   "keywords": [
     "router",
@@ -21,7 +21,7 @@
     "dist"
   ],
   "bin": {
-    "build-sitemap": "./build-sitemap.js"
+    "build-sitemap": "build-sitemap.js"
   },
   "type": "module",
   "exports": {
