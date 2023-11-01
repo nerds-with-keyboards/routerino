@@ -73,7 +73,12 @@ export default function Routerino({
           match.titlePostfix ?? titlePostfix
         }`;
         document.title = fullTitle;
-        updateHeadTag({ property: "og:title", content: match.title });
+        updateHeadTag({
+          property: "og:title",
+          content: `${match.title}${
+            Boolean(match.description) && ` - ${match.description}`
+          }`,
+        });
       }
 
       // set the description
