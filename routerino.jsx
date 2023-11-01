@@ -73,7 +73,6 @@ export default function Routerino({
           match.titlePostfix ?? titlePostfix
         }`;
         document.title = fullTitle;
-        updateHeadTag({ property: "og:title", content: match.title });
       }
 
       // set the description
@@ -82,6 +81,15 @@ export default function Routerino({
         updateHeadTag({
           property: "og:description",
           content: match.description,
+        });
+        // set og:title
+        let ogTitle = `${match.title ?? document.title} - ${match.description}`;
+        if (ogTitle.length > 60) {
+          ogTitle = `${ogTitle.slice(0, 60)}...`;
+        }
+        updateHeadTag({
+          property: "og:title",
+          content: ogTitle,
         });
       }
 
