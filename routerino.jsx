@@ -85,7 +85,7 @@ export default function Routerino({
         document.title = fullTitle;
 
         // create the og:title IFF user didn't supply their own
-        if (!match.tags.find(({ property }) => property === "og:title")) {
+        if (!match.tags?.find(({ property }) => property === "og:title")) {
           updateHeadTag({
             property: "og:title",
             content: fullTitle,
@@ -98,7 +98,9 @@ export default function Routerino({
         updateHeadTag({ name: "description", content: match.description });
 
         // create the og:description IFF user didn't supply their own
-        if (!match.tags.find(({ property }) => property === "og:description")) {
+        if (
+          !match.tags?.find(({ property }) => property === "og:description")
+        ) {
           updateHeadTag({
             property: "og:description",
             content: match.description,
