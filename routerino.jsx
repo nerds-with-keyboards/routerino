@@ -76,19 +76,19 @@ export default function Routerino({
     if (Boolean(match)) {
       // set the title, og:title
       if (Boolean(match.title)) {
+        // calculate the title
         const fullTitle = `${match.titlePrefix ?? titlePrefix}${match.title}${
           match.titlePostfix ?? titlePostfix
         }`;
+
+        // set the doc title
         document.title = fullTitle;
 
-        // set the og:title IFF user didn't supply their own
+        // create the og:title IFF user didn't supply their own
         if (!match.tags.find(({ property }) => property === "og:title")) {
           updateHeadTag({
             property: "og:title",
-            content:
-              match.title.length > 60
-                ? `${match.title.slice(0, 56)}...`
-                : match.title,
+            content: fullTitle,
           });
         }
       }
@@ -96,33 +96,32 @@ export default function Routerino({
       // set the description
       if (Boolean(match.description)) {
         updateHeadTag({ name: "description", content: match.description });
-        updateHeadTag({
-          property: "og:description",
-          content: match.description,
-        });
+
+        // create the og:description IFF user didn't supply their own
+        if (!match.tags.find(({ property }) => property === "og:description")) {
+          updateHeadTag({
+            property: "og:description",
+            content: match.description,
+          });
+        }
       }
 
       // set the og:image
       if (Boolean(imageUrl) || Boolean(match.imageUrl)) {
-        let imageMatch = match.imageUrl ?? imageUrl;
-        let includesHost = imageMatch.startsWith(cleanedHost);
-        let separator = imageMatch.startsWith("/") ? "" : "/";
+        // look for an image url to use
+        const imageMatch = match.imageUrl ?? imageUrl;
+        // check and account for possible relative urls
+        // if the url includes http protocol then it isn't relative
+        const includesHost =
+          imageMatch.startsWith("http://") || imageMatch.startsWith("https://");
+        const separator = imageMatch.startsWith("/") ? "" : "/";
+
+        // set the tag
         updateHeadTag({
           property: "og:image",
           content: includesHost
             ? imageMatch
             : `${cleanedHost}${separator}${imageMatch}`,
-        });
-      } else {
-        // if we don't have a user-supplied image, default to the favicon
-        updateHeadTag({
-          property: "og:image",
-          content: `${cleanedHost}/favicon.ico`,
-        });
-        updateHeadTag({
-          tag: "link",
-          rel: "apple-touch-icon",
-          href: `${cleanedHost}/favicon.ico`,
         });
       }
 

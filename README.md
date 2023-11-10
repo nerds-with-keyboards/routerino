@@ -2,10 +2,28 @@
 
 Tiny, SEO-focused router for React CSR websites, such as JAMStack or Vite.js sites. Supports [Prerender](https://github.com/prerender/prerender) tags for handling redirects and 404 codes for SEO bots. Routerino can even generate your sitemap.xml file from your routes!
 
+## Features
+
+Routerino allows developers to define routing and SEO metadata together. This saves duplication when creating a sitemap and setting page metadata like a description.
+
+You can:
+
+- easily add simple routing to your React app
+- set any arbitrary `<head>` tags for any route
+- set the title, description, and image for each route
+- configure the site name to be included with the page titles
+- generate a sitemap automatically from your routes
+- keep your sitemap up-to-date as part of the build process
+- observe best practices for SEO
+- optimize for Googlebot with pre-rendering
+- support sharing and social previews
+
 ## Installation
 
+Save it as a dev dependency
+
 ```sh
-npm i routerino
+npm i routerino -D
 ```
 
 ## Usage
