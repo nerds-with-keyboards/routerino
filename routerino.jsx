@@ -55,32 +55,32 @@ export default function Routerino({
   titlePostfix,
   imageUrl,
 }) {
-  const [href, setHref] = useState(window.location.href);
-  useEffect(() => {
-    const handleClick = (event) => {
-      let target = event.target;
-      while (target.tagName !== "A" && target.parentElement) {
-        target = target.parentElement;
-      }
-
-      if (
-        target.tagName === "A" &&
-        target.hostname === window.location.hostname
-      ) {
-        setHref(target.href);
-        event.preventDefault();
-        window.history.pushState({}, "", target.href);
-      }
-    };
-    document.addEventListener("click", handleClick);
-
-    // Clean up the event listener when the component unmounts
-    return () => {
-      document.removeEventListener("click", handleClick);
-    };
-  }, [href]);
-
   try {
+    const [href, setHref] = useState(window.location.href);
+    useEffect(() => {
+      const handleClick = (event) => {
+        let target = event.target;
+        while (target.tagName !== "A" && target.parentElement) {
+          target = target.parentElement;
+        }
+
+        if (
+          target.tagName === "A" &&
+          target.hostname === window.location.hostname
+        ) {
+          setHref(target.href);
+          event.preventDefault();
+          window.history.pushState({}, "", target.href);
+        }
+      };
+      document.addEventListener("click", handleClick);
+
+      // Clean up the event listener when the component unmounts
+      return () => {
+        document.removeEventListener("click", handleClick);
+      };
+    }, [href]);
+
     let currentRoute = window.location?.pathname ?? "/";
     // use the root route for index.html requests
     if (currentRoute === "/index.html" || currentRoute === "")
