@@ -75,9 +75,16 @@ export default function Routerino({
       };
       document.addEventListener("click", handleClick);
 
-      // Clean up the event listener when the component unmounts
+      // handle browser back button state changes
+      const handlePopState = () => {
+        setHref(window.location.href);
+      };
+      window.addEventListener("popstate", handlePopState);
+
+      // clean up the event listeners
       return () => {
         document.removeEventListener("click", handleClick);
+        window.removeEventListener("popstate", handlePopState);
       };
     }, [href]);
 
@@ -98,7 +105,39 @@ export default function Routerino({
         `${route.path}/` === currentRoute || route.path === `${currentRoute}/`
     );
 
-    const match = exactMatch ?? addSlashMatch;
+    // locate the route if using params matching
+    const paramsMatch = routes.find((route) => {
+      // Normalize the paths by removing trailing slashes
+      const normalizedRoutePath = route.path.endsWith("/")
+        ? route.path.slice(0, -1)
+        : route.path;
+      const normalizedCurrentRoute = currentRoute.endsWith("/")
+        ? currentRoute.slice(0, -1)
+        : currentRoute;
+
+      // Split the paths into segments
+      const routeSegments = normalizedRoutePath.split("/").filter(Boolean);
+      const currentRouteSegments = normalizedCurrentRoute
+        .split("/")
+        .filter(Boolean);
+
+      // Check if segments length match
+      if (routeSegments.length !== currentRouteSegments.length) {
+        return false;
+      }
+
+      // Compare each segment
+      return routeSegments.every((segment, index) => {
+        // If the segment starts with ':', it's a parameter, so it should match anything
+        if (segment.startsWith(":")) {
+          return true;
+        }
+        // If it's not a parameter, it should match the segment in the current route exactly
+        return segment === currentRouteSegments[index];
+      });
+    });
+
+    const match = exactMatch ?? addSlashMatch ?? paramsMatch;
 
     if (Boolean(match)) {
       // set the title, og:title
