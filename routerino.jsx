@@ -66,7 +66,8 @@ export default function Routerino({
 
         if (
           target.tagName === "A" &&
-          target.hostname === window.location.hostname
+          target.hostname === window.location.hostname &&
+          target.href !== window.location.href
         ) {
           setHref(target.href);
           event.preventDefault();
