@@ -72,6 +72,10 @@ export default function Routerino({
           if (target.href !== window.location.href) {
             setHref(target.href);
             window.history.pushState({}, "", target.href);
+            window.scrollTo({
+              top: 0,
+              behavior: "auto",
+            });
           }
         }
       };
