@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { cloneElement, useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
 // update a head tag
@@ -39,6 +39,21 @@ function updateHeadTag({ tag = "meta", ...attrs }) {
 
   // finally, append the tag
   document.querySelector("head").appendChild(tagToUpdate);
+}
+
+function extractParams({ routePattern, currentRoute }) {
+  // For simplicity, we just split by '/' and match :paramName
+  let params = {};
+  let routeSegments = routePattern.split("/");
+  let currentRouteSegments = currentRoute.split("/");
+
+  routeSegments.forEach((segment, index) => {
+    if (segment.startsWith(":")) {
+      params[segment.slice(1)] = currentRouteSegments[index];
+    }
+  });
+
+  return params;
 }
 
 // Routerino Component
@@ -228,7 +243,12 @@ export default function Routerino({
 
       // check & return the element to render
       if (Boolean(match.element)) {
-        return match.element;
+        const routeParams = extractParams(match.path, currentRoute);
+        // nb: cloneElement won't re-trigger componentDidMount lifecycle
+        const elementWithProps = cloneElement(match.element, {
+          routeParams,
+        });
+        return elementWithProps;
       } else {
         // no element
         console.error(`No element found for ${currentRoute}`);
