@@ -69,6 +69,7 @@ export default function Routerino({
   titlePrefix,
   titlePostfix,
   imageUrl,
+  onUpdate,
 }) {
   try {
     const [href, setHref] = useState(window.location.href);
@@ -247,12 +248,17 @@ export default function Routerino({
           routePattern: match.path,
           currentRoute,
         });
-        if (JSON.stringify(routeParams) === JSON.stringify({}))
+        if (JSON.stringify(routeParams) === JSON.stringify({})) {
+          onUpdate({ status: "route found" });
           return match.element;
+        }
         // nb: cloneElement won't re-trigger componentDidMount lifecycle
+        // use onUpdate prop instead to re-trigger your logic
+        // or maybe find a better way if you can
         const elementWithProps = cloneElement(match.element, {
           routeParams,
         });
+        onUpdate({ status: "route found" });
         return elementWithProps;
       } else {
         // no element
@@ -261,6 +267,7 @@ export default function Routerino({
         if (usePrerenderTags) {
           updateHeadTag({ name: "prerender-status-code", content: "404" });
         }
+        onUpdate({ status: "route not found" });
         return notFoundTemplate;
       }
     }
@@ -271,6 +278,7 @@ export default function Routerino({
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "404" });
     }
+    onUpdate({ status: "route not found" });
     return notFoundTemplate;
   } catch (e) {
     // router threw up
@@ -279,6 +287,7 @@ export default function Routerino({
       updateHeadTag({ name: "prerender-status-code", content: "500" });
     }
     document.title = `${titlePrefix}${errorTitle}${titlePostfix}`;
+    onUpdate({ status: "router error" });
     return errorTemplate;
   }
 }
@@ -320,6 +329,7 @@ Routerino.defaultProps = {
   usePrerenderTags: true,
   titlePrefix: "",
   titlePostfix: "",
+  onUpdate: () => {},
 };
 
 const RouteProps = PropTypes.exact({
@@ -345,4 +355,5 @@ Routerino.propTypes = {
   titlePrefix: PropTypes.string,
   titlePostfix: PropTypes.string,
   imageUrl: PropTypes.string,
+  onUpdate: PropTypes.func,
 };
