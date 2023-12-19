@@ -243,16 +243,14 @@ export default function Routerino({
 
       // check & return the element to render
       if (Boolean(match.element)) {
-        const routeParams = extractParams({
+        const params = extractParams({
           routePattern: match.path,
           currentRoute,
         });
-        if (JSON.stringify(routeParams) === JSON.stringify({})) {
-          return match.element;
-        }
+
         // nb: cloneElement won't re-trigger componentDidMount lifecycle
         const elementWithProps = cloneElement(match.element, {
-          routeParams,
+          routerino: { params, routePattern: match.path, updateHeadTag },
         });
 
         return elementWithProps;
