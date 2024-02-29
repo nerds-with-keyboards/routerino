@@ -60,7 +60,7 @@ function isOnSamePage({ aUrl, bUrl }) {
   return (
     aUrl.protocol === bUrl.protocol &&
     aUrl.port === bUrl.port &&
-    aUrl.hostname === bUrl.hostname &&
+    aUrl.hostname === bUrl.hostname
   );
 }
 
