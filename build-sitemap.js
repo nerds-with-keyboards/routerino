@@ -56,6 +56,7 @@ function getPathsFromFile(routeFilePath) {
           pathString.match(/(["'`]).*?\1/)[0].slice(1, -1)
         )
       : [];
+
   return paths;
 }
 

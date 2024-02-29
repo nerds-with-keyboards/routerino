@@ -56,6 +56,14 @@ function extractParams({ routePattern, currentRoute }) {
   return params;
 }
 
+function isOnSamePage({ aUrl, bUrl }) {
+  return (
+    aUrl.protocol === bUrl.protocol &&
+    aUrl.port === bUrl.port &&
+    aUrl.hostname === bUrl.hostname &&
+  );
+}
+
 // Routerino Component
 export default function Routerino({
   routes,
@@ -79,11 +87,11 @@ export default function Routerino({
           target = target.parentElement;
         }
 
-        if (
-          target.tagName === "A" &&
-          target.hostname === window.location.hostname
-        ) {
+        // this decides which links can be updated without reloading
+        if (target.tagName === "A" && isOnSamePage(target, window.location)) {
           event.preventDefault();
+
+          // just update in the case where there's an actual change
           if (target.href !== window.location.href) {
             setHref(target.href);
             window.history.pushState({}, "", target.href);
@@ -204,14 +212,22 @@ export default function Routerino({
         const includesHost =
           imageMatch.startsWith("http://") || imageMatch.startsWith("https://");
         const separator = imageMatch.startsWith("/") ? "" : "/";
+        const content = includesHost
+          ? imageMatch
+          : `${cleanedHost}${separator}${imageMatch}`;
 
-        // set the tag
+        // set the og tag
         updateHeadTag({
           property: "og:image",
-          content: includesHost
-            ? imageMatch
-            : `${cleanedHost}${separator}${imageMatch}`,
+          content,
         });
+
+        // set touch icon?
+        // updateHeadTag({
+        //   tag: "link",
+        //   rel: "apple-touch-icon",
+        //   href: content,
+        // });
       }
 
       // check if we need to provide prerender redirects
