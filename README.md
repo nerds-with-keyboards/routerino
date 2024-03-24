@@ -43,7 +43,7 @@ export default App;
 
 ## Generating a sitemap from routes
 
-Run the command `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs.
+Run the command `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first! Note: routes with route params are not added to the sitemap.
 
 Arguments:
 
@@ -55,10 +55,12 @@ Example:
 
 ```sh
 build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputPath=dist/sitemap.xml
-# sitemap.xml with 12 URLs written to dist/sitemap.xml
 ```
+Output: `# sitemap.xml with 12 URLs written to dist/sitemap.xml`
 
 Add `build-sitemap` to your build command to update automatically on every build. This sitemap only includes the location entry, as the rest are [mostly ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps).
+
+Example package.json build script: `"build": "vite build && build-sitemap routeFilePath=src/App.jsx hostname=https://papoir.com outputPath=dist/sitemap.xml",`
 
 ### License
 
