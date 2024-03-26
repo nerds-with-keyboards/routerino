@@ -22,7 +22,8 @@
     "types"
   ],
   "bin": {
-    "routerino-build-sitemap": "build-sitemap.js"
+    "routerino-build-sitemap": "build-sitemap.js",
+    "build-sitemap": "build-sitemap.js"
   },
   "type": "module",
   "types": "types/routerino.d.ts",
