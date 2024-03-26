@@ -149,9 +149,9 @@ Run the command `build-sitemap` to create a sitemap.xml for your site. Adjust th
 
 ### Arguments
 
-- routeFilePath: The path to whichever file contains your routes. The routes array can be defined either directly in the props to Routerino, or stored in an array called routes/Routes.
-- hostname: The domain to use as the base for the URLs in the sitemap.
-- outputPath: The path to write the new sitemap XML file.
+- routeFilePath: The path to whichever file contains your routes, in order for the sitemap build tool to find them. The routes can be defined either inline in the Routerino props, or kept in an array named `routes` or `Routes`. This might be something like `src/routes.jsx`, or `src/App.jsx`.
+- hostname: The domain to use as the base for the URLs in the sitemap. E.g. `https://example.com`.
+- outputPath: The path to write the new sitemap XML file. This would usually be a build folder, e.g. `dist/sitemap.xml`, or something like `public/sitemap.xml` if you want to check in the sitemap to your repo.
 
 ### Example
 
@@ -168,6 +168,8 @@ Add `build-sitemap` to your build command to update automatically on every build
 Example package.json build script: `"build": "vite build && build-sitemap routeFilePath=src/App.jsx hostname=https://example.com outputPath=dist/sitemap.xml",`
 
 ## Sources & Resources
+
+There is a lot of information on SEO and social previews. Here are some sources for further reading on best-practices.
 
 - https://developer.apple.com/library/archive/technotes/tn2444/_index.html
 - https://ahrefs.com/blog/open-graph-meta-tags/
