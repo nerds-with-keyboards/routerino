@@ -33,22 +33,23 @@ npm i routerino -D
 ```jsx
 import Routerino from "routerino";
 
-const routes = [
-  {
-    path: "/",
-    element: <p>Hello, world!</p>,
-    title: "Hello!",
-    description: "Lorem ipsum......",
-  },
-];
-
 const App = () => (
   <main>
     <header>
       <a href="/">Home</a>
     </header>
 
-    <Routerino routes={routes} titlePostfix=" | Foo.com" />
+    <Routerino
+      routes={[
+        {
+          path: "/",
+          element: <p>Hello, world!</p>,
+          title: "Hello!",
+          description: "Lorem ipsum, etc...",
+        },
+      ]}
+      titlePostfix=" | Foo.com"
+    />
 
     <footer>
       <p>Copyright 2048 Foo.com</p>

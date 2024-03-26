@@ -1,8 +1,11 @@
 import React from "react";
 
-export interface RouteTag {
-  property: string;
-  content: string;
+export interface HeadTag {
+  tag?: string;
+  name?: string;
+  content?: string;
+  property?: string;
+  [attribute: string]: string | undefined;
 }
 
 export interface RouteConfig {
@@ -10,7 +13,7 @@ export interface RouteConfig {
   element: React.ReactNode;
   title?: string;
   description?: string;
-  tags?: RouteTag[];
+  tags?: HeadTag[];
   titlePrefix?: string;
   titlePostfix?: string;
   imageUrl?: string;
