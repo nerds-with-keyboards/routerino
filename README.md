@@ -155,14 +155,14 @@ What are the best practices for using Routerino? For SEO and social previews?
 
 - Don't put the site name (ex: Foo.com) in the page title. Each page title should be unique.
 - Put the site name in one of the "title prefix/postfix" props. Only put the site name in one of the two props (ex: "Foo.com - Page Title" would use a `titlePrefix` of `Foo.com - `). Make sure to include your desired spacing and separator.
-- Automate generation of a sitemap.xml as part of your build, which you can do with the `build-sitemap` command (see below).
+- Automate generation of a sitemap.xml as part of your build, which you can do with the `routerino-build-sitemap` command (see below).
 - For social previews, you can add an imageUrl to each route. For pages that don't need a unique image, a sitewide default imageUrl can be set via the Routerino props.
 - A canonical URL is that page URL which is considered the source of truth or "canon" for duplicate pages. Search engines consider the following URLs as two different pages: `example.com/foo` and `example.com/foo/`. We don't want to show users an error whether they use a trailing slash or not. So we will render the same page at both URLs, but for search engines, we have to point them towards which one is the canonical. Otherwise, the link equity can become split among two "different" URLs.
 - Try to keep description between 100-200 chars. This is the sweet spot for most search engines. More than ~150 chars may be truncated in search results.
 
 ## Generating a sitemap from routes
 
-You can use the included CLI tool `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first (or create the directory for the sitemap). Note: routes with route params are not added to the sitemap. Node 16+ should be installed.
+You can use the included CLI tool `routerino-build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first (or ensure the directory for the sitemap exists). Note: routes with route params are not added to the sitemap. Node 16+ should be installed and available in the path.
 
 ### Arguments
 
@@ -173,16 +173,16 @@ You can use the included CLI tool `build-sitemap` to create a sitemap.xml for yo
 ### Example
 
 ```sh
-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputPath=dist/sitemap.xml
+routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputPath=dist/sitemap.xml
 ```
 
 Sample Output: `sitemap.xml with 12 URLs written to dist/sitemap.xml`
 
 ### package.json scripts
 
-Add `build-sitemap` to your build command to update automatically on every build. This sitemap only includes the location entry, as the rest are [mostly ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps).
+Add `routerino-build-sitemap` to your build command to update automatically on every build. This sitemap only includes the location entry, as the rest are [mostly ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps).
 
-Example package.json build script: `"build": "vite build && build-sitemap routeFilePath=src/App.jsx hostname=https://example.com outputPath=dist/sitemap.xml",`
+Example package.json build script: `"build": "vite build && routerino-build-sitemap routeFilePath=src/App.jsx hostname=https://example.com outputPath=dist/sitemap.xml",`
 
 ## Sources & Resources
 
