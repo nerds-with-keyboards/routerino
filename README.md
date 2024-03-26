@@ -20,7 +20,7 @@ You can:
 
 ## Installation
 
-Save it as a dev dependency
+Save it as a dev dependency. You need to have React & React DOM installed in the same project.
 
 ```sh
 npm i routerino -D

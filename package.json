@@ -18,29 +18,26 @@
   },
   "homepage": "https://github.com/nerds-with-keyboards/routerino#readme",
   "files": [
-    "dist",
-    "types"
+    "dist"
   ],
   "bin": {
     "build-sitemap": "build-sitemap.js"
   },
   "type": "module",
-  "types": "types/routerino.d.ts",
   "exports": {
     "import": "./dist/routerino.js",
     "require": "./dist/routerino.umd.cjs"
   },
   "scripts": {
-    "build": "tsc && vite build",
+    "build": "vite build",
     "test": "echo TODO",
-    "prepublishOnly": "tsc && vite build"
+    "prepublishOnly": "vite build"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.1.0",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "typescript": "^5.4.3",
     "vite": "^4.4.9"
   },
   "peerDependencies": {
