@@ -18,7 +18,8 @@
   },
   "homepage": "https://github.com/nerds-with-keyboards/routerino#readme",
   "files": [
-    "dist"
+    "dist",
+    "types"
   ],
   "bin": {
     "build-sitemap": "build-sitemap.js"
