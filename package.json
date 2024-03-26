@@ -25,6 +25,7 @@
     "build-sitemap": "build-sitemap.js"
   },
   "type": "module",
+  "types": "types/routerino.d.ts",
   "exports": {
     "import": "./dist/routerino.js",
     "require": "./dist/routerino.umd.cjs"
