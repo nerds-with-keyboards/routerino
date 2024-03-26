@@ -145,22 +145,27 @@ What are the best practices for using Routerino? For SEO and social previews?
 
 ## Generating a sitemap from routes
 
-Run the command `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs.
+Run the command `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first! Note: routes with route params are not added to the sitemap.
 
-Arguments:
+### Arguments
 
 - routeFilePath: The path to whichever file contains your routes. The routes array can be defined either directly in the props to Routerino, or stored in an array called routes/Routes.
 - hostname: The domain to use as the base for the URLs in the sitemap.
 - outputPath: The path to write the new sitemap XML file.
 
-Example:
+### Example
 
 ```sh
 build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputPath=dist/sitemap.xml
-# sitemap.xml with 12 URLs written to dist/sitemap.xml
 ```
 
+Sample Output: `sitemap.xml with 12 URLs written to dist/sitemap.xml`
+
+### package.json scripts
+
 Add `build-sitemap` to your build command to update automatically on every build. This sitemap only includes the location entry, as the rest are [mostly ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps).
+
+Example package.json build script: `"build": "vite build && build-sitemap routeFilePath=src/App.jsx hostname=https://example.com outputPath=dist/sitemap.xml",`
 
 ## Sources & Resources
 
