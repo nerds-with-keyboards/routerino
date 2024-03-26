@@ -43,7 +43,7 @@ const routes = [
 ];
 
 const App = () => (
-  <div>
+  <main>
     <header>
       <a href="/">Home</a>
     </header>
@@ -53,7 +53,7 @@ const App = () => (
     <footer>
       <p>Copyright 2048 Foo.com</p>
     </footer>
-  </div>
+  </main>
 );
 
 export default App;
