@@ -28,7 +28,7 @@ npm i routerino -D
 
 ## Usage
 
-### Minimal example
+### Minimal example React app `App.jsx`
 
 ```jsx
 import Routerino from "routerino";
@@ -137,7 +137,7 @@ Routerino.defaultProps = {
 
 What are the best practices for using Routerino? For SEO and social previews?
 
-- Don't page the site name (ex: Foo.com) in the page title. Each page title should be unique.
+- Don't put the site name (ex: Foo.com) in the page title. Each page title should be unique.
 - Put the site name in one of the "title prefix/postfix" props. Only put the site name in one of the two props (ex: "Foo.com - Page Title" would use a `titlePrefix` of `Foo.com - `). Make sure to include your desired spacing and separator.
 - Automate generation of a sitemap.xml as part of your build, which you can do with the `build-sitemap` command (see below).
 - For social previews, you can add an imageUrl to each route. For pages that don't need a unique image, a sitewide default imageUrl can be set via the Routerino props.
@@ -145,7 +145,7 @@ What are the best practices for using Routerino? For SEO and social previews?
 
 ## Generating a sitemap from routes
 
-Run the command `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first! Note: routes with route params are not added to the sitemap.
+You can use the included CLI tool `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first! Note: routes with route params are not added to the sitemap.
 
 ### Arguments
 

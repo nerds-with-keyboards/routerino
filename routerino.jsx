@@ -291,7 +291,7 @@ export default function Routerino({
 
     return notFoundTemplate;
   } catch (e) {
-    // router threw up
+    // router threw up (ಥ﹏ಥ)
     console.error(`Routerino error: ${e}`);
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "500" });
