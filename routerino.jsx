@@ -56,7 +56,7 @@ function extractParams({ routePattern, currentRoute }) {
   return params;
 }
 
-function isOnSamePage({ aUrl, bUrl }) {
+function isOnSameHost({ aUrl, bUrl }) {
   return (
     aUrl.protocol === bUrl.protocol &&
     aUrl.port === bUrl.port &&
@@ -79,7 +79,11 @@ export default function Routerino({
   imageUrl,
 }) {
   try {
+    // we use this state to track the URL internally and control React updates
     const [href, setHref] = useState(window.location.href);
+
+    // this useEffect manages reload-free page transitions via
+    // the browser's history.pushState and window.scrollTo APIs
     useEffect(() => {
       const handleClick = (event) => {
         let target = event.target;
@@ -88,18 +92,20 @@ export default function Routerino({
         }
 
         // this decides which links can be updated without reloading
-        if (target.tagName === "A" && isOnSamePage(target, window.location)) {
+        if (target.tagName === "A" && isOnSameHost(target, window.location)) {
           event.preventDefault();
 
-          // just update in the case where there's an actual change
+          // update the history (for new locations)
           if (target.href !== window.location.href) {
             setHref(target.href);
             window.history.pushState({}, "", target.href);
-            window.scrollTo({
-              top: 0,
-              behavior: "auto",
-            });
           }
+
+          // replicate a browser reload (by scrolling to top)
+          window.scrollTo({
+            top: 0,
+            behavior: "auto",
+          });
         }
       };
       document.addEventListener("click", handleClick);
@@ -117,6 +123,7 @@ export default function Routerino({
       };
     }, [href]);
 
+    // START LOCATING MATCH
     let currentRoute = window.location?.pathname ?? "/";
     // use the root route for index.html requests
     if (currentRoute === "/index.html" || currentRoute === "")
@@ -168,118 +175,122 @@ export default function Routerino({
 
     const match = exactMatch ?? addSlashMatch ?? paramsMatch;
 
-    if (Boolean(match)) {
-      // set the title, og:title
-      if (Boolean(match.title)) {
-        // calculate the title
-        const fullTitle = `${match.titlePrefix ?? titlePrefix}${match.title}${
-          match.titlePostfix ?? titlePostfix
-        }`;
-
-        // set the doc title
-        document.title = fullTitle;
-
-        // create the og:title IFF user didn't supply their own
-        if (!match.tags?.find(({ property }) => property === "og:title")) {
-          updateHeadTag({
-            property: "og:title",
-            content: fullTitle,
-          });
-        }
-      }
-
-      // set the description
-      if (Boolean(match.description)) {
-        updateHeadTag({ name: "description", content: match.description });
-
-        // create the og:description IFF user didn't supply their own
-        if (
-          !match.tags?.find(({ property }) => property === "og:description")
-        ) {
-          updateHeadTag({
-            property: "og:description",
-            content: match.description,
-          });
-        }
-      }
-
-      // set the og:image
-      if (Boolean(imageUrl) || Boolean(match.imageUrl)) {
-        // look for an image url to use
-        const imageMatch = match.imageUrl ?? imageUrl;
-        // check and account for possible relative urls
-        // if the url includes http protocol then it isn't relative
-        const includesHost =
-          imageMatch.startsWith("http://") || imageMatch.startsWith("https://");
-        const separator = imageMatch.startsWith("/") ? "" : "/";
-        const content = includesHost
-          ? imageMatch
-          : `${cleanedHost}${separator}${imageMatch}`;
-
-        // set the og tag
-        updateHeadTag({
-          property: "og:image",
-          content,
-        });
-
-        // set touch icon?
-        // updateHeadTag({
-        //   tag: "link",
-        //   rel: "apple-touch-icon",
-        //   href: content,
-        // });
-      }
-
-      // check if we need to provide prerender redirects
+    // START 404 HANDLING
+    if (!Boolean(match)) {
+      console.error(`No matching route found for ${currentRoute}`);
+      document.title = `${titlePrefix}${notFoundTitle}${titlePostfix}`;
       if (usePrerenderTags) {
-        if (useTrailingSlash && !currentRoute.endsWith("/")) {
-          updateHeadTag({ name: "prerender-status-code", content: "301" });
-          updateHeadTag({
-            name: "prerender-header",
-            content: `Location: ${window.location.href}/`,
-          });
-        } else if (!useTrailingSlash && currentRoute.endsWith("/")) {
-          updateHeadTag({ name: "prerender-status-code", content: "301" });
-          updateHeadTag({
-            name: "prerender-header",
-            content: `Location: ${window.location.href.slice(0, -1)}`,
-          });
-        }
+        updateHeadTag({ name: "prerender-status-code", content: "404" });
       }
+      return notFoundTemplate;
+    }
 
-      // add any supplied meta tags (& default the og:type to website)
-      if (Boolean(match.tags) && Boolean(match.tags.length)) {
-        if (!match.tags.find(({ property }) => property === "og:type")) {
-          updateHeadTag({ property: "og:type", content: "website" });
-        }
-        match.tags.forEach((tag) => updateHeadTag(tag));
-      } else {
+    // START MATCH HANDLING
+    // set the title, og:title
+    if (Boolean(match.title)) {
+      // calculate the title
+      const fullTitle = `${match.titlePrefix ?? titlePrefix}${match.title}${
+        match.titlePostfix ?? titlePostfix
+      }`;
+
+      // set the doc title
+      document.title = fullTitle;
+
+      // create the og:title IFF user didn't supply their own
+      if (!match.tags?.find(({ property }) => property === "og:title")) {
+        updateHeadTag({
+          property: "og:title",
+          content: fullTitle,
+        });
+      }
+    }
+
+    // set the description
+    if (Boolean(match.description)) {
+      updateHeadTag({ name: "description", content: match.description });
+
+      // create the og:description IFF user didn't supply their own
+      if (!match.tags?.find(({ property }) => property === "og:description")) {
+        updateHeadTag({
+          property: "og:description",
+          content: match.description,
+        });
+      }
+    }
+
+    // set the og:image
+    if (Boolean(imageUrl) || Boolean(match.imageUrl)) {
+      // look for an image url to use
+      const imageMatch = match.imageUrl ?? imageUrl;
+      // check and account for possible relative urls
+      // if the url includes http protocol then it isn't relative
+      const includesHost =
+        imageMatch.startsWith("http://") || imageMatch.startsWith("https://");
+      const separator = imageMatch.startsWith("/") ? "" : "/";
+      const content = includesHost
+        ? imageMatch
+        : `${cleanedHost}${separator}${imageMatch}`;
+
+      // set the og tag
+      updateHeadTag({
+        property: "og:image",
+        content,
+      });
+
+      // set touch icon?
+      // updateHeadTag({
+      //   tag: "link",
+      //   rel: "apple-touch-icon",
+      //   href: content,
+      // });
+    }
+
+    // check if we need to provide prerender redirects
+    if (usePrerenderTags) {
+      if (useTrailingSlash && !currentRoute.endsWith("/")) {
+        updateHeadTag({ name: "prerender-status-code", content: "301" });
+        updateHeadTag({
+          name: "prerender-header",
+          content: `Location: ${window.location.href}/`,
+        });
+      } else if (!useTrailingSlash && currentRoute.endsWith("/")) {
+        updateHeadTag({ name: "prerender-status-code", content: "301" });
+        updateHeadTag({
+          name: "prerender-header",
+          content: `Location: ${window.location.href.slice(0, -1)}`,
+        });
+      }
+    }
+
+    // add any supplied meta tags (& default the og:type to website)
+    if (Boolean(match.tags) && Boolean(match.tags.length)) {
+      if (!match.tags.find(({ property }) => property === "og:type")) {
         updateHeadTag({ property: "og:type", content: "website" });
       }
+      match.tags.forEach((tag) => updateHeadTag(tag));
+    } else {
+      updateHeadTag({ property: "og:type", content: "website" });
+    }
 
-      // check & return the element to render
-      if (Boolean(match.element)) {
-        const params = extractParams({
-          routePattern: match.path,
+    // check & return the element to render
+    if (Boolean(match.element)) {
+      const params = extractParams({
+        routePattern: match.path,
+        currentRoute,
+      });
+
+      // add the route params to the React component
+      // nb: cloneElement won't re-trigger componentDidMount lifecycle
+      const elementWithProps = cloneElement(match.element, {
+        routerino: {
           currentRoute,
-        });
+          params,
+          routePattern: match.path,
+          updateHeadTag,
+        },
+      });
 
-        // nb: cloneElement won't re-trigger componentDidMount lifecycle
-        const elementWithProps = cloneElement(match.element, {
-          routerino: { params, routePattern: match.path, updateHeadTag },
-        });
-
-        return elementWithProps;
-      } else {
-        // no element
-        console.error(`No element found for ${currentRoute}`);
-        document.title = `${titlePrefix}${notFoundTitle}${titlePostfix}`;
-        if (usePrerenderTags) {
-          updateHeadTag({ name: "prerender-status-code", content: "404" });
-        }
-
-        return notFoundTemplate;
-      }
+      return elementWithProps;
     }
 
     // no search result

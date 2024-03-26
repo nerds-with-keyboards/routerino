@@ -8,7 +8,7 @@ Routerino allows developers to define routing and SEO metadata together. This sa
 
 You can:
 
-- easily add simple routing to your React app
+- easily add simple routing to your React app (supports React v18)
 - set any arbitrary `<head>` tags for any route
 - set the title, description, and image for each route
 - configure the site name to be included with the page titles
@@ -133,6 +133,15 @@ Routerino.defaultProps = {
 };
 ```
 
+### Extracting route parameters, getting the current route, and updating head tags
+
+Child components can access the current route and its parameters via the `routerino` prop. This prop is an object with the following properties:
+
+- routePattern: The current route path pattern, such as `/foo/:id/`.
+- currentRoute: The current route path, such as `/foo/bar/`.
+- params: a dictionary of route parameters, such as `{id: "bar"}`. These will match the route pattern provided by the `path` prop.
+- updateHeadTag: a function that takes a tag object and updates the head tags for the current route. This is useful for setting custom tags for each route, such as `og:image` for social previews. You may need to set this after doing some data fetches, for example. Sample: `updateHeadTag({ name: "description", content: 'Some description...' });`
+
 ## Routerino best practices
 
 What are the best practices for using Routerino? For SEO and social previews?
@@ -142,16 +151,17 @@ What are the best practices for using Routerino? For SEO and social previews?
 - Automate generation of a sitemap.xml as part of your build, which you can do with the `build-sitemap` command (see below).
 - For social previews, you can add an imageUrl to each route. For pages that don't need a unique image, a sitewide default imageUrl can be set via the Routerino props.
 - A canonical URL is that page URL which is considered the source of truth or "canon" for duplicate pages. Search engines consider the following URLs as two different pages: `example.com/foo` and `example.com/foo/`. We don't want to show users an error whether they use a trailing slash or not. So we will render the same page at both URLs, but for search engines, we have to point them towards which one is the canonical. Otherwise, the link equity can become split among two "different" URLs.
+- Try to keep description between 100-200 chars. This is the sweet spot for most search engines. More than ~150 chars may be truncated in search results.
 
 ## Generating a sitemap from routes
 
-You can use the included CLI tool `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first! Note: routes with route params are not added to the sitemap.
+You can use the included CLI tool `build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first (or create the directory for the sitemap). Note: routes with route params are not added to the sitemap. Node 16+ should be installed.
 
 ### Arguments
 
 - routeFilePath: The path to whichever file contains your routes, in order for the sitemap build tool to find them. The routes can be defined either inline in the Routerino props, or kept in an array named `routes` or `Routes`. This might be something like `src/routes.jsx`, or `src/App.jsx`.
 - hostname: The domain to use as the base for the URLs in the sitemap. E.g. `https://example.com`.
-- outputPath: The path to write the new sitemap XML file. This would usually be a build folder, e.g. `dist/sitemap.xml`, or something like `public/sitemap.xml` if you want to check in the sitemap to your repo.
+- outputPath: The path to write the new sitemap XML file. This would usually be a build directory, e.g. `dist/sitemap.xml`, or something like `public/sitemap.xml` if you want to check in the sitemap to your repo.
 
 ### Example
 
