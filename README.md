@@ -82,6 +82,8 @@ All of these are optional, so it's easy to get started with a simple `<Routerino
 
 #### Route props
 
+todo: convert these to sub sections with headings
+
 - path: PropTypes.string.isRequired
 - element: PropTypes.element.isRequired
 - title: PropTypes.string
@@ -90,6 +92,10 @@ All of these are optional, so it's easy to get started with a simple `<Routerino
 - titlePrefix: PropTypes.string
 - titlePostfix: PropTypes.string
 - imageUrl: PropTypes.string
+
+##### tags
+
+This is where you can put head tags that you want to have set for a page. For example, for a blog post you may want to use: `tags: [{ property: "og:type", content: "article" }]`
 
 ### Default props
 
