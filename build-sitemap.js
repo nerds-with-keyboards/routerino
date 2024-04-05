@@ -84,9 +84,7 @@ ${paths.map((path) => `  <url><loc>${hostname}${path}</loc></url>`).join("\n")}
       `${outputDir}/robots.txt`,
       `User-agent: *\nSitemap: ${hostname}/sitemap.xml`
     );
-    console.log(
-      `✅ robots.txt with ${paths.length} URLs written to ${outputDir}`
-    );
+    console.log(`✅ robots.txt written to ${outputDir}`);
   }
 } catch (err) {
   console.error(`❌ sitemap.xml or robots.txt failed to build.`);
