@@ -3,7 +3,7 @@ import fs from "fs";
 
 try {
   // parse the args
-  const { routeFilePath, hostname, outputPath } = process.argv
+  const { routeFilePath, hostname, outputDir } = process.argv
     .filter((arg) => arg.includes("="))
     .reduce((acc, cur) => {
       const split = cur.split("=");
@@ -12,9 +12,9 @@ try {
     }, {});
 
   // input checks
-  if (!(routeFilePath && hostname && outputPath)) {
+  if (!(routeFilePath && hostname && outputDir)) {
     console.error(
-      `Error: missing some args! Cannot create sitemap.\nRequired args:\n - routeFilePath: ${routeFilePath}\n - hostname: ${hostname}\n - outputPath: ${outputPath}`
+      `Error: missing some args! Cannot create sitemap.\nRequired args:\n - routeFilePath: ${routeFilePath}\n - hostname: ${hostname}\n - outputDir: ${outputDir}`
     );
     process.exit(1);
   }
@@ -72,12 +72,23 @@ ${paths.map((path) => `  <url><loc>${hostname}${path}</loc></url>`).join("\n")}
   const sitemap = createSitemap({ hostname, paths });
 
   if (sitemap) {
-    fs.writeFileSync(outputPath, sitemap);
+    fs.writeFileSync(`${outputDir}/sitemap.xml`, sitemap);
     console.log(
-      `✅ sitemap.xml with ${paths.length} URLs written to ${outputPath}`
+      `✅ sitemap.xml with ${paths.length} URLs written to ${outputDir}`
+    );
+  }
+
+  // next we want to check if the output dir does not contain a robots.txt file
+  if (!fs.existsSync(`${outputDir}/robots.txt`)) {
+    fs.writeFileSync(
+      `${outputDir}/robots.txt`,
+      `User-agent: *\nSitemap: ${hostname}/sitemap.xml`
+    );
+    console.log(
+      `✅ robots.txt with ${paths.length} URLs written to ${outputDir}`
     );
   }
 } catch (err) {
-  console.error(`❌ sitemap failed to generate.`);
+  console.error(`❌ sitemap.xml or robots.txt failed to build.`);
   console.error(err);
 }

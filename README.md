@@ -166,23 +166,23 @@ You can use the included CLI tool `routerino-build-sitemap` to create a sitemap.
 
 ### Arguments
 
-- routeFilePath: The path to whichever file contains your routes, in order for the sitemap build tool to find them. The routes can be defined either inline in the Routerino props, or kept in an array named `routes` or `Routes`. This might be something like `src/routes.jsx`, or `src/App.jsx`.
+- routeFilePath: The path to whichever file contains your routes, in order for the sitemap build tool to find them. The routes can be defined either inline in the Routerino props, or kept in an array named `routes` or `Routes`. This might be something like `routes.jsx`, or `src/App.jsx`.
 - hostname: The domain to use as the base for the URLs in the sitemap. E.g. `https://example.com`.
 - outputPath: The path to write the new sitemap XML file. This would usually be a build directory, e.g. `dist/sitemap.xml`, or something like `public/sitemap.xml` if you want to check in the sitemap to your repo.
 
 ### Example
 
 ```sh
-routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputPath=dist/sitemap.xml
+routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputDir=dist
 ```
 
-Sample Output: `sitemap.xml with 12 URLs written to dist/sitemap.xml`
+Sample Output: `✅ sitemap.xml with 42 URLs written to dist`
 
 ### package.json scripts
 
-Add `routerino-build-sitemap` to your build command to update automatically on every build. This sitemap only includes the location entry, as the rest are [mostly ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps).
+Add `routerino-build-sitemap` to your build command to update automatically on every build. This sitemap only includes the location entry, as the rest are mostly [ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps).
 
-Example package.json build script: `"build": "vite build && routerino-build-sitemap routeFilePath=src/App.jsx hostname=https://example.com outputPath=dist/sitemap.xml",`
+Example package.json build script: `"build": "vite build && routerino-build-sitemap routeFilePath=src/App.jsx hostname=https://example.com outputDir=dist",`
 
 ## Sources & Resources
 
