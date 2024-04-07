@@ -1,8 +1,29 @@
 import { cloneElement, useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
-// update a head tag
-function updateHeadTag({ tag = "meta", ...attrs }) {
+/**
+ * update a head tag
+ *
+ * @typedef {Object} HeadTag
+ * @property {string} [tag] - The tag name to update (default: meta)
+ * @property {boolean} [soft] - Whether to skip the update of an existing tag if already exists (default: false)
+ * @property {string} [name] - The name attribute of the tag
+ * @property {string} [property] - The property attribute of the tag
+ * @property {string} [content] - The content attribute of the tag
+ * @property {string} [charset] - The charset attribute of the tag
+ * @property {string} [httpEquiv] - The http-equiv attribute of the tag
+ * @property {string} [itemProp] - The itemProp attribute of the tag
+ * @property {string} [rel] - The rel attribute of the tag
+ * @property {string} [href] - The href attribute of the tag
+ * @property {string} [src] - The src attribute of the tag
+ * @property {string} [sizes] - The sizes attribute of the tag
+ * @property {string} [type] - The type attribute of the tag
+ * @property {string} [media] - The media attribute of the tag
+ * @property {string} [hrefLang] - The hrefLang attribute of the tag
+ * @property {string} [target] - The target attribute of the tag
+ *
+ */
+function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
   // first, get an array of the attribute names
   const attrKeys = Object.keys(attrs);
 
@@ -13,7 +34,7 @@ function updateHeadTag({ tag = "meta", ...attrs }) {
     );
   }
 
-  // tag assignment (3 steps)
+  // tag search/instantiate (3 steps)
   // we want to use existing tag if available (to prevent duplicate tags), or create it otherwise.
   // ------------------------------------------
   // 1. instantiate the variable here
@@ -30,7 +51,8 @@ function updateHeadTag({ tag = "meta", ...attrs }) {
   }
 
   // 3. if no matching tag is found, create a new one
-  if (!tagToUpdate) {
+  // make sure we don't want a "soft" update (doesn't overwrite the value if set)
+  if (!tagToUpdate && !soft) {
     tagToUpdate = document.createElement(tag);
   }
 
@@ -221,20 +243,22 @@ export default function Routerino({
     // set the og:image
     if (Boolean(imageUrl) || Boolean(match.imageUrl)) {
       // look for an image url to use
-      const imageMatch = match.imageUrl ?? imageUrl;
+      // const imageMatch = match.imageUrl ?? imageUrl;
+
+      // disabled, not sure if this is worth it.
       // check and account for possible relative urls
       // if the url includes http protocol then it isn't relative
-      const includesHost =
-        imageMatch.startsWith("http://") || imageMatch.startsWith("https://");
-      const separator = imageMatch.startsWith("/") ? "" : "/";
-      const content = includesHost
-        ? imageMatch
-        : `${cleanedHost}${separator}${imageMatch}`;
+      // const includesHost =
+      //   imageMatch.startsWith("http://") || imageMatch.startsWith("https://");
+      // const separator = imageMatch.startsWith("/") ? "" : "/";
+      // const content = includesHost
+      //   ? imageMatch
+      //   : `${cleanedHost}${separator}${imageMatch}`;
 
       // set the og tag
       updateHeadTag({
         property: "og:image",
-        content,
+        content: match.imageUrl ?? imageUrl,
       });
 
       // set touch icon?

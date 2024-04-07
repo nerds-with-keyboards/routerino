@@ -68,7 +68,9 @@ ${paths.map((path) => `  <url><loc>${hostname}${path}</loc></url>`).join("\n")}
 </urlset>`;
   }
 
-  const paths = getPathsFromFile(routeFilePath);
+  const paths = getPathsFromFile(routeFilePath).filter(
+    (path) => !path.startsWith(":")
+  );
   const sitemap = createSitemap({ hostname, paths });
 
   if (sitemap) {
