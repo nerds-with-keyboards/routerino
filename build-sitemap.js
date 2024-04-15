@@ -45,7 +45,7 @@ try {
     //  - <Router routes={[...]} />
     //  - <Router {...{ routes: [...] }} />
     const arrayMatch = routeFileString.match(
-      /[rR]outes\s*[=:]\s*\{?\s*(\[[\s\S]*\])/
+      /(?:[rR]outes\s*[=:]\s*\{?\s*|\bexport\s+default\s+)(\[[\s\S]*\])/
     );
     const routeString = arrayMatch[0] ?? "";
 
