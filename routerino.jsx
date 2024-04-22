@@ -269,14 +269,17 @@ export default function Routerino({
       // });
     }
 
-    // check if we need to provide prerender redirects
-    if (usePrerenderTags) {
+    // check if we need to provide prerender redirects (skipping redirects for the root route: `/`)
+    if (usePrerenderTags && currentRoute !== "/") {
+      // check if we need to redirect to a trailing slash
       if (useTrailingSlash && !currentRoute.endsWith("/")) {
         updateHeadTag({ name: "prerender-status-code", content: "301" });
         updateHeadTag({
           name: "prerender-header",
           content: `Location: ${window.location.href}/`,
         });
+
+        // check if we need to redirect to a non-trailing slash
       } else if (!useTrailingSlash && currentRoute.endsWith("/")) {
         updateHeadTag({ name: "prerender-status-code", content: "301" });
         updateHeadTag({

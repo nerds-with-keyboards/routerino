@@ -35,6 +35,7 @@ try {
     // 4: any spacing
     // 5: optional open brace
     // 6: any spacing
+    // 6b: export default support. TODO: update this comment a bit
     // 7: group capture start - open bracket
     // 8: any characters
     // 9: group capture end - close bracket
