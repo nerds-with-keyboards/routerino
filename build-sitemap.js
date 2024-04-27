@@ -5,7 +5,7 @@ function pathHasRouteParam(path) {
   let includes = false;
   let pathSegments = path.split("/");
   pathSegments.forEach((segment) => {
-    if (segment.startsWith(":")) {
+    if (segment.startsWith("/:")) {
       includes = true;
     }
   });
