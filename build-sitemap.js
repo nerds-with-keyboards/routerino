@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 import fs from "fs";
 
-function pathHasRouteParam(path) {
-  let includes = false;
-  let pathSegments = path.split("/");
-  pathSegments.forEach((segment) => {
-    if (segment.startsWith("/:")) {
-      includes = true;
-    }
-  });
-  return includes;
-}
+// function pathHasRouteParam(path) {
+//   let includes = false;
+//   let pathSegments = path.split("/");
+//   pathSegments.forEach((segment) => {
+//     if (segment.startsWith("/:")) {
+//       includes = true;
+//     }
+//   });
+//   return includes;
+// }
 
 try {
   // parse the args
@@ -70,7 +70,7 @@ try {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${paths
-  .filter(pathHasRouteParam)
+  // .filter(pathHasRouteParam)
   .map((path) => `  <url><loc>${hostname}${path}</loc></url>`)
   .join("\n")}
 </urlset>`;
