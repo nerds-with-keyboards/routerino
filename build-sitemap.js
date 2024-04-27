@@ -1,6 +1,17 @@
 #!/usr/bin/env node
 import fs from "fs";
 
+function pathHasRouteParam(path) {
+  let includes = false;
+  let pathSegments = path.split("/");
+  pathSegments.forEach((segment) => {
+    if (segment.startsWith(":")) {
+      includes = true;
+    }
+  });
+  return includes;
+}
+
 try {
   // parse the args
   const { routeFilePath, hostname, outputDir } = process.argv
@@ -27,24 +38,17 @@ try {
         ?.toString()
         ?.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "") ?? "";
 
-    // match the routes array
-    //
-    // 1: routes or Routes
-    // 2: any spacing
-    // 3: = or :
-    // 4: any spacing
-    // 5: optional open brace
-    // 6: any spacing
-    // 6b: export default support. TODO: update this comment a bit
-    // 7: group capture start - open bracket
-    // 8: any characters
-    // 9: group capture end - close bracket
+    // match the routes array regex breakdown
+    // 1. match a routes array such as `Routes = ` or `routes: `, or
+    // 2. match `export default `
+    // 3. match group `[<any characters>]`
     //
     // examples:
     //  - Routes = [...]
     //  - routes = [...]
     //  - <Router routes={[...]} />
     //  - <Router {...{ routes: [...] }} />
+    //  - export default [...]
     const arrayMatch = routeFileString.match(
       /(?:[rR]outes\s*[=:]\s*\{?\s*|\bexport\s+default\s+)(\[[\s\S]*\])/
     );
@@ -65,13 +69,14 @@ try {
   function createSitemap({ hostname, paths }) {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${paths.map((path) => `  <url><loc>${hostname}${path}</loc></url>`).join("\n")}
+${paths
+  .filter(pathHasRouteParam)
+  .map((path) => `  <url><loc>${hostname}${path}</loc></url>`)
+  .join("\n")}
 </urlset>`;
   }
 
-  const paths = getPathsFromFile(routeFilePath).filter(
-    (path) => !path.startsWith(":")
-  );
+  const paths = getPathsFromFile(routeFilePath);
   const sitemap = createSitemap({ hostname, paths });
 
   if (sitemap) {
@@ -88,6 +93,8 @@ ${paths.map((path) => `  <url><loc>${hostname}${path}</loc></url>`).join("\n")}
       `User-agent: *\nSitemap: ${hostname}/sitemap.xml`
     );
     console.log(`✅ robots.txt written to ${outputDir}`);
+  } else {
+    console.log(`✅ robots.txt already exists in ${outputDir} (skipped)`);
   }
 } catch (err) {
   console.error(`❌ sitemap.xml or robots.txt failed to build.`);

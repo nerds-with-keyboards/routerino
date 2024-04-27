@@ -66,7 +66,7 @@ Please see the [default props](#default-props) and [usage](#usage) sections for 
 
 #### Main props
 
-All of these are optional, so it's easy to get started with a simple `<Routerino />` element.
+All of these are optional, so it's easy to get started with a simple `<Routerino />` element, to get a working page.
 
 - `routes`: arrayOf(RouteProps); see below for details. If you don't set anything in this prop, you'll see a default page.
 - `host`: string; The root page URL, such as `https://example.com`. Defaults to an empty string and relative paths are used.
@@ -92,6 +92,7 @@ todo: convert these to sub sections with headings
 - titlePrefix: PropTypes.string
 - titlePostfix: PropTypes.string
 - imageUrl: PropTypes.string
+- redirects: PropTypes.arrayOf(PropTypes.string)
 
 ##### tags
 
@@ -162,13 +163,13 @@ What are the best practices for using Routerino? For SEO and social previews?
 
 ## Generating a sitemap from routes
 
-You can use the included CLI tool `routerino-build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first (or ensure the directory for the sitemap exists). Note: routes with route params are not added to the sitemap. Node 16+ should be installed and available in the path.
+You can use the included CLI tool `routerino-build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first (or ensure the directory for the sitemap exists). Note: routes with route params are not added to the sitemap. Node 16+ should be installed and available in the path. If no `robots.txt` file is found, a default one will be created which just points to the sitemap. It would be an SEO problem to not have the `robots.txt` file pointing to the sitemap, so we include it if necessary. If you create your own, make sure to include the sitemap URL.
 
 ### Arguments
 
-- routeFilePath: The path to whichever file contains your routes, in order for the sitemap build tool to find them. The routes can be defined either inline in the Routerino props, or kept in an array named `routes` or `Routes`. This might be something like `routes.jsx`, or `src/App.jsx`.
-- hostname: The domain to use as the base for the URLs in the sitemap. E.g. `https://example.com`.
-- outputPath: The path to write the new sitemap XML file. This would usually be a build directory, e.g. `dist/sitemap.xml`, or something like `public/sitemap.xml` if you want to check in the sitemap to your repo.
+- routeFilePath: The path to whichever file contains your routes, in order for the sitemap build tool to find them. The routes can be defined either inline in the Routerino props, or kept in an array named `routes`, `Routes`, or just exported as default. This might be something like `src/Router/index.jsx`, or `src/App.jsx`. Whichever file you've put your routes in should be used.
+- hostname: The domain to use as the base for the URLs in the sitemap. E.g. `https://example.com`. Make sure to include or exclude the `www` prefix as desired.
+- outputDir: The path to write the new sitemap XML file. This would usually be a build directory, e.g. `dist` or `build`, or something like `public` if you wanted to check in the sitemap to your repo.
 
 ### Example
 
@@ -177,12 +178,13 @@ routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.co
 ```
 
 Sample Output: `✅ sitemap.xml with 42 URLs written to dist`
+and: `✅ robots.txt written to dist`
 
 ### package.json scripts
 
 Add `routerino-build-sitemap` to your build command to update automatically on every build. This sitemap only includes the location entry, as the rest are mostly [ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps).
 
-Example package.json build script: `"build": "vite build && routerino-build-sitemap routeFilePath=src/App.jsx hostname=https://example.com outputDir=dist",`
+Example package.json build script: `"build": "vite build && routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputDir=dist",`
 
 ## Sources & Resources
 
@@ -190,6 +192,7 @@ There is a lot of information on SEO and social previews. Here are some sources 
 
 - https://developer.apple.com/library/archive/technotes/tn2444/_index.html
 - https://ahrefs.com/blog/open-graph-meta-tags/
+- [Use Descriptive Link Text](https://developers.google.com/search/docs/fundamentals/seo-starter-guide?hl=en&ref_topic=9460495)
 
 ### License
 
