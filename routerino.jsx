@@ -79,11 +79,16 @@ function extractParams({ routePattern, currentRoute }) {
 }
 
 function isOnSameHost({ aUrl, bUrl }) {
-  return (
-    aUrl.protocol === bUrl.protocol &&
-    aUrl.port === bUrl.port &&
-    aUrl.hostname === bUrl.hostname
-  );
+  try {
+    return (
+      aUrl.protocol === bUrl.protocol &&
+      aUrl.port === bUrl.port &&
+      aUrl.hostname === bUrl.hostname
+    );
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
 }
 
 // Routerino Component
