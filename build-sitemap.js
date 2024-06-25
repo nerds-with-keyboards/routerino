@@ -1,15 +1,6 @@
 #!/usr/bin/env node
 import fs from "fs";
 
-function pathHasRouteParam(path) {
-  console.log("testing path: ", path);
-  let pathSegments = path.split("/");
-  console.log(pathSegments);
-  let includes = pathSegments.some((segment) => segment.startsWith(":"));
-  console.log({ includes });
-  return includes;
-}
-
 try {
   // parse the args
   const { routeFilePath, hostname, outputDir } = process.argv
@@ -64,11 +55,24 @@ try {
     return paths;
   }
 
+  /**
+   * Creates a sitemap XML string.
+   * @param {Object} options - The options for creating the sitemap.
+   * @param {string} options.hostname - The base URL of the site.
+   * @param {string[]} options.paths - An array of paths to include in the sitemap.
+   * @returns {string} The generated sitemap XML string.
+   *
+   * @example
+   * createSitemap({
+   *   hostname: "https://example.com",
+   *   paths: ["/", "/about", "/blog"]
+   * });
+   */
   function createSitemap({ hostname, paths }) {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${paths
-  .filter(pathHasRouteParam)
+  .filter(!path.split("/").some((segment) => segment.startsWith(":")))
   .map((path) => `  <url><loc>${hostname}${path}</loc></url>`)
   .join("\n")}
 </urlset>`;
