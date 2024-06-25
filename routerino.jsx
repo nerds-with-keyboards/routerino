@@ -80,10 +80,16 @@ function extractParams({ routePattern, currentRoute }) {
 
 function isOnSameHost({ aUrl, bUrl }) {
   try {
+    if (!aUrl || !bUrl) return false;
+
+    if (!(aUrl instanceof URL) || !(bUrl instanceof URL)) {
+      return false;
+    }
+
     return (
-      aUrl?.protocol === bUrl?.protocol &&
-      aUrl?.port === bUrl?.port &&
-      aUrl?.hostname === bUrl?.hostname
+      aUrl.protocol === bUrl.protocol &&
+      aUrl.port === bUrl.port &&
+      aUrl.hostname.toLowerCase() === bUrl.hostname.toLowerCase()
     );
   } catch (e) {
     console.error(e);
