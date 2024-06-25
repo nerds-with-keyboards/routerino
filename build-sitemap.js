@@ -3,14 +3,9 @@ import fs from "fs";
 
 function pathHasRouteParam(path) {
   console.log("testing path: ", path);
-  let includes = false;
   let pathSegments = path.split("/");
   console.log(pathSegments);
-  pathSegments.forEach((segment) => {
-    if (segment.startsWith(":")) {
-      includes = true;
-    }
-  });
+  let includes = pathSegments.some((segment) => segment.startsWith(":"));
   console.log({ includes });
   return includes;
 }
