@@ -29,7 +29,8 @@
   "types": "types/routerino.d.ts",
   "exports": {
     "import": "./dist/routerino.js",
-    "require": "./dist/routerino.umd.cjs"
+    "require": "./dist/routerino.umd.cjs",
+    "types": "./types/routerino.d.ts"
   },
   "scripts": {
     "build": "vite build",
