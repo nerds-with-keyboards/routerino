@@ -94,7 +94,6 @@ export default function Routerino({
       tags: [{ property: "og:locale", content: "en_US" }],
     },
   ],
-  host = "",
   notFoundTemplate = (
     <>
       <p>No page found for this URL. [404]</p>
@@ -161,7 +160,7 @@ export default function Routerino({
           });
         } else if (debug)
           console.debug(
-            "target link is not on the same host, standard link handling applies"
+            "target link does not share an origin, standard link handling applies"
           );
       };
       document.addEventListener("click", handleClick);
@@ -185,8 +184,6 @@ export default function Routerino({
     if (currentRoute === "/index.html" || currentRoute === "")
       currentRoute = "/";
     // console.debug({ msg: "router called", currentRoute });
-
-    let cleanedHost = host.endsWith("/") ? host.slice(0, -1) : host;
 
     // locate the route if it matches exactly
     const exactMatch = routes.find((route) => route.path === currentRoute);
@@ -277,19 +274,6 @@ export default function Routerino({
 
     // set the og:image
     if (Boolean(imageUrl) || Boolean(match.imageUrl)) {
-      // look for an image url to use
-      // const imageMatch = match.imageUrl ?? imageUrl;
-
-      // disabled, not sure if this is worth it.
-      // check and account for possible relative urls
-      // if the url includes http protocol then it isn't relative
-      // const includesHost =
-      //   imageMatch.startsWith("http://") || imageMatch.startsWith("https://");
-      // const separator = imageMatch.startsWith("/") ? "" : "/";
-      // const content = includesHost
-      //   ? imageMatch
-      //   : `${cleanedHost}${separator}${imageMatch}`;
-
       // set the og tag
       updateHeadTag({
         property: "og:image",
@@ -388,7 +372,6 @@ const RouteProps = PropTypes.exact({
 
 Routerino.propTypes = {
   routes: PropTypes.arrayOf(RouteProps),
-  host: PropTypes.string,
   notFoundTemplate: PropTypes.element,
   notFoundTitle: PropTypes.string,
   errorTemplate: PropTypes.element,

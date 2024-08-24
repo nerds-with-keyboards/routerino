@@ -21,7 +21,6 @@ export interface RouteConfig {
 
 export interface RouterinoProps {
   routes?: RouteConfig[];
-  host?: string;
   notFoundTemplate?: React.ReactNode;
   notFoundTitle?: string;
   errorTemplate?: React.ReactNode;
@@ -46,7 +45,6 @@ declare namespace Routerino {
         content: string;
       }[];
     }[];
-    host: string;
     notFoundTemplate: JSX.Element;
     notFoundTitle: string;
     errorTemplate: JSX.Element;
