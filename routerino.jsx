@@ -132,15 +132,18 @@ export default function Routerino({
         while (target.tagName !== "A" && target.parentElement) {
           target = target.parentElement;
         }
+        if (target.tagName !== "A") {
+          // no anchor tag, stop checking anything
+          if (debug) console.debug(`no achor tag found during click`);
+          return;
+        }
+        if (debug) console.debug(`click target ${target}`);
         let targetUrl = new URL(target);
 
         if (debug)
-          console.debug(`target: ${target}, current: ${window.location}`);
-        // check fo links to be updated without reloading (same origin)
-        if (
-          target.tagName === "A" &&
-          window.location.origin === targetUrl.origin
-        ) {
+          console.debug(`targetUrl: ${targetUrl}, current: ${window.location}`);
+        // check for links to be updated without reloading (same origin)
+        if (window.location.origin === targetUrl.origin) {
           if (debug)
             console.debug(
               "target link is same origin, push-state transitioning"
