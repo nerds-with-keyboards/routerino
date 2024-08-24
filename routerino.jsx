@@ -99,17 +99,45 @@ function isOnSameHost({ aUrl, bUrl }) {
 
 // Routerino Component
 export default function Routerino({
-  routes,
-  host,
-  notFoundTemplate,
-  notFoundTitle,
-  errorTemplate,
-  errorTitle,
-  useTrailingSlash,
-  usePrerenderTags,
+  routes = [
+    {
+      path: "/",
+      element: (
+        <p>
+          This is the default route. Pass an array of routes to the Routerino
+          component in order to configure your own pages. Each route is a
+          dictionary with at least `path` and `element` defined.
+        </p>
+      ),
+      description: "The default route example description.",
+      tags: [{ property: "og:locale", content: "en_US" }],
+    },
+  ],
+  host = "",
+  notFoundTemplate = (
+    <>
+      <p>No page found for this URL. [404]</p>
+      <p>
+        <a href="/">Home</a>
+      </p>
+    </>
+  ),
+  notFoundTitle = "Page not found [404]",
+  errorTemplate = (
+    <>
+      <p>Page failed to load. [500]</p>
+      <p>
+        <a href="/">Home</a>
+      </p>
+    </>
+  ),
+  errorTitle = "Page error [500]",
+  useTrailingSlash = true,
+  usePrerenderTags = true,
   titlePrefix,
   titlePostfix,
   imageUrl,
+  debug = false,
 }) {
   try {
     // we use this state to track the URL internally and control React updates
@@ -119,13 +147,18 @@ export default function Routerino({
     // the browser's history.pushState and window.scrollTo APIs
     useEffect(() => {
       const handleClick = (event) => {
+        if (debug) console.debug("click occurred");
         let target = event.target;
         while (target.tagName !== "A" && target.parentElement) {
           target = target.parentElement;
         }
 
+        if (debug)
+          console.debug(`target: ${target}, current: ${window.location}`);
         // this decides which links can be updated without reloading
         if (target.tagName === "A" && isOnSameHost(target, window.location)) {
+          if (debug)
+            console.debug("targets are on the same page, transitioning");
           event.preventDefault();
 
           // update the history (for new locations)
@@ -139,7 +172,7 @@ export default function Routerino({
             top: 0,
             behavior: "auto",
           });
-        }
+        } else if (debug) console.debug("targets are not on the same page");
       };
       document.addEventListener("click", handleClick);
 
@@ -207,6 +240,7 @@ export default function Routerino({
     });
 
     const match = exactMatch ?? addSlashMatch ?? paramsMatch;
+    if (debug) console.debug({ match, exactMatch, addSlashMatch, paramsMatch });
 
     // START 404 HANDLING
     if (!Boolean(match)) {
@@ -351,45 +385,6 @@ export default function Routerino({
   }
 }
 
-Routerino.defaultProps = {
-  routes: [
-    {
-      path: "/",
-      element: (
-        <p>
-          This is the default route. Pass an array of routes to the Routerino
-          component in order to configure your own pages.
-        </p>
-      ),
-      description: "The default route example description.",
-      tags: [{ property: "og:locale", content: "en_US" }],
-    },
-  ],
-  host: "",
-  notFoundTemplate: (
-    <>
-      <p>No page found for this URL. [404]</p>
-      <p>
-        <a href="/">Home</a>
-      </p>
-    </>
-  ),
-  notFoundTitle: "Page not found [404]",
-  errorTemplate: (
-    <>
-      <p>Page failed to load. [500]</p>
-      <p>
-        <a href="/">Home</a>
-      </p>
-    </>
-  ),
-  errorTitle: "Page error [500]",
-  useTrailingSlash: true,
-  usePrerenderTags: true,
-  titlePrefix: "",
-  titlePostfix: "",
-};
-
 const RouteProps = PropTypes.exact({
   path: PropTypes.string.isRequired,
   element: PropTypes.element.isRequired,
@@ -413,4 +408,5 @@ Routerino.propTypes = {
   titlePrefix: PropTypes.string,
   titlePostfix: PropTypes.string,
   imageUrl: PropTypes.string,
+  debug: PropTypes.bool,
 };
