@@ -161,7 +161,7 @@ export default function Routerino({
         // this decides which links can be updated without reloading
         if (
           target.tagName === "A" &&
-          isOnSameHost({ aUrl: target, bUrl: window.location }, debug)
+          isOnSameHost({ aUrl: new URL(target), bUrl: window.location }, debug)
         ) {
           if (debug)
             console.debug(
