@@ -78,19 +78,22 @@ function extractParams({ routePattern, currentRoute }) {
   return params;
 }
 
-function isOnSameHost({ aUrl, bUrl }) {
+function isOnSameHost({ aUrl, bUrl }, debug) {
   try {
+    if (debug) console.debug(`comparing hosts for ${aUrl} and ${bUrl}`);
     if (!aUrl || !bUrl) return false;
 
     if (!(aUrl instanceof URL) || !(bUrl instanceof URL)) {
+      if (debug) console.debug(`one of the arguments is not a URL`);
       return false;
     }
 
-    return (
+    let result =
       aUrl.protocol === bUrl.protocol &&
       aUrl.port === bUrl.port &&
-      aUrl.hostname.toLowerCase() === bUrl.hostname.toLowerCase()
-    );
+      aUrl.hostname.toLowerCase() === bUrl.hostname.toLowerCase();
+    if (debug) console.debug(`host check result: ${result}`);
+    return result;
   } catch (e) {
     console.error(e);
     return false;
@@ -158,7 +161,9 @@ export default function Routerino({
         // this decides which links can be updated without reloading
         if (target.tagName === "A" && isOnSameHost(target, window.location)) {
           if (debug)
-            console.debug("targets are on the same page, transitioning");
+            console.debug(
+              "targets are on the same host, push-state transitioning"
+            );
           event.preventDefault();
 
           // update the history (for new locations)
@@ -172,7 +177,10 @@ export default function Routerino({
             top: 0,
             behavior: "auto",
           });
-        } else if (debug) console.debug("targets are not on the same page");
+        } else if (debug)
+          console.debug(
+            "targets are not on the same host, normal link handling applies"
+          );
       };
       document.addEventListener("click", handleClick);
 
