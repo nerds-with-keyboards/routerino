@@ -78,15 +78,14 @@ function extractParams({ routePattern, currentRoute }) {
   return params;
 }
 
-function isOnSameHost({ aUrl, bUrl }, debug) {
+function checkLinkTargetIsOnSamePage(target, debug = false) {
   try {
-    if (debug) console.debug(`comparing hosts for ${aUrl} and ${bUrl}`);
-    if (!aUrl || !bUrl) return false;
+    if (debug) console.debug(`comparing hosts for link target: ${target}`);
+    if (!target) return false;
 
-    if (!(aUrl instanceof URL) || !(bUrl instanceof URL)) {
-      if (debug) console.debug(`one of the arguments is not a URL`);
-      return false;
-    }
+    let aUrl = new URL(target);
+    let bUrl = window.location;
+    if (debug) console.debug({ aUrl, bUrl });
 
     let result =
       aUrl.protocol === bUrl.protocol &&
@@ -161,7 +160,7 @@ export default function Routerino({
         // this decides which links can be updated without reloading
         if (
           target.tagName === "A" &&
-          isOnSameHost({ aUrl: new URL(target), bUrl: window.location }, debug)
+          checkLinkTargetIsOnSamePage(target, debug)
         ) {
           if (debug)
             console.debug(
