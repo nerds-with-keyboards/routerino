@@ -78,27 +78,6 @@ function extractParams({ routePattern, currentRoute }) {
   return params;
 }
 
-function checkLinkTargetIsOnSamePage(target, debug = false) {
-  try {
-    if (debug) console.debug(`comparing hosts for link target: ${target}`);
-    if (!target) return false;
-
-    let aUrl = new URL(target);
-    let bUrl = window.location;
-    if (debug) console.debug({ aUrl, bUrl });
-
-    let result =
-      aUrl.protocol === bUrl.protocol &&
-      aUrl.port === bUrl.port &&
-      aUrl.hostname.toLowerCase() === bUrl.hostname.toLowerCase();
-    if (debug) console.debug(`host check result: ${result}`);
-    return result;
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
-}
-
 // Routerino Component
 export default function Routerino({
   routes = [
@@ -136,8 +115,8 @@ export default function Routerino({
   errorTitle = "Page error [500]",
   useTrailingSlash = true,
   usePrerenderTags = true,
-  titlePrefix,
-  titlePostfix,
+  titlePrefix = "",
+  titlePostfix = "",
   imageUrl,
   debug = false,
 }) {
@@ -154,17 +133,18 @@ export default function Routerino({
         while (target.tagName !== "A" && target.parentElement) {
           target = target.parentElement;
         }
+        let targetUrl = new URL(target);
 
         if (debug)
           console.debug(`target: ${target}, current: ${window.location}`);
-        // this decides which links can be updated without reloading
+        // check fo links to be updated without reloading (same origin)
         if (
           target.tagName === "A" &&
-          checkLinkTargetIsOnSamePage(target, debug)
+          window.location.origin === targetUrl.origin
         ) {
           if (debug)
             console.debug(
-              "targets are on the same host, push-state transitioning"
+              "target link is same origin, push-state transitioning"
             );
           event.preventDefault();
 
@@ -181,7 +161,7 @@ export default function Routerino({
           });
         } else if (debug)
           console.debug(
-            "targets are not on the same host, normal link handling applies"
+            "target link is not on the same host, standard link handling applies"
           );
       };
       document.addEventListener("click", handleClick);
