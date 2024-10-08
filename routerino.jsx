@@ -248,7 +248,7 @@ export default function Routerino({
     }
 
     // START 404 HANDLING
-    if (!Boolean(match)) {
+    if (!match) {
       console.error(`No matching route found for ${currentRoute}`);
       document.title = `${titlePrefix}${notFoundTitle}${
         titlePostfix ?? `${separator}${title}`
@@ -261,13 +261,10 @@ export default function Routerino({
 
     // START MATCH HANDLING
     // set the title, og:title
-    if (Boolean(match.title)) {
+    if (match.title) {
       // calculate the title
       const fullTitle = `${match.titlePrefix ?? titlePrefix}${match.title}${
-        match.titlePostfix ??
-        `${separator}${title}` ??
-        titlePostfix ??
-        `${separator}${title}`
+        match.titlePostfix ?? titlePostfix ?? `${separator}${title}`
       }`;
 
       // set the doc title
@@ -283,7 +280,7 @@ export default function Routerino({
     }
 
     // set the description
-    if (Boolean(match.description)) {
+    if (match.description) {
       updateHeadTag({ name: "description", content: match.description });
 
       // create the og:description IFF user didn't supply their own
@@ -304,7 +301,7 @@ export default function Routerino({
       });
     }
 
-    if (Boolean(touchIconUrl)) {
+    if (touchIconUrl) {
       updateHeadTag({
         tag: "link",
         rel: "apple-touch-icon",
@@ -343,7 +340,7 @@ export default function Routerino({
     }
 
     // check & return the element to render
-    if (Boolean(match.element)) {
+    if (match.element) {
       // we need to extract the path parameters to give to components that need them
       const params = extractParams({
         routePattern: match.path,
