@@ -113,21 +113,22 @@ Please see the [default props](#default-props) and [usage](#usage) sections for 
 
 All of these are optional, so it's easy to get started with nothing but a bare-bones `<Routerino />` element, to get started with a working sample page. The main props you'll need are `routes` and `title`. See [Route props](#routes-prop) for the route format.
 
-| Prop                                           | Type            | Description                   | Default                       |
-| ---------------------------------------------- | --------------- | ----------------------------- | ----------------------------- |
-| [title](#title-string)                         | string          | The site title                | `""`                          |
-| [routes](#routes-array-of-routeconfig-objects) | RouteConfig[]   | Array of route configurations | `[Default Route Object]`      |
-| [separator](#separator-string)                 | string          | Title separator               | `" \| "`                      |
-| [notFoundTemplate](#notfoundtemplate-element)  | React.ReactNode | 404 page template             | `<DefaultNotFoundTemplate />` |
-| [notFoundTitle](#notfoundtitle-string)         | string          | 404 page title                | `"Page not found [404]"`      |
-| [errorTemplate](#errortemplate-element)        | React.ReactNode | Error page template           | `<DefaultErrorTemplate />`    |
-| [errorTitle](#errortitle-string)               | string          | Error page title              | `"Page error [500]"`          |
-| [useTrailingSlash](#usetrailingslash-bool)     | boolean         | Use trailing slashes in URLs  | `true`                        |
-| [usePrerenderTags](#useprerendertags-bool)     | boolean         | Use pre-render meta tags      | `true`                        |
-| [imageUrl](#imageurl-string)                   | string          | Default image URL for sharing | `null`                        |
-| [debug](#debug-boolean)                        | boolean         | Enable debug mode             | `false`                       |
-| [titlePrefix](#titleprefix-string)             | string          | Deprecated: Title prefix      | `""`                          |
-| [titlePostfix](#titlepostfix-string)           | string          | Deprecated: Title postfix     | `""`                          |
+| Prop                                           | Type            | Description                       | Default                       |
+| ---------------------------------------------- | --------------- | --------------------------------- | ----------------------------- |
+| [title](#title-string)                         | string          | The site title                    | `""`                          |
+| [routes](#routes-array-of-routeconfig-objects) | RouteConfig[]   | Array of route configurations     | `[Default Route Object]`      |
+| [separator](#separator-string)                 | string          | Title separator                   | `" \| "`                      |
+| [notFoundTemplate](#notfoundtemplate-element)  | React.ReactNode | 404 page template                 | `<DefaultNotFoundTemplate />` |
+| [notFoundTitle](#notfoundtitle-string)         | string          | 404 page title                    | `"Page not found [404]"`      |
+| [errorTemplate](#errortemplate-element)        | React.ReactNode | Error page template               | `<DefaultErrorTemplate />`    |
+| [errorTitle](#errortitle-string)               | string          | Error page title                  | `"Page error [500]"`          |
+| [useTrailingSlash](#usetrailingslash-bool)     | boolean         | Use trailing slashes in URLs      | `true`                        |
+| [usePrerenderTags](#useprerendertags-bool)     | boolean         | Use pre-render meta tags          | `true`                        |
+| [imageUrl](#imageurl-string)                   | string          | Default image URL for sharing     | `null`                        |
+| [touchIconUrl](#touchiconurl-string)           | string          | Image URL for PWA homescreen icon | `null`                        |
+| [debug](#debug-boolean)                        | boolean         | Enable debug mode                 | `false`                       |
+| [titlePrefix](#titleprefix-string)             | string          | Deprecated: Title prefix          | `""`                          |
+| [titlePostfix](#titlepostfix-string)           | string          | Deprecated: Title postfix         | `""`                          |
 
 ##### `title`: string;
 
@@ -222,7 +223,13 @@ Default: `""` (empty string)
 
 ##### `imageUrl`: string;
 
-A string containing the path of the default (site-wide) image to use for sharing previews. If the `host` prop is set, a relative path may be used (with or without a starting forward-slash).
+A string containing the path of the default (site-wide) image to use for sharing previews.
+
+Default: `null`
+
+##### `touchIconUrl`: string;
+
+A string containing the path of the image to use for PWA homescreen icon.
 
 Default: `null`
 
