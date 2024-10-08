@@ -23,7 +23,7 @@ import PropTypes from "prop-types";
  * @property {string} [target] - The target attribute of the tag
  *
  */
-export function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
+function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
   // first, get an array of the attribute names
   const attrKeys = Object.keys(attrs);
 
