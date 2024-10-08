@@ -23,7 +23,7 @@ import PropTypes from "prop-types";
  * @property {string} [target] - The target attribute of the tag
  *
  */
-function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
+export function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
   // first, get an array of the attribute names
   const attrKeys = Object.keys(attrs);
 
@@ -90,6 +90,7 @@ export default function Routerino({
           dictionary with at least `path` and `element` defined.
         </p>
       ),
+      title: "Routerino default route example",
       description: "The default route example description.",
       tags: [{ property: "og:locale", content: "en_US" }],
     },
@@ -114,9 +115,12 @@ export default function Routerino({
   errorTitle = "Page error [500]",
   useTrailingSlash = true,
   usePrerenderTags = true,
+  title = "",
+  separator = " | ",
   titlePrefix = "",
   titlePostfix = "",
-  imageUrl,
+  imageUrl = null,
+  touchIconUrl = null,
   debug = false,
 }) {
   try {
@@ -127,27 +131,35 @@ export default function Routerino({
     // the browser's history.pushState and window.scrollTo APIs
     useEffect(() => {
       const handleClick = (event) => {
-        if (debug) console.debug("click occurred");
+        if (debug) {
+          console.debug("click occurred");
+        }
         let target = event.target;
         while (target.tagName !== "A" && target.parentElement) {
           target = target.parentElement;
         }
         if (target.tagName !== "A") {
           // no anchor tag, stop checking anything
-          if (debug) console.debug(`no achor tag found during click`);
+          if (debug) {
+            console.debug("no achor tag found during click");
+          }
           return;
         }
-        if (debug) console.debug(`click target ${target}`);
+        if (debug) {
+          console.debug(`click target ${target}`);
+        }
         let targetUrl = new URL(target);
 
-        if (debug)
+        if (debug) {
           console.debug(`targetUrl: ${targetUrl}, current: ${window.location}`);
+        }
         // check for links to be updated without reloading (same origin)
         if (window.location.origin === targetUrl.origin) {
-          if (debug)
+          if (debug) {
             console.debug(
               "target link is same origin, push-state transitioning"
             );
+          }
           event.preventDefault();
 
           // update the history (for new locations)
@@ -161,10 +173,11 @@ export default function Routerino({
             top: 0,
             behavior: "auto",
           });
-        } else if (debug)
+        } else if (debug) {
           console.debug(
             "target link does not share an origin, standard link handling applies"
           );
+        }
       };
       document.addEventListener("click", handleClick);
 
@@ -230,12 +243,16 @@ export default function Routerino({
     });
 
     const match = exactMatch ?? addSlashMatch ?? paramsMatch;
-    if (debug) console.debug({ match, exactMatch, addSlashMatch, paramsMatch });
+    if (debug) {
+      console.debug({ match, exactMatch, addSlashMatch, paramsMatch });
+    }
 
     // START 404 HANDLING
     if (!Boolean(match)) {
       console.error(`No matching route found for ${currentRoute}`);
-      document.title = `${titlePrefix}${notFoundTitle}${titlePostfix}`;
+      document.title = `${titlePrefix}${notFoundTitle}${
+        titlePostfix ?? `${separator}${title}`
+      }`;
       if (usePrerenderTags) {
         updateHeadTag({ name: "prerender-status-code", content: "404" });
       }
@@ -247,7 +264,10 @@ export default function Routerino({
     if (Boolean(match.title)) {
       // calculate the title
       const fullTitle = `${match.titlePrefix ?? titlePrefix}${match.title}${
-        match.titlePostfix ?? titlePostfix
+        match.titlePostfix ??
+        `${separator}${title}` ??
+        titlePostfix ??
+        `${separator}${title}`
       }`;
 
       // set the doc title
@@ -277,21 +297,22 @@ export default function Routerino({
 
     // set the og:image
     if (Boolean(imageUrl) || Boolean(match.imageUrl)) {
-      // set the og tag
+      // set the og:image tag
       updateHeadTag({
         property: "og:image",
         content: match.imageUrl ?? imageUrl,
       });
-
-      // set touch icon?
-      // updateHeadTag({
-      //   tag: "link",
-      //   rel: "apple-touch-icon",
-      //   href: content,
-      // });
     }
 
-    // check if we need to provide prerender redirects (skipping redirects for the root route: `/`)
+    if (Boolean(touchIconUrl)) {
+      updateHeadTag({
+        tag: "link",
+        rel: "apple-touch-icon",
+        href: touchIconUrl,
+      });
+    }
+
+    // check if we need to provide prerender redirects (while skipping redirects for the root route: `/` because that makes no sense)
     if (usePrerenderTags && currentRoute !== "/") {
       // check if we need to redirect to a trailing slash
       if (useTrailingSlash && !currentRoute.endsWith("/")) {
@@ -323,20 +344,25 @@ export default function Routerino({
 
     // check & return the element to render
     if (Boolean(match.element)) {
+      // we need to extract the path parameters to give to components that need them
       const params = extractParams({
         routePattern: match.path,
         currentRoute,
       });
 
+      const routerinoProps = {
+        currentRoute,
+        params,
+        routePattern: match.path,
+        updateHeadTag,
+      };
+
       // add the route params to the React component
       // nb: cloneElement won't re-trigger componentDidMount lifecycle
       const elementWithProps = cloneElement(match.element, {
-        routerino: {
-          currentRoute,
-          params,
-          routePattern: match.path,
-          updateHeadTag,
-        },
+        // we allow access via both uppercase and lowercase
+        routerino: routerinoProps,
+        Routerino: routerinoProps,
       });
 
       return elementWithProps;
@@ -344,7 +370,9 @@ export default function Routerino({
 
     // no search result
     console.error(`No route found for ${currentRoute}`);
-    document.title = `${titlePrefix}${notFoundTitle}${titlePostfix}`;
+    document.title = `${titlePrefix}${notFoundTitle}${
+      titlePostfix ?? `${separator}${title}`
+    }`;
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "404" });
     }
@@ -356,7 +384,9 @@ export default function Routerino({
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "500" });
     }
-    document.title = `${titlePrefix}${errorTitle}${titlePostfix}`;
+    document.title = `${titlePrefix}${errorTitle}${
+      titlePostfix ?? `${separator}${title}`
+    }`;
 
     return errorTemplate;
   }
@@ -375,6 +405,8 @@ const RouteProps = PropTypes.exact({
 
 Routerino.propTypes = {
   routes: PropTypes.arrayOf(RouteProps),
+  title: PropTypes.string,
+  separator: PropTypes.string,
   notFoundTemplate: PropTypes.element,
   notFoundTitle: PropTypes.string,
   errorTemplate: PropTypes.element,
@@ -384,5 +416,6 @@ Routerino.propTypes = {
   titlePrefix: PropTypes.string,
   titlePostfix: PropTypes.string,
   imageUrl: PropTypes.string,
+  touchIconUrl: PropTypes.string,
   debug: PropTypes.bool,
 };
