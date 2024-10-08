@@ -28,6 +28,7 @@
   },
   "type": "module",
   "types": "types/routerino.d.ts",
+  "main": "./dist/routerino.umd.cjs",
   "exports": {
     "import": "./dist/routerino.js",
     "require": "./dist/routerino.umd.cjs",
