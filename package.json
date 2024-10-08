@@ -1,7 +1,7 @@
 {
   "name": "routerino",
   "version": "1.1.3",
-  "description": "Tiny, SEO-focused router for React websites",
+  "description": "A lightweight, SEO-optimized React router for modern web applications",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nerds-with-keyboards/routerino.git"
