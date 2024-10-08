@@ -1,6 +1,6 @@
 {
   "name": "routerino",
-  "version": "1.1.0-rc45",
+  "version": "1.1.0-rc46",
   "description": "Tiny, SEO-focused router for React websites",
   "repository": {
     "type": "git",
