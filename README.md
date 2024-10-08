@@ -2,11 +2,11 @@
 
 > A lightweight, SEO-optimized React router for modern web applications
 
-Routerino is a zero-dependency router tailored for [React](https://reactjs.org/) [client-side rendered (CSR)](https://developers.google.com/web/updates/2019/02/rendering-on-the-web#csr) websites - perfect for modern web architectures like [JAMStack](https://jamstack.org/) or simple [Vite.js](https://vitejs.dev/)-React sites. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can automatically generate a sitemap.xml file from your routes. Routerino simplifies client-side routing in React apps while providing essential [SEO](https://developer.mozilla.org/en-US/docs/Glossary/SEO) optimizations out of the box - a minimalist router with SEO benefits.
+Routerino is a zero-dependency router tailored for [React](https://reactjs.org/) [client-side rendered (CSR)](https://developers.google.com/web/updates/2019/02/rendering-on-the-web#csr) websites - perfect for modern web architectures like [JAMStack](https://jamstack.org/) or simple [Vite.js](https://vitejs.dev/)-React sites. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can automatically generate a sitemap.xml file from your routes. Routerino **simplifies client-side routing** in React apps while **providing essential SEO optimizations out of the box** - a minimalist router with SEO benefits.
+
+As a developer, I've always been passionate about creating user-friendly applications and websites. However, I've encountered challenges when it comes to routing and SEO optimization in React client-side rendered (CSR) websites. For many years, the de facto routing monoculture has led to a lack of diversity and innovation in the React ecosystem. Moreover, keeping up with the frequent API churn has been time-consuming and annoying. Frustrated, I set out to create Routerino—a lightweight, zero-dependency router that keeps routing simple and offers great SEO benefits out of the box.
 
 ## Features
-
-Routerino empowers developers to define and manage routing and SEO concerns in one centralized location. This approach eliminates duplication when creating sitemaps and setting page metadata, such as descriptions or open-graph tags. The core of Routerino fits in a single file, making it easy to vendor if that suits your needs.
 
 Key capabilities:
 
