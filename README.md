@@ -6,7 +6,7 @@ Routerino is a zero-dependency router tailored for [React](https://reactjs.org/)
 
 ## Features
 
-Routerino empowers developers to define and manage routing and SEO concerns in one centralized location. This approach eliminates duplication when creating sitemaps and setting page metadata like descriptions or open-graph tags. The core fits in one file for easy vendoring if that suits your need.
+Routerino empowers developers to define and manage routing and SEO concerns in one centralized location. This approach eliminates duplication when creating sitemaps and setting page metadata, such as descriptions or open-graph tags. The core of Routerino fits in a single file, making it easy to vendor if that suits your needs.
 
 Key capabilities:
 
