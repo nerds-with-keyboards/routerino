@@ -2,7 +2,7 @@
 
 > A lightweight, SEO-optimized React router for modern web applications
 
-Routerino is a zero-dependency router tailored for [React](https://reactjs.org/) [client-side rendered (CSR)](https://developers.google.com/web/updates/2019/02/rendering-on-the-web#csr) websites - perfect for modern web architectures like [JAMStack](https://jamstack.org/) or simple [Vite.js](https://vitejs.dev/)-React sites. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can automatically generate a sitemap.xml file from your routes. Routerino simplifies client-side routing in React apps while providing essential [SEO](https://developer.mozilla.org/en-US/docs/Glossary/SEO) optimizations out of the box, making it a minimalist router with SEO benefits.
+Routerino is a zero-dependency router tailored for [React](https://reactjs.org/) [client-side rendered (CSR)](https://developers.google.com/web/updates/2019/02/rendering-on-the-web#csr) websites - perfect for modern web architectures like [JAMStack](https://jamstack.org/) or simple [Vite.js](https://vitejs.dev/)-React sites. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can automatically generate a sitemap.xml file from your routes. Routerino simplifies client-side routing in React apps while providing essential [SEO](https://developer.mozilla.org/en-US/docs/Glossary/SEO) optimizations out of the box - a minimalist router with SEO benefits.
 
 ## Features
 
