@@ -1,6 +1,6 @@
 {
   "name": "routerino",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Tiny, SEO-focused router for React websites",
   "repository": {
     "type": "git",
@@ -10,7 +10,8 @@
     "router",
     "react",
     "seo",
-    "prerender"
+    "prerender",
+    "react router"
   ],
   "license": "MIT",
   "bugs": {
@@ -18,23 +19,33 @@
   },
   "homepage": "https://github.com/nerds-with-keyboards/routerino#readme",
   "files": [
-    "dist"
+    "dist",
+    "types"
   ],
   "bin": {
+    "routerino-build-sitemap": "build-sitemap.js",
     "build-sitemap": "build-sitemap.js"
   },
   "type": "module",
+  "types": "types/routerino.d.ts",
+  "main": "./dist/routerino.umd.cjs",
   "exports": {
     "import": "./dist/routerino.js",
-    "require": "./dist/routerino.umd.cjs"
+    "require": "./dist/routerino.umd.cjs",
+    "types": "./types/routerino.d.ts"
   },
   "scripts": {
     "build": "vite build",
     "test": "echo TODO",
-    "prepublishOnly": "vite build"
+    "prepublishOnly": "vite build",
+    "lint": "eslint --fix . --max-warnings=0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.12.0",
     "@vitejs/plugin-react": "^4.1.0",
+    "eslint": "^9.12.0",
+    "eslint-plugin-react": "^7.37.1",
+    "globals": "^15.10.0",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
