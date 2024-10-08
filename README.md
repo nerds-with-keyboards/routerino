@@ -2,7 +2,7 @@
 
 > A lightweight, SEO-optimized React router for modern web applications
 
-Routerino is a tiny, dependency-free router designed for React CSR websites, perfect for JAMStack or Vite.js sites. It supports [Prerender](https://github.com/prerender/prerender) tags for handling redirects and 404 codes for SEO bots, and can even generate your sitemap.xml file from your routes!
+Routerino is a lightweight, zero-dependency router tailored for React client-side rendered (CSR) websites, perfect for modern web architectures like JAMStack and build tools such as Vite.js. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can automatically generate a sitemap.xml file from your routes. Routerino simplifies client-side routing in React apps while providing essential SEO optimizations out of the box, making it an excellent choice for developers seeking a minimalist router with SEO benefits.
 
 ## Features
 
@@ -25,6 +25,7 @@ Key capabilities:
   - Optimize for Googlebot with pre-rendering support
 
 - Enhanced User Experience
+
   - Support for sharing and social preview metadata
   - Snappy page transitions with automatic scroll reset, eliminating the jarring experience of landing mid-page when navigating
 
@@ -32,7 +33,7 @@ Routerino is designed to work with modern browsers and has been tested with the 
 
 ## Installation
 
-You can quickly install Routerino as a development dependency. Ensure that you have React and React DOM installed in your project as peer dependencies.
+Ensure that you have React and React DOM installed in your project as peer dependencies. To add as a dev dependency:
 
 ```sh
 npm i routerino -D
@@ -42,13 +43,47 @@ npm i routerino -D
 
 If you're starting from scratch and wondering "How do I create a React project with Routerino?", here's a recommended approach:
 
-1. First, ensure you have Node.js and npm (Node Package Manager) installed on your system.
-2. We recommend using Vite for a fast and lean development experience. To create a new React project with Vite, run: `npm create vite@latest my-react-app -- --template react`
-3. Navigate to your new project directory: `cd my-react-app`
-4. Install the project dependencies: `npm i` (or `npm install`)
-5. Now, add Routerino to your project: `npm i routerino -D` (or `npm install routerino --save-dev`)
+1. First, ensure you have [Node.js](https://nodejs.org/) and npm (Node Package Manager) installed on your system. If you're just getting started, consider using a Node version manager like [Volta](https://volta.sh/), [fnm](https://github.com/Schniz/fnm), or [asdf](https://asdf-vm.com/) for easy installation and management of Node.js versions.
 
-You're now ready to start building your React application with Routerino! [See usage below](#usage).
+2. We recommend using [Vite](https://vitejs.dev/) for a fast and lean development experience. Vite is a modern build tool that focuses on speed and simplicity. To create a new React project with Vite, run the following command in your terminal:
+
+```
+
+npm create vite@latest my-react-app -- --template react
+
+```
+
+This command will create a new directory called `my-react-app` with a basic React project structure.
+
+3. Navigate to your new project directory:
+
+```
+
+cd my-react-app
+
+```
+
+4. Install the project dependencies using npm:
+
+```
+
+npm install
+
+```
+
+This command will read the `package.json` file in your project and install all the necessary dependencies.
+
+5. Now, add Routerino to your project as a development dependency:
+
+```
+
+npm install routerino --save-dev
+
+```
+
+This command will install the latest version of Routerino and save it to your `package.json` file under the `devDependencies` section.
+
+With these steps, you'll have a new React project set up with Vite as the build tool and Routerino installed as a development dependency. You can now start building your application and incorporating Routerino for client-side routing and SEO optimizations.
 
 ## Usage
 
