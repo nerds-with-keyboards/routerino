@@ -2,11 +2,13 @@
 
 > A lightweight, SEO-optimized React router for modern web applications
 
-Routerino is a zero-dependency router tailored for [React](https://reactjs.org/) [client-side rendered (CSR)](https://developers.google.com/web/updates/2019/02/rendering-on-the-web#csr) websites - perfect for modern web architectures like [JAMStack](https://jamstack.org/) or simple [Vite.js](https://vitejs.dev/)-React sites. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can automatically generate a sitemap.xml file from your routes. Routerino **simplifies client-side routing** in React apps while **providing essential SEO optimizations out of the box** - a minimalist router with SEO benefits.
+Routerino is a zero-dependency router tailored for [React](https://reactjs.org/) [client-side rendered (CSR)](https://developers.google.com/web/updates/2019/02/rendering-on-the-web#csr) websites - perfect for modern web architectures like [JAMStack](https://jamstack.org/) or simple [Vite.js](https://vitejs.dev/)-React sites. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can **automatically generate a sitemap.xml** file from your routes. Routerino simplifies client-side routing in React apps while providing handy SEO optimizations out of the box - a **minimalist router with SEO benefits**.
 
 As a developer, I've always been passionate about creating user-friendly applications and websites. However, I've encountered challenges when it comes to routing and SEO optimization in React client-side rendered (CSR) websites. For many years, the de facto routing monoculture has led to a lack of diversity and innovation in the React ecosystem. Moreover, keeping up with the frequent API churn has been time-consuming and annoying. Frustrated, I set out to create Routerino—a lightweight, zero-dependency router that keeps routing simple and offers great SEO benefits out of the box.
 
 ## Features
+
+Routerino empowers developers to define and manage routing and SEO concerns in one centralized location. This approach eliminates duplication when creating sitemaps and setting page metadata, such as descriptions or open-graph tags. The core of Routerino fits in a single file, making it [easy to vendor](#vendoring-routerino) if that suits your needs.
 
 Key capabilities:
 
@@ -409,6 +411,39 @@ updateHeadTag({
   href: "/example-icon.png",
 });
 ```
+
+## Vendoring Routerino
+
+If you prefer to include Routerino directly in your project instead of using it as a dependency, you can easily vendor the library. Vendoring allows you to have full control over the version of Routerino used in your project and eliminates the need to manage it as an external dependency.
+
+To vendor Routerino, follow these steps:
+
+1. Download the `routerino.jsx` file from the [Routerino repository](https://github.com/nerds-with-keyboards/routerino/blob/main/routerino.jsx).
+
+2. Place the `routerino.jsx` file in a suitable location within your project's source directory. For example, you could create a `vendor` folder and place the file there:
+
+   ```
+   your-project/
+   ├── src/
+   │   ├── vendor/
+   │   │   └── routerino.jsx
+   │   └── ...
+   └── ...
+   ```
+
+3. Update your import statements to reference the vendored `routerino.jsx` file instead of the package:
+
+   ```jsx
+   // Before (importing from the package)
+   import { Router, Route } from "routerino";
+
+   // After (importing from the vendored file)
+   import { Router, Route } from "./vendor/routerino";
+   ```
+
+4. You're all set! Routerino is now vendored in your project, and you can use it as before.
+
+By vendoring Routerino, you have full control over the code and can make any necessary modifications directly to the `routerino.jsx` file. However, keep in mind that you'll need to manually update the vendored file if you want to incorporate any future updates or bug fixes from the main Routerino repository.
 
 ## License
 
