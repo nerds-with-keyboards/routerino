@@ -6,7 +6,7 @@ Routerino is a zero-dependency router tailored for [React](https://reactjs.org/)
 
 As a developer, I've always been passionate about creating user-friendly applications and websites. However, I've faced challenges in routing and SEO optimization for React client-side rendered (CSR) websites. For years, the de facto routing monoculture has stifled diversity and innovation in the React ecosystem. Moreover, keeping up with the frequent API churn has been time-consuming and frustrating. Driven by these challenges, I set out to create Routerino — a lightweight, zero-dependency router that simplifies routing and offers excellent SEO benefits.
 
-I also wanted the ability to steer clear of the JSX-soup that has become prevalent in the React ecosystem. HTML is a powerful tool and it's often enough. Attempts to abstract away the web browser have led to excessive complexity, an endless black hole of bugs, and poor developer experience and delivery speed. If you've encountered such issues, you know exactly what I mean. By using plain HTML in JSX, we can build applications with simplicity. Let's not use this as an excuse to introduce needless complexity.
+I also wanted the ability to steer clear of the JSX-soup that has become prevalent in the React ecosystem. HTML is a powerful tool and it's often enough. Attempts to abstract away the web browser have led to excessive complexity, an endless black hole of bugs, and poor developer experience and delivery speed. If you've encountered such issues, you know exactly what I mean. By using plain HTML in JSX, we can build applications with simplicity. We shouldn't use this as an excuse to introduce needless complexity.
 
 Here's a quick example of what using Routerino looks like in React:
 
