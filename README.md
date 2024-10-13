@@ -1,10 +1,42 @@
 # Routerino
 
-> A lightweight, SEO-optimized React router for modern web applications
+> A lightweight, SEO-optimized React router for modern websites and applications
 
 Routerino is a zero-dependency router tailored for [React](https://reactjs.org/) [client-side rendered (CSR)](https://developers.google.com/web/updates/2019/02/rendering-on-the-web#csr) websites - perfect for modern web architectures like [JAMStack](https://jamstack.org/) or simple [Vite.js](https://vitejs.dev/)-React sites. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can **automatically generate a sitemap.xml** file from your routes. Routerino simplifies client-side routing in React apps while providing handy SEO optimizations out of the box - a **minimalist router with SEO benefits**.
 
-As a developer, I've always been passionate about creating user-friendly applications and websites. However, I've encountered challenges when it comes to routing and SEO optimization in React client-side rendered (CSR) websites. For many years, the de facto routing monoculture has led to a lack of diversity and innovation in the React ecosystem. Moreover, keeping up with the frequent API churn has been time-consuming and annoying. Frustrated, I set out to create Routerino—a lightweight, zero-dependency router that keeps routing simple and offers great SEO benefits out of the box.
+As a developer, I've always been passionate about creating user-friendly applications and websites. However, I've faced challenges in routing and SEO optimization for React client-side rendered (CSR) websites. For years, the de facto routing monoculture has stifled diversity and innovation in the React ecosystem. Moreover, keeping up with the frequent API churn has been time-consuming and frustrating. Driven by these challenges, I set out to create Routerino — a lightweight, zero-dependency router that simplifies routing and offers excellent SEO benefits out of the box.
+
+I also wanted the ability to steer clear of the JSX-soup that has become prevalent in the React ecosystem. HTML is a powerful tool and it's often enough. Attempts to abstract away the web browser have led to excessive complexity, an endless black hole of bugs, and poor developer experience and delivery speed. If you've encountered such issues, you know exactly what I mean. By using plain HTML in JSX, we can build applications with simplicity. Let's not use this as an excuse to introduce needless complexity.
+
+Here's a quick example of what using Routerino looks like in React:
+
+```jsx
+<Routerino
+  title="Example.com"
+  routes={[
+    {
+      path: "/",
+      element: <p>This is the home page!</p>,
+      title: "My Home Page!",
+      description: "Welcome to my home page!",
+    },
+    {
+      path: "/my-first-post/",
+      element: (
+        <article>
+          <h1>My First Post</h1>
+          <p>Lorem ipsum...</p>
+        </article>
+      ),
+      title: "My First Post",
+      description: "The first post on my new home page!",
+      tags: [{ property: "og:type", content="article" }]
+    },
+  ]}
+/>
+```
+
+For more details on getting started, see the [Installation](#installation) and [Usage](#usage) sections below.
 
 ## Features
 
@@ -16,11 +48,12 @@ Key capabilities:
 
   - Easy integration of simple routing for your React app (supports React v18, older versions have not yet been tested)
   - Zero dependencies for lighter, more maintainable projects
+  - No special link components required, works great for Markdown-based pages and semantic HTML
 
 - SEO Optimization
 
   - Configure title, description, and image for each route
-  - Set `<head>` tags for any route
+  - Set `<head>` tags for any route (either directly in your routes config, or dynamically after rendering)
   - Set a site-wide name to be included with page titles
   - Automatically generate and maintain an up-to-date `sitemap.xml` from your routes
   - Implement SEO best practices out-of-the-box
@@ -41,106 +74,27 @@ Ensure that you have React and React DOM installed in your project as peer depen
 npm i routerino -D
 ```
 
-### Starting a New React Project with Routerino
-
-If you're starting from scratch and wondering "How do I create a React project with Routerino?", here's a recommended approach:
-
-1. First, ensure you have [Node.js](https://nodejs.org/) and npm (Node Package Manager) installed on your system. If you're just getting started, consider using a Node version manager like [Volta](https://volta.sh/), [fnm](https://github.com/Schniz/fnm), or [asdf](https://asdf-vm.com/) for easy installation and management of Node.js versions.
-
-2. We recommend using [Vite](https://vitejs.dev/) for a fast and lean development experience. Vite is a modern build tool that focuses on speed and simplicity. To create a new React project with Vite, run the following command in your terminal:
-
-```
-
-npm create vite@latest my-react-app -- --template react
-
-```
-
-This command will create a new directory called `my-react-app` with a basic React project structure.
-
-3. Navigate to your new project directory:
-
-```
-
-cd my-react-app
-
-```
-
-4. Install the project dependencies using npm:
-
-```
-
-npm install
-
-```
-
-This command will read the `package.json` file in your project and install all the necessary dependencies.
-
-5. Now, add Routerino to your project as a development dependency:
-
-```
-
-npm install routerino --save-dev
-
-```
-
-This command will install the latest version of Routerino and save it to your `package.json` file under the `devDependencies` section.
-
-With these steps, you'll have a new React project set up with Vite as the build tool and Routerino installed as a development dependency. You can now start building your application and incorporating Routerino for client-side routing and SEO optimizations.
-
 ## Usage
 
-Here's a minimal example of using Routerino in your React application:
+Here's a quick example of using Routerino in your React application:
 
 ```jsx
-import React from "react";
-import { render } from "react-dom";
-import Routerino from "routerino";
-
-const routes = [
-  {
-    path: "/",
-    element: <HomePage />,
-    title: "Home",
-    description: "Welcome to my website!",
-  },
-  {
-    path: "/about/",
-    element: <AboutPage />,
-    title: "About",
-    description: "Learn more about us.",
-  },
-  {
-    path: "/contact/",
-    element: <ContactPage />,
-    title: "Contact",
-    description: "Get in touch with us.",
-  },
-];
-
-const App = () => (
-  <main>
-    <nav>
-      <a href="/">Home</a>
-    </nav>
-
-    <Routerino
-      title="Foo.com"
-      routes={routes}
-      notFoundTitle="Sorry, but this page does not exist."
-      errorTitle="Yikes! Something went wrong."
-    />
-
-    <footer>
-      <p>
-        Learn more <a href="/about/">about us</a> or{" "}
-        <a href="/contact/">contact us</a> today.
-      </p>
-    </footer>
-  </main>
-);
-
-render(<App />, document.getElementById("root"));
+<Routerino
+  title="Example.com"
+  routes={[
+    {
+      path: "/",
+      element: <p>This is the home page!</p>,
+      title: "My Home Page!",
+      description: "Welcome to my home page!",
+    },
+  ]}
+/>
 ```
+
+Links are just regular HTML anchor tags. No need to use special `<Link>` components and you can handle styling however you wish. For example: `<a href="/some-page/>a link</a>`
+
+See [props](#props-arguments) for full explanations and [example code](#how-to-guides--example-code) for more complete code samples.
 
 ### Props (arguments)
 
@@ -173,28 +127,22 @@ The site title, such as "Foo.com". This will be appended to your page's title wi
 
 ##### `routes`: array of `RouteConfig` objects;
 
-See [RouteConfig props](#routeconfig-props) for more details.
+See [RouteConfig props](#routeconfig-props) for more details. At a minimum a path and React element are required for each route.
 
 - path: string;
 - element: React.ReactNode;
 - title?: string;
 - description?: string;
 - tags?: HeadTag[];
-- titlePrefix?: string;
-- titlePostfix?: string;
 - imageUrl?: string;
-
-###### `tags`: array of `HeadTag` objects;
-
-This is where you can put head tags that you want to have set for a page. For example, for a blog post you may want to use: `tags: [{ property: "og:type", content: "article" }]`. Requires at least one attribute to set, use the dictionary keys to correspond to the attributes you want to set in the tag.
 
 ##### `separator`: string;
 
-A string to separate the page title from the site title. The default is `|` (a pipe character with spaces around). Set this to customize the separator.
+A string to separate the page title from the site title. The default is `|` (a pipe character). Set this to customize the separator.
 
 ##### `notFoundTemplate`: element;
 
-Any React element for the default (or no) match.
+Any React element for the default (or no) route match.
 
 Default:
 
@@ -209,7 +157,7 @@ Default:
 
 ##### `notFoundTitle`: string;
 
-A title string for no match.
+A title string for no route match.
 
 Default: `"Page not found [404]"`
 
@@ -236,13 +184,13 @@ Default: `"Page error [500]"`
 
 ##### `useTrailingSlash`: bool;
 
-Is the page using trailing slashes as the canonical URL? See best practices section for an explanation.
+Use trailing slashes as the canonical URL. See best practices section for an explanation.
 
 Default: `true`
 
 ##### `usePrerenderTags`: bool;
 
-Is the page using pre-render technology? If so, we will include meta tags to enable proper error codes like 404 when serving pages to a search crawler.
+Include meta tags to enable proper error codes like 404 when serving pages to a search crawler.
 
 Default: `true`
 
@@ -298,15 +246,15 @@ The page's description, which will show up on search results pages.
 
 ##### tags?: HeadTag[];
 
-Any desired head tags for that route.
+Any desired head tags for that route. See [HeadTag props](#headtag-props) for details.
 
 ##### titlePrefix?: string;
 
-Deprecated: a title prefix for this route to override the default.
+Deprecated: a title prefix for this route to override the default. Use title and separator instead.
 
 ##### titlePostfix?: string;
 
-Deprecated: a title postfix for this route to override the default.
+Deprecated: a title postfix for this route to override the default. Use title and separator instead.
 
 ##### imageUrl?: string;
 
@@ -314,16 +262,78 @@ An image URL to set for the page's og:image tag.
 
 #### HeadTag props
 
-Head tags can have a lot of attributes. The first one is `tag`, which sets the HTML tag with a default of meta e.g. `<meta ... />`. The next prop is `soft` which will preserve the existing tag if it is present already.
+An array of HeadTag objects that can be added to the route to manage meta tags, links, and other elements in the `<head>` section of the HTML document. These HeadTag objects are processed by the `updateHeadTag` function to update or create a `<head>` child tag (usually `<meta>` tags). The available props and most common tag attributes are listed below, but any arbitrary tag attributes are supported. See the [updateHeadTag section](#updateheadtag) for more details.
+
+- `tag` (string, default: "meta"): The HTML element to update or create. By default, it is set to "meta", but you can specify other tags like "link" or "title".
+
+- `soft` (boolean, default: false): When set to `true`, it prevents overwriting the value of an existing tag if it already exists. This is useful when you want to preserve existing tag attributes.
+
+- `name` (string): The "name" attribute of the tag. Commonly used for meta tags to specify the name of the metadata.
+
+- `property` (string): The "property" attribute of the tag. Used for Open Graph (OG) meta tags to define specific OG properties.
+
+- `content` (string): The "content" attribute of the tag. Specifies the value or content of the metadata. Sometimes two distinct meta tags may share identical content, so it's not used for matching.
+
+- `charset` (string): The "charset" attribute of the tag. Defines the character encoding for the document.
+
+- `httpEquiv` (string): The "http-equiv" attribute of the tag. Used for defining HTTP headers for the document.
+
+- `itemProp` (string): The "itemProp" attribute of the tag. Used for adding schema.org microdata to the tag.
+
+- `rel` (string): The "rel" attribute of the tag. Specifies the relationship between the current document and the linked resource.
+
+- `href` (string): The "href" attribute of the tag. Specifies the URL of the linked resource.
+
+- `src` (string): The "src" attribute of the tag. Specifies the URL of an external resource, such as an image or script.
+
+- `sizes` (string): The "sizes" attribute of the tag. Defines the sizes of the linked resource, commonly used for favicon links.
+
+- `type` (string): The "type" attribute of the tag. Specifies the MIME type of the linked resource.
+
+- `media` (string): The "media" attribute of the tag. Defines the media or device the linked resource is optimized for.
+
+- `hrefLang` (string): The "hrefLang" attribute of the tag. Specifies the language of the linked resource.
+
+- `target` (string): The "target" attribute of the tag. Defines where to open the linked resource.
 
 ### Get route parameters and the current route, and updating head tags
 
-Child components can access the current route and its parameters via the `routerino` prop. This prop is an object with the following properties:
+Child components can access the current route and its parameters via the `Routerino` or `routerino` props. This prop is an object with the following properties:
 
 - routePattern: The current route path pattern, such as `/foo/:id/`.
 - currentRoute: The current route path, such as `/foo/bar/`.
 - params: a dictionary of route parameters, such as `{id: "bar"}`. These will match the route pattern provided by the `path` prop.
-- updateHeadTag: a function that takes a tag object and updates the head tags for the current route. This is useful for setting custom tags for each route, such as `og:image` for social previews. You may need to set this after doing some data fetches, for example. Sample: `updateHeadTag({ name: "description", content: 'Some description...' });`
+- updateHeadTag: a function that takes a [HeadTag object](#headtag-props) and updates the head tags for the current route. This is useful for setting custom `<head>` child tags for each route, such as Open Graph tags for social previews. You may need to set this after doing some data fetches, for example. See the next section for more details.
+
+### `updateHeadTag`
+
+The `updateHeadTag` function is responsible for creating or updating the specified head tag. It searches for an existing tag based on the provided attributes (excluding the "content" attribute) to prevent duplicate tags. If a matching tag is found (and the `soft` prop is not set to `true`), the function updates the tag's attributes. If no matching tag is found, a new tag is created with the specified attributes.
+
+Please note that the `updateHeadTag` function requires at least one attribute to be provided. If no attributes are specified, an error message will be logged.
+
+### Props
+
+See [HeadTag props](#headtag-props) for arguments and some common tag attributes.
+
+#### Examples
+
+Setting a page description:
+
+```js
+updateHeadTag({ name: "description", content: "Some description..." });
+```
+
+Adding an apple touch icon (for when saving to the home screen):
+
+```js
+updateHeadTag({
+  tag: "link",
+  rel: "apple-touch-icon",
+  href: "/example-icon.png",
+});
+```
+
+While these two examples are automatically handled for you via the `description` and `touchIconUrl` properties in [RouteConfig props](#routeconfig-props), you might want to update them later or in specific scenarios.
 
 ## Routerino Best Practices
 
@@ -351,7 +361,7 @@ To optimize your site for SEO and social previews when using Routerino, consider
 - Add an `imageUrl` to each route for page-specific social preview images.
 - Set a default `imageUrl` via the Routerino prop for pages without unique images.
 - Ensure preview images meet platform-specific size requirements (e.g., 1200x630 pixels for Facebook).
-- Include any other open graph tags you need for each page with the `updateHeadTag` function.
+- Include any other Open Graph tags you need for each page with the `updateHeadTag` function.
 
 ### Meta Descriptions
 
@@ -369,7 +379,7 @@ By following these practices, you'll improve your site's SEO performance and soc
 
 ## Generating a sitemap from routes
 
-You can use the included CLI tool `routerino-build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first (or ensure the directory for the sitemap exists). Note: routes with route params are not added to the sitemap. Node 16+ should be installed and available in the path. If no `robots.txt` file is found, a default one will be created which just points to the sitemap. It would be an SEO problem to not have the `robots.txt` file pointing to the sitemap, so we include it if necessary. If you create your own, make sure to include the sitemap URL.
+You can use the included CLI tool `routerino-build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first (or otherwise ensure the directory for the sitemap exists). Routes with route params are not added to the sitemap. This sitemap only includes the location entry, as the others are [mostly ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps). Node 16+ should be installed and available in the path. Since it would be an SEO problem to not have the `robots.txt` file pointing to the sitemap, we include it if missing. If you create your own, make sure to include the sitemap URL in it.
 
 ### Arguments
 
@@ -377,39 +387,197 @@ You can use the included CLI tool `routerino-build-sitemap` to create a sitemap.
 - hostname: The domain to use as the base for the URLs in the sitemap. E.g. `https://example.com`. Make sure to include or exclude the `www` prefix as desired.
 - outputDir: The path to write the new sitemap XML file. This would usually be a build directory, e.g. `dist` or `build`, or maybe something like `public` if you wanted to check in the sitemap to your repo (set it as a pre-commit step in that case).
 
-### Example
+### Example Usage
 
 ```sh
 routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputDir=dist
 ```
 
-Sample Output: `✅ sitemap.xml with 42 URLs written to dist`
-and: `✅ robots.txt written to dist`
+### Sample Output:
 
-### package.json scripts
+`✅ sitemap.xml with 42 URLs written to dist`
 
-Add `routerino-build-sitemap` to your build command to update automatically on every build. This sitemap only includes the location entry, as the rest are [mostly ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps).
+`✅ robots.txt written to dist`
+
+### Adding to package.json scripts
+
+Add `routerino-build-sitemap` to your build command to update automatically on every build.
 
 Example package.json build script: `"build": "vite build && routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputDir=dist",`
 
-## Resources
+## How-to Guides & Example Code
 
-There is a lot of information on SEO and social previews. Here are some sources for further reading on best-practices.
+1. [Starting a New React Project with Routerino](#starting-a-new-react-project-with-routerino)
+2. [Basic Example](#basic-example)
+3. [Full React Example](#full-react-example)
 
-- [Apple's best practices for link previews](https://developer.apple.com/library/archive/technotes/tn2444/_index.html)
-- [Use Open Graph tags](https://ahrefs.com/blog/open-graph-meta-tags/)
-- [Use descriptive link text](https://developers.google.com/search/docs/fundamentals/seo-starter-guide?hl=en&ref_topic=9460495)
+### Starting a New React Project with Routerino
 
-## Example code
+If you're starting from scratch and wondering "How do I create a React project with Routerino?", here's a recommended approach:
 
-Set an apple icon (e.g. when saving to home screen)
+1. First, ensure you have [Node.js](https://nodejs.org/) and npm (Node Package Manager) installed on your system. If you're just getting started, consider using a Node version manager like [Volta](https://volta.sh/), [fnm](https://github.com/Schniz/fnm), or [asdf](https://asdf-vm.com/) for easy installation and management of Node.js versions.
 
-```js
-updateHeadTag({
-  tag: "link",
-  rel: "apple-touch-icon",
-  href: "/example-icon.png",
-});
+2. We recommend using [Vite](https://vitejs.dev/) for a fast and lean development experience. Vite is a modern build tool that focuses on speed and simplicity. To create a new React project with Vite, run the following command in your terminal:
+
+```
+
+npm create vite@latest my-react-app -- --template react
+
+```
+
+This command will create a new directory called `my-react-app` with a basic React project structure.
+
+3. Navigate to your new project directory:
+
+```
+
+cd my-react-app
+
+```
+
+4. Install the project dependencies using npm:
+
+```
+
+npm install
+
+```
+
+This command will read the `package.json` file in your project and install all the necessary dependencies.
+
+5. Now, add Routerino to your project as a development dependency:
+
+```
+
+npm install routerino --save-dev
+
+```
+
+This command will install the latest version of Routerino and save it to your `package.json` file under the `devDependencies` section.
+
+With these steps, you'll have a new React project set up with Vite as the build tool and Routerino installed as a development dependency. You can now start building your application with React & Routerino.
+
+### Basic Example
+
+Somewhere in your project, such as in your `src/App.jsx` file, import Routerino and add it to your code. Define your routes and configure the site title.
+
+```jsx
+import React from "react";
+import Routerino from "routerino";
+
+// example pages
+import HomePage from "./HomePage";
+import AboutPage from "./AboutPage";
+import ContactPage from "./ContactPage";
+
+const routes = [
+  {
+    path: "/",
+    element: <HomePage />,
+    title: "Home",
+    description: "Welcome to my website!",
+  },
+  {
+    path: "/about/",
+    element: <AboutPage />,
+    title: "About",
+    description: "Learn more about us.",
+  },
+  {
+    path: "/contact/",
+    element: <ContactPage />,
+    title: "Contact",
+    description: "Get in touch with us.",
+  },
+];
+
+const App = () => (
+  <main>
+    <nav>
+      <a href="/">Home</a>
+    </nav>
+
+    <Routerino
+      title="Foo.com"
+      routes={routes}
+      notFoundTitle="Sorry, but this page does not exist."
+      errorTitle="Yikes! Something went wrong."
+    />
+
+    <footer>
+      <p>
+        Learn more <a href="/about/">about us</a> or{" "}
+        <a href="/contact/">contact us</a> today.
+      </p>
+    </footer>
+  </main>
+);
+
+export default App;
+```
+
+### Full React Example
+
+This example includes the full React configuration. It might take the place of `src/main.jsx` or an `index.js` file. Also suitable for use in a code-pen.
+
+```jsx
+import React from "react";
+import { render } from "react-dom";
+import Routerino from "routerino";
+
+const title = "Example.com";
+const routes = [
+  {
+    path: "/",
+    element: <p>Welcome to Home</p>,
+    title: "Home",
+    description: "Welcome to my website!",
+  },
+  {
+    path: "/about/",
+    element: <p>About us...</p>,
+    title: "About",
+    description: "Learn more about us.",
+  },
+  {
+    path: "/contact/",
+    element: (
+      <div>
+        <h1>Contact Us</h1>
+        <p>
+          Please <a href="mailto:user@example.com">send us an email</a> at
+          user@example.com
+        </p>
+      </div>
+    ),
+    title: "Contact",
+    description: "Get in touch with us.",
+  },
+];
+
+const App = () => (
+  <main>
+    <nav>
+      <a href="/">Home</a>
+    </nav>
+
+    <Routerino
+      {...{
+        title,
+        routes,
+      }}
+    />
+
+    <footer>
+      <p>
+        Learn more <a href="/about/">about us</a> or{" "}
+        <a href="/contact/">contact us</a> today.
+      </p>
+    </footer>
+  </main>
+);
+
+render(<App />, document.getElementById("root"));
 ```
 
 ## Vendoring Routerino
@@ -418,32 +586,46 @@ If you prefer to include Routerino directly in your project instead of using it 
 
 To vendor Routerino, follow these steps:
 
-1. Download the `routerino.jsx` file from the [Routerino repository](https://github.com/nerds-with-keyboards/routerino/blob/main/routerino.jsx).
+1. Download the `routerino.jsx` file from the Routerino [repository](./routerino.jsx).
 
 2. Place the `routerino.jsx` file in a suitable location within your project's source directory. For example, you could create a `vendor` folder and place the file there:
 
-   ```
-   your-project/
-   ├── src/
-   │   ├── vendor/
-   │   │   └── routerino.jsx
-   │   └── ...
-   └── ...
-   ```
+```md
+your-project/
+├── src/
+│ ├── vendor/
+│ │ └── routerino.jsx
+│ └── ...
+└── ...
+```
 
 3. Update your import statements to reference the vendored `routerino.jsx` file instead of the package:
 
-   ```jsx
-   // Before (importing from the package)
-   import { Router, Route } from "routerino";
+```jsx
+// Before (importing from the package)
+import { Router, Route } from "routerino";
 
-   // After (importing from the vendored file)
-   import { Router, Route } from "./vendor/routerino";
-   ```
+// After (importing from the vendored file)
+import { Router, Route } from "./vendor/routerino";
+```
 
 4. You're all set! Routerino is now vendored in your project, and you can use it as before.
 
+5. If you want to use the [sitemap generation script](./build-sitemap.js), copy `build-sitemap.js` into your project and reference it directly with the same arguments [as above](#generating-a-sitemap-from-routes). For example: `./build-sitemap.js routeFilePath=src/App.jsx hostname=https://example.com outputDir=build`
+
 By vendoring Routerino, you have full control over the code and can make any necessary modifications directly to the `routerino.jsx` file. However, keep in mind that you'll need to manually update the vendored file if you want to incorporate any future updates or bug fixes from the main Routerino repository.
+
+## Additional Resources
+
+There is a lot of information on SEO and social previews. Here are some sources for further reading on best-practices.
+
+- [Apple's best practices for link previews](https://developer.apple.com/library/archive/technotes/tn2444/_index.html)
+- [Use Open Graph tags](https://ahrefs.com/blog/open-graph-meta-tags/)
+- [Use descriptive link text](https://developers.google.com/search/docs/fundamentals/seo-starter-guide?hl=en&ref_topic=9460495)
+
+## Contributions
+
+Contributions are always welcome. Please feel free to create an issue or submit a pull request. Just remember to keep it simple!
 
 ## License
 
