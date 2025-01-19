@@ -8,7 +8,7 @@ As a developer, I've always been passionate about creating user-friendly applica
 
 I also wanted the ability to steer clear of the JSX-soup that has become prevalent in the React ecosystem. HTML is a powerful tool and it's often enough. Attempts to abstract away the web browser have led to excessive complexity, an endless black hole of bugs, and poor developer experience and delivery speed. If you've encountered such issues, you know exactly what I mean. By using plain HTML in JSX, we can build applications with simplicity. We shouldn't use this as an excuse to introduce needless complexity.
 
-Here's a quick example of what using Routerino looks like in React:
+Here's a quick example of what using Routerino looks like:
 
 ```jsx
 <Routerino
@@ -21,7 +21,7 @@ Here's a quick example of what using Routerino looks like in React:
       description: "Welcome to my home page!",
     },
     {
-      path: "/my-first-post/",
+      path: "/blog/my-first-post/",
       element: (
         <article>
           <h1>My First Post</h1>
@@ -138,7 +138,7 @@ See [RouteConfig props](#routeconfig-props) for more details. At a minimum a pat
 
 ##### `separator`: string;
 
-A string to separate the page title from the site title. The default is `|` (a pipe character). Set this to customize the separator.
+A string to separate the page title from the site title. The default is `|` (a pipe character w/space around). Set this to customize the separator.
 
 ##### `notFoundTemplate`: element;
 
