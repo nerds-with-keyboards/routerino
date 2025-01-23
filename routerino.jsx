@@ -251,7 +251,7 @@ export default function Routerino({
     if (!match) {
       console.error(`No matching route found for ${currentRoute}`);
       document.title = `${titlePrefix}${notFoundTitle}${
-        titlePostfix ?? `${separator}${title}`
+        titlePostfix || `${separator}${title}`
       }`;
       if (usePrerenderTags) {
         updateHeadTag({ name: "prerender-status-code", content: "404" });
@@ -264,7 +264,7 @@ export default function Routerino({
     if (match.title) {
       // calculate the title
       const fullTitle = `${match.titlePrefix ?? titlePrefix}${match.title}${
-        match.titlePostfix ?? titlePostfix ?? `${separator}${title}`
+        match.titlePostfix || titlePostfix || `${separator}${title}`
       }`;
 
       // set the doc title
@@ -368,7 +368,7 @@ export default function Routerino({
     // no search result
     console.error(`No route found for ${currentRoute}`);
     document.title = `${titlePrefix}${notFoundTitle}${
-      titlePostfix ?? `${separator}${title}`
+      titlePostfix || `${separator}${title}`
     }`;
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "404" });
@@ -382,7 +382,7 @@ export default function Routerino({
       updateHeadTag({ name: "prerender-status-code", content: "500" });
     }
     document.title = `${titlePrefix}${errorTitle}${
-      titlePostfix ?? `${separator}${title}`
+      titlePostfix || `${separator}${title}`
     }`;
 
     return errorTemplate;
