@@ -599,14 +599,14 @@ your-project/
 └── ...
 ```
 
-3. Update your import statements to reference the vendored `routerino.jsx` file instead of the package:
+3. Update your import statements to reference the vendored `routerino.jsx` file instead of the npm package:
 
 ```jsx
 // Before (importing from the package)
-import { Router, Route } from "routerino";
+import { Router } from "routerino";
 
 // After (importing from the vendored file)
-import { Router, Route } from "./vendor/routerino";
+import { Router } from "./vendor/routerino";
 ```
 
 4. You're all set! Routerino is now vendored in your project, and you can use it as before.
