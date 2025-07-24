@@ -39,6 +39,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:react-versions": "node test-react-versions.js",
+    "test:node-versions": "node test-node-versions.js",
     "prepublishOnly": "vite build",
     "lint": "eslint --fix . --max-warnings=0"
   },
