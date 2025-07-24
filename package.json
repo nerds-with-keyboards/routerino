@@ -36,20 +36,25 @@
   },
   "scripts": {
     "build": "vite build",
-    "test": "echo TODO",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
     "prepublishOnly": "vite build",
     "lint": "eslint --fix . --max-warnings=0"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^4.5.0",
     "eslint": "^9.27.0",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^16.1.0",
+    "jsdom": "^26.1.0",
     "prop-types": "^15.8.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "prop-types": "^15.0.0",
