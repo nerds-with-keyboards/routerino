@@ -20,11 +20,14 @@
   "homepage": "https://github.com/nerds-with-keyboards/routerino#readme",
   "files": [
     "dist",
-    "types"
+    "types",
+    "build-sitemap.js",
+    "build-static.js",
+    "vite-plugin-routerino-static.js"
   ],
   "bin": {
     "routerino-build-sitemap": "build-sitemap.js",
-    "build-sitemap": "build-sitemap.js"
+    "routerino-build-static": "build-static.js"
   },
   "type": "module",
   "types": "types/routerino.d.ts",
@@ -36,6 +39,7 @@
   },
   "scripts": {
     "build": "vite build",
+    "build:static": "node build-static.js",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:react-versions": "node test-react-versions.js",

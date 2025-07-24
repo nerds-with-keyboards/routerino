@@ -5,7 +5,7 @@ import pluginReact from "eslint-plugin-react";
 export default [
   { files: ["**/*.{js,mjs,cjs,jsx}"] },
   {
-    ignores: ["dist/*", "node_modules/*"],
+    ignores: ["dist/*", "node_modules/*", "example-vite-static/dist/*", "example/dist/*"],
   },
   {
     languageOptions: {

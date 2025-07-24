@@ -23,7 +23,7 @@ import PropTypes from "prop-types";
  * @property {string} [target] - The target attribute of the tag
  *
  */
-function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
+export function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
   // first, get an array of the attribute names
   const attrKeys = Object.keys(attrs);
 
@@ -80,11 +80,11 @@ function extractParams({ routePattern, currentRoute }) {
 
 /**
  * A minimal error boundary component that catches React errors and displays a fallback UI.
- * 
+ *
  * @component
  * @example
  * ```jsx
- * <ErrorBoundary 
+ * <ErrorBoundary
  *   fallback={<div>Something went wrong</div>}
  *   errorTitleString="Error | My Site"
  *   usePrerenderTags={true}
@@ -98,32 +98,32 @@ export class ErrorBoundary extends Component {
     super(props);
     this.state = { hasError: false };
   }
-  
+
   static getDerivedStateFromError() {
     return { hasError: true };
   }
-  
+
   componentDidCatch(error, errorInfo) {
     // Enhanced error logging
-    console.group('🚨 Routerino Error Boundary Caught an Error');
-    console.error('Error:', error);
-    console.error('Component Stack:', errorInfo.componentStack);
-    
+    console.group("🚨 Routerino Error Boundary Caught an Error");
+    console.error("Error:", error);
+    console.error("Component Stack:", errorInfo.componentStack);
+
     if (this.props.routePath) {
-      console.error('Failed Route:', this.props.routePath);
+      console.error("Failed Route:", this.props.routePath);
     }
-    
-    console.error('Error occurred at:', new Date().toISOString());
+
+    console.error("Error occurred at:", new Date().toISOString());
     console.groupEnd();
-    
+
     // Set error title and meta tags
     document.title = this.props.errorTitleString;
-    
+
     if (this.props.usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "500" });
     }
   }
-  
+
   render() {
     if (this.state.hasError) {
       return this.props.fallback;
@@ -142,7 +142,7 @@ ErrorBoundary.propTypes = {
   /** Whether to set prerender meta tags (status code 500) on error */
   usePrerenderTags: PropTypes.bool,
   /** The current route path for better error context (optional) */
-  routePath: PropTypes.string
+  routePath: PropTypes.string,
 };
 
 // Routerino Component
@@ -192,27 +192,39 @@ export default function Routerino({
 }) {
   // Deprecation warnings
   if (titlePrefix !== "") {
-    console.warn("Routerino: titlePrefix is deprecated and will be removed in v2.0. Use the title and separator props instead.");
+    console.warn(
+      "Routerino: titlePrefix is deprecated and will be removed in v2.0. Use the title and separator props instead."
+    );
   }
   if (titlePostfix !== "") {
-    console.warn("Routerino: titlePostfix is deprecated and will be removed in v2.0. Use the title and separator props instead.");
+    console.warn(
+      "Routerino: titlePostfix is deprecated and will be removed in v2.0. Use the title and separator props instead."
+    );
   }
-  
+
   // Pre-compute title strings
-  const errorTitleString = `${titlePrefix}${errorTitle}${titlePostfix || `${separator}${title}`}`;
-  const notFoundTitleString = `${titlePrefix}${notFoundTitle}${titlePostfix || `${separator}${title}`}`;
-  
+  const errorTitleString = `${titlePrefix}${errorTitle}${
+    titlePostfix || `${separator}${title}`
+  }`;
+  const notFoundTitleString = `${titlePrefix}${notFoundTitle}${
+    titlePostfix || `${separator}${title}`
+  }`;
+
   // Development-only checks
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     // Check for duplicate routes
-    const paths = routes.map(r => r.path);
-    const duplicates = paths.filter((path, index) => paths.indexOf(path) !== index);
+    const paths = routes.map((r) => r.path);
+    const duplicates = paths.filter(
+      (path, index) => paths.indexOf(path) !== index
+    );
     if (duplicates.length > 0) {
-      console.warn('⚠️ Routerino: Duplicate route paths detected:', [...new Set(duplicates)]);
-      console.warn('The first matching route will be used');
+      console.warn("⚠️ Routerino: Duplicate route paths detected:", [
+        ...new Set(duplicates),
+      ]);
+      console.warn("The first matching route will be used");
     }
   }
-  
+
   try {
     // we use this state to track the URL internally and control React updates
     const [href, setHref] = useState(window.location.href);
@@ -339,12 +351,17 @@ export default function Routerino({
 
     // START 404 HANDLING
     if (!match) {
-      console.group('⚠️ Routerino 404 - No matching route');
+      console.group("⚠️ Routerino 404 - No matching route");
       console.warn(`Requested path: ${currentRoute}`);
-      console.warn('Available routes:', routes.map(r => r.path));
-      console.warn('Consider adding a catch-all route or checking your route paths');
+      console.warn(
+        "Available routes:",
+        routes.map((r) => r.path)
+      );
+      console.warn(
+        "Consider adding a catch-all route or checking your route paths"
+      );
       console.groupEnd();
-      
+
       document.title = notFoundTitleString;
       if (usePrerenderTags) {
         updateHeadTag({ name: "prerender-status-code", content: "404" });
@@ -456,7 +473,7 @@ export default function Routerino({
       });
 
       return (
-        <ErrorBoundary 
+        <ErrorBoundary
           fallback={errorTemplate}
           errorTitleString={errorTitleString}
           usePrerenderTags={usePrerenderTags}
@@ -477,12 +494,16 @@ export default function Routerino({
     return notFoundTemplate;
   } catch (e) {
     // router threw up (ಥ﹏ಥ)
-    console.group('💥 Routerino Fatal Error');
-    console.error('An error occurred in the router itself (not in a route component)');
-    console.error('Error:', e);
-    console.error('This typically means an issue with route configuration or router setup');
+    console.group("💥 Routerino Fatal Error");
+    console.error(
+      "An error occurred in the router itself (not in a route component)"
+    );
+    console.error("Error:", e);
+    console.error(
+      "This typically means an issue with route configuration or router setup"
+    );
     console.groupEnd();
-    
+
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "500" });
     }
