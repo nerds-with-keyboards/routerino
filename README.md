@@ -56,6 +56,7 @@ Key capabilities:
   - Set `<head>` tags for any route (either directly in your routes config, or dynamically after rendering)
   - Set a site-wide name to be included with page titles
   - Automatically generate and maintain an up-to-date `sitemap.xml` from your routes
+  - Generate static HTML files for each route with proper meta tags
   - Implement SEO best practices out-of-the-box
   - Optimize for Googlebot with pre-rendering support
 
@@ -411,6 +412,87 @@ routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.co
 Add `routerino-build-sitemap` to your build command to update automatically on every build.
 
 Example package.json build script: `"build": "vite build && routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputDir=dist",`
+
+## Static Site Generation
+
+Routerino includes tools to generate static HTML files for each route, improving SEO and initial page load performance. There are two methods available:
+
+### Method 1: Standalone Build Script
+
+Use the `routerino-build-static` command to generate static HTML files:
+
+```sh
+routerino-build-static routesFile=src/routes.js outputDir=dist template=index.html baseUrl=https://example.com
+```
+
+**Parameters:**
+- `routesFile` - Path to your routes configuration file
+- `outputDir` - Directory where static HTML files will be generated
+- `template` - HTML template file to use as the base
+- `baseUrl` - Base URL for meta tags (optional but recommended for SEO)
+
+Add it to your build process in package.json:
+
+```json
+"build": "vite build && routerino-build-static routesFile=src/routes.js outputDir=dist template=index.html baseUrl=https://example.com"
+```
+
+### Method 2: Vite Plugin
+
+For deeper integration with Vite, use the included plugin:
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { routerinoStatic } from 'routerino/vite-plugin-routerino-static.js';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    routerinoStatic({
+      routesFile: './src/routes.js',
+      baseUrl: 'https://example.com',
+      globalMeta: {
+        siteName: 'My Site',
+        description: 'Default site description'
+      }
+    })
+  ]
+});
+```
+
+### What Gets Generated
+
+The static build process will:
+- Generate an HTML file for each non-dynamic route (routes with `:param` are skipped)
+- Apply route-specific meta tags (title, description, og:tags, custom tags)
+- Add proper `data-route` attributes for client-side hydration
+- Preserve your existing HTML structure and assets
+
+### Example Output
+
+For a route configuration like:
+```javascript
+{
+  path: '/about',
+  title: 'About Us',
+  description: 'Learn more about our company',
+  imageUrl: 'https://example.com/about-og.jpg'
+}
+```
+
+The generated `/about.html` will include:
+```html
+<title>About Us</title>
+<meta name="description" content="Learn more about our company">
+<meta property="og:title" content="About Us">
+<meta property="og:description" content="Learn more about our company">
+<meta property="og:image" content="https://example.com/about-og.jpg">
+<meta property="og:url" content="https://example.com/about">
+```
+
+This provides excellent SEO while maintaining the benefits of a React SPA.
 
 ## How-to Guides & Example Code
 
