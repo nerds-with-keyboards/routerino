@@ -79,7 +79,7 @@ npm i routerino -D
 Routerino supports:
 - **React 17, 18, and 19** - All versions are tested and supported
 - **Preact** - Compatible via `@preact/compat`
-- **Node.js 16+** - Tested on Node.js 16, 18, 20, and 22
+- **Node.js 18+** - Tested on Node.js 18, 20, and 22
 
 ## Usage
 

@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 
 console.log('🧪 Testing Routerino with multiple Node.js versions...\n');
 
-const nodeVersions = ['16', '18', '20', '22'];
+const nodeVersions = ['18', '20', '22'];
 
 console.log('📋 Current Node.js version:');
 execSync('node --version', { stdio: 'inherit' });
