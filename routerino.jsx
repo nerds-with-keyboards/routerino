@@ -1,4 +1,4 @@
-import { cloneElement, useEffect, useState } from "react";
+import { cloneElement, useEffect, useState, Component } from "react";
 import PropTypes from "prop-types";
 
 /**
@@ -78,6 +78,73 @@ function extractParams({ routePattern, currentRoute }) {
   return params;
 }
 
+/**
+ * A minimal error boundary component that catches React errors and displays a fallback UI.
+ * 
+ * @component
+ * @example
+ * ```jsx
+ * <ErrorBoundary 
+ *   fallback={<div>Something went wrong</div>}
+ *   errorTitleString="Error | My Site"
+ *   usePrerenderTags={true}
+ * >
+ *   <MyComponent />
+ * </ErrorBoundary>
+ * ```
+ */
+export class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  
+  componentDidCatch(error, errorInfo) {
+    // Enhanced error logging
+    console.group('🚨 Routerino Error Boundary Caught an Error');
+    console.error('Error:', error);
+    console.error('Component Stack:', errorInfo.componentStack);
+    
+    if (this.props.routePath) {
+      console.error('Failed Route:', this.props.routePath);
+    }
+    
+    console.error('Error occurred at:', new Date().toISOString());
+    console.groupEnd();
+    
+    // Set error title and meta tags
+    document.title = this.props.errorTitleString;
+    
+    if (this.props.usePrerenderTags) {
+      updateHeadTag({ name: "prerender-status-code", content: "500" });
+    }
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
+ErrorBoundary.propTypes = {
+  /** The child components to render when there's no error */
+  children: PropTypes.node,
+  /** The fallback UI to display when an error is caught */
+  fallback: PropTypes.node,
+  /** The document title to set when an error occurs */
+  errorTitleString: PropTypes.string.isRequired,
+  /** Whether to set prerender meta tags (status code 500) on error */
+  usePrerenderTags: PropTypes.bool,
+  /** The current route path for better error context (optional) */
+  routePath: PropTypes.string
+};
+
 // Routerino Component
 export default function Routerino({
   routes = [
@@ -123,6 +190,29 @@ export default function Routerino({
   touchIconUrl = null,
   debug = false,
 }) {
+  // Deprecation warnings
+  if (titlePrefix !== "") {
+    console.warn("Routerino: titlePrefix is deprecated and will be removed in v2.0. Use the title and separator props instead.");
+  }
+  if (titlePostfix !== "") {
+    console.warn("Routerino: titlePostfix is deprecated and will be removed in v2.0. Use the title and separator props instead.");
+  }
+  
+  // Pre-compute title strings
+  const errorTitleString = `${titlePrefix}${errorTitle}${titlePostfix || `${separator}${title}`}`;
+  const notFoundTitleString = `${titlePrefix}${notFoundTitle}${titlePostfix || `${separator}${title}`}`;
+  
+  // Development-only checks
+  if (process.env.NODE_ENV !== 'production') {
+    // Check for duplicate routes
+    const paths = routes.map(r => r.path);
+    const duplicates = paths.filter((path, index) => paths.indexOf(path) !== index);
+    if (duplicates.length > 0) {
+      console.warn('⚠️ Routerino: Duplicate route paths detected:', [...new Set(duplicates)]);
+      console.warn('The first matching route will be used');
+    }
+  }
+  
   try {
     // we use this state to track the URL internally and control React updates
     const [href, setHref] = useState(window.location.href);
@@ -249,10 +339,13 @@ export default function Routerino({
 
     // START 404 HANDLING
     if (!match) {
-      console.error(`No matching route found for ${currentRoute}`);
-      document.title = `${titlePrefix}${notFoundTitle}${
-        titlePostfix || `${separator}${title}`
-      }`;
+      console.group('⚠️ Routerino 404 - No matching route');
+      console.warn(`Requested path: ${currentRoute}`);
+      console.warn('Available routes:', routes.map(r => r.path));
+      console.warn('Consider adding a catch-all route or checking your route paths');
+      console.groupEnd();
+      
+      document.title = notFoundTitleString;
       if (usePrerenderTags) {
         updateHeadTag({ name: "prerender-status-code", content: "404" });
       }
@@ -362,14 +455,21 @@ export default function Routerino({
         Routerino: routerinoProps,
       });
 
-      return elementWithProps;
+      return (
+        <ErrorBoundary 
+          fallback={errorTemplate}
+          errorTitleString={errorTitleString}
+          usePrerenderTags={usePrerenderTags}
+          routePath={currentRoute}
+        >
+          {elementWithProps}
+        </ErrorBoundary>
+      );
     }
 
     // no search result
     console.error(`No route found for ${currentRoute}`);
-    document.title = `${titlePrefix}${notFoundTitle}${
-      titlePostfix || `${separator}${title}`
-    }`;
+    document.title = notFoundTitleString;
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "404" });
     }
@@ -377,13 +477,16 @@ export default function Routerino({
     return notFoundTemplate;
   } catch (e) {
     // router threw up (ಥ﹏ಥ)
-    console.error(`Routerino error: ${e}`);
+    console.group('💥 Routerino Fatal Error');
+    console.error('An error occurred in the router itself (not in a route component)');
+    console.error('Error:', e);
+    console.error('This typically means an issue with route configuration or router setup');
+    console.groupEnd();
+    
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "500" });
     }
-    document.title = `${titlePrefix}${errorTitle}${
-      titlePostfix || `${separator}${title}`
-    }`;
+    document.title = errorTitleString;
 
     return errorTemplate;
   }
@@ -395,7 +498,9 @@ const RouteProps = PropTypes.exact({
   title: PropTypes.string,
   description: PropTypes.string,
   tags: PropTypes.arrayOf(PropTypes.object),
+  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
   titlePrefix: PropTypes.string,
+  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
   titlePostfix: PropTypes.string,
   imageUrl: PropTypes.string,
 });
@@ -410,7 +515,9 @@ Routerino.propTypes = {
   errorTitle: PropTypes.string,
   useTrailingSlash: PropTypes.bool,
   usePrerenderTags: PropTypes.bool,
+  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
   titlePrefix: PropTypes.string,
+  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
   titlePostfix: PropTypes.string,
   imageUrl: PropTypes.string,
   touchIconUrl: PropTypes.string,

@@ -12,6 +12,9 @@ describe('Routerino', () => {
     // Mock console methods
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(console, 'debug').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'group').mockImplementation(() => {})
+    vi.spyOn(console, 'groupEnd').mockImplementation(() => {})
   })
 
   describe('Basic Rendering', () => {

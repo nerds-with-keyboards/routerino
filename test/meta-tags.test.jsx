@@ -15,6 +15,9 @@ describe('Meta Tag Management', () => {
     
     // Mock console
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'group').mockImplementation(() => {})
+    vi.spyOn(console, 'groupEnd').mockImplementation(() => {})
   })
 
   it('sets description meta tag from route', () => {

@@ -587,6 +587,47 @@ const App = () => (
 render(<App />, document.getElementById("root"));
 ```
 
+## ErrorBoundary Component
+
+Routerino exports an `ErrorBoundary` component that you can use in your own applications to catch and handle React component errors gracefully.
+
+### Import
+
+```jsx
+import { ErrorBoundary } from 'routerino';
+```
+
+### Usage
+
+```jsx
+<ErrorBoundary 
+  fallback={<div>Something went wrong. Please try again.</div>}
+  errorTitleString="Error | My Application"
+  usePrerenderTags={true}
+>
+  <MyComponent />
+</ErrorBoundary>
+```
+
+### Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `children` | `ReactNode` | No | The child components to render when there's no error |
+| `fallback` | `ReactNode` | No | The UI to display when an error is caught |
+| `errorTitleString` | `string` | Yes | The document title to set when an error occurs |
+| `usePrerenderTags` | `boolean` | No | Whether to set prerender meta tag (status code 500) |
+
+### Features
+
+- Catches JavaScript errors in child component tree
+- Displays fallback UI instead of white screen
+- Sets document title on error
+- Logs errors to console for debugging
+- Optionally sets prerender status code for SEO
+
+This is the same error boundary used internally by Routerino to protect your route components from crashing the entire application.
+
 ## Vendoring Routerino
 
 If you prefer to include Routerino directly in your project instead of using it as a dependency, you can easily vendor the library. Vendoring allows you to have full control over the version of Routerino used in your project and eliminates the need to manage it as an external dependency.
