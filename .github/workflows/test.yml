@@ -11,7 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        react-version: [18, 19]
+        include:
+          - react-version: 17
+            react-package: "react@^17.0.0 react-dom@^17.0.0"
+          - react-version: 18
+            react-package: "react@^18.0.0 react-dom@^18.0.0"
+          - react-version: 19
+            react-package: "react@^19.0.0 react-dom@^19.0.0"
+          - react-version: preact
+            react-package: "react@npm:@preact/compat@^17.0.0 react-dom@npm:@preact/compat@^17.0.0 preact@^10.0.0"
     
     steps:
     - uses: actions/checkout@v3
@@ -26,12 +34,7 @@ jobs:
       run: npm ci
     
     - name: Install React ${{ matrix.react-version }}
-      run: |
-        if [ "${{ matrix.react-version }}" = "18" ]; then
-          npm install --no-save react@^18.0.0 react-dom@^18.0.0
-        else
-          npm install --no-save react@^19.0.0 react-dom@^19.0.0
-        fi
+      run: npm install --no-save ${{ matrix.react-package }}
     
     - name: Run tests
       run: npm test -- --run
