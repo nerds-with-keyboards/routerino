@@ -29,4 +29,10 @@ export default [
       "react/react-in-jsx-scope": "off",
     },
   },
+  {
+    files: ["test/**/*.{js,jsx}"],
+    rules: {
+      "react/prop-types": "off"
+    }
+  },
 ];

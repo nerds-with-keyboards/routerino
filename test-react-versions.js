@@ -56,7 +56,7 @@ for (const version of versions) {
     execSync('npm test -- --run', { stdio: 'inherit' });
     
     console.log(`✅ ${version.name} tests passed!\n`);
-  } catch (error) {
+  } catch {
     console.error(`❌ ${version.name} tests failed!\n`);
     allPassed = false;
   }

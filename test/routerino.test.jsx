@@ -61,7 +61,7 @@ describe('Routerino', () => {
 
     it('matches paths with parameters', () => {
       window.location = new URL('http://localhost/user/123')
-      const UserComponent = ({ routerino }) => <div>User ID: {routerino.params.id}</div>
+      const UserComponent = ({ routerino }) => <div>User ID: {routerino?.params?.id}</div>
       const routes = [
         { path: '/user/:id', element: <UserComponent /> }
       ]
@@ -73,7 +73,7 @@ describe('Routerino', () => {
     it('matches multiple parameters', () => {
       window.location = new URL('http://localhost/blog/2024/hello-world')
       const BlogPost = ({ routerino }) => (
-        <div>Year: {routerino.params.year}, Slug: {routerino.params.slug}</div>
+        <div>Year: {routerino?.params?.year}, Slug: {routerino?.params?.slug}</div>
       )
       const routes = [
         { path: '/blog/:year/:slug', element: <BlogPost /> }
