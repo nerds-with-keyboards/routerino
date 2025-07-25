@@ -65,11 +65,13 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          load: ${{ github.event_name == 'pull_request' }}
 
       - name: Test Docker image
-        if: github.event_name == 'pull_request'
         run: |
-          docker run -d -p 3000:3000 --name test-prerender ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          # Use the first tag from the metadata
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          docker run -d -p 3000:3000 --name test-prerender ${IMAGE_TAG}
           sleep 10
           curl -f http://localhost:3000/health || exit 1
           docker logs test-prerender
