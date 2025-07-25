@@ -1,0 +1,60 @@
+# Secure Dockerfile - Maximum security, minimal attack surface
+# Base: Google Distroless (no shell, no OS utilities)
+# Features: Only Node.js runtime, no debugging access
+# Use for: High-security production environments
+# See Dockerfile.README.md for detailed comparison
+
+# Multi-stage build for security
+FROM node:18-slim AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy application files
+COPY . .
+
+# Final stage with distroless image
+FROM gcr.io/distroless/nodejs18-debian11
+
+# Install Chrome dependencies in a separate stage
+FROM debian:bullseye-slim AS chrome-deps
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    ca-certificates \
+    --no-install-recommends \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# Final secure image
+FROM gcr.io/distroless/nodejs18-debian11
+
+# Copy Chrome from deps stage
+COPY --from=chrome-deps /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable
+COPY --from=chrome-deps /opt/google/chrome /opt/google/chrome
+COPY --from=chrome-deps /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+
+# Copy app from builder
+WORKDIR /app
+COPY --from=builder /app /app
+
+# Set Chrome path
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# Run as non-root user (distroless includes a nonroot user)
+USER nonroot
+
+EXPOSE 3000
+
+# Start the server
+ENTRYPOINT ["node", "server.js"]

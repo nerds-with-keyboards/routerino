@@ -494,6 +494,53 @@ The generated `/about.html` will include:
 
 This provides excellent SEO while maintaining the benefits of a React SPA.
 
+## Prerender Server (Docker)
+
+Routerino includes a production-ready Docker container for running your own prerender server. This allows you to render your JavaScript application for search engines and social media bots.
+
+### Quick Start
+
+```bash
+# Using the included Docker setup
+cd node_modules/routerino/prerender
+docker-compose up -d
+
+# Or build and run directly
+docker build -t routerino-prerender .
+docker run -p 3000:3000 -e ALLOWED_DOMAINS="yourdomain.com,*.yourdomain.com" routerino-prerender
+```
+
+### Configuration
+
+The prerender server is configured via environment variables:
+
+- `ALLOWED_DOMAINS` - Comma-separated list of allowed domains (empty = allow all)
+- `PRERENDER_USER_AGENTS` - Who to prerender for (default: `all`)
+- `STRIP_JS_USER_AGENTS` - Who to strip JS for (default: search engines, or set to `none`)
+- `CACHE_MAXAGE` - Cache TTL in seconds (default: 3600)
+- `PORT` - Port to listen on (default: 3000)
+- `LOG_REQUESTS` - Enable request logging (default: true)
+
+### Web Server Integration
+
+Configure your web server to route crawler requests to the prerender service:
+
+**Nginx example:**
+```nginx
+location @prerender {
+    set $prerender 0;
+    if ($http_user_agent ~* "googlebot|bingbot|facebookexternalhit|twitterbot|whatsapp") {
+        set $prerender 1;
+    }
+    if ($prerender = 1) {
+        rewrite .* /https://$host$request_uri? break;
+        proxy_pass http://localhost:3000;
+    }
+}
+```
+
+See the [prerender directory](./prerender) for complete documentation, examples, and deployment guides.
+
 ## How-to Guides & Example Code
 
 1. [Starting a New React Project with Routerino](#starting-a-new-react-project-with-routerino)
