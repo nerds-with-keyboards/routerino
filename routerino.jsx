@@ -370,6 +370,18 @@ export default function Routerino({
     }
 
     // START MATCH HANDLING
+    // Clean up any prerender error/redirect tags from previous routes
+    if (usePrerenderTags) {
+      const prerenderStatusTag = document.querySelector('meta[name="prerender-status-code"]');
+      if (prerenderStatusTag) {
+        prerenderStatusTag.remove();
+      }
+      const prerenderHeaderTag = document.querySelector('meta[name="prerender-header"]');
+      if (prerenderHeaderTag) {
+        prerenderHeaderTag.remove();
+      }
+    }
+
     // set the title, og:title
     if (match.title) {
       // calculate the title
