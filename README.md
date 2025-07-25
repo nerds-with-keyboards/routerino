@@ -437,10 +437,6 @@ Add it to your build process in package.json:
 "build": "vite build && routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://example.com"
 ```
 
-### Method 2: Vite Plugin (Deprecated)
-
-**Note: The Vite plugin approach is deprecated. Please use the standalone build script method above.**
-
 ### What Gets Generated
 
 The static build process will:
@@ -472,6 +468,18 @@ The generated `/about.html` will include:
 ```
 
 This provides excellent SEO while maintaining the benefits of a React SPA.
+
+## Deployment Guides
+
+Comprehensive deployment guides are available for various platforms:
+
+- [**Overview & Platform Comparison**](./docs/deployment/README.md)
+- [Netlify](./docs/deployment/netlify.md) - Static hosting with automatic deployments
+- [Vercel](./docs/deployment/vercel.md) - Edge network with serverless functions
+- [GitHub Pages](./docs/deployment/github-pages.md) - Free hosting from your repository
+- [Cloudflare Pages](./docs/deployment/cloudflare-pages.md) - Unlimited bandwidth with Workers
+- [Docker](./docs/deployment/docker.md) - Self-hosted with prerendering
+- [AWS](./docs/deployment/aws.md) - S3/CloudFront or ECS options
 
 ## Prerender Server (Docker)
 

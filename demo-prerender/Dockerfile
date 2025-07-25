@@ -1,3 +1,7 @@
+# Dockerfile for the demo web application (not the prerender service)
+# The prerender service uses the Dockerfile from ../prerender
+# This just builds and serves the demo Routerino app via Nginx
+
 # Build stage
 FROM node:20-alpine as builder
 

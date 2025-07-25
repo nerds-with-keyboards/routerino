@@ -230,23 +230,15 @@ const routes = [
         </section>
 
         <section className="example-section">
-          <h2>Static Site with Vite</h2>
+          <h2>Static Site Generation</h2>
           <p>Full static site generation setup.</p>
           <div className="code-example">
             <pre><code>{`// vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import routerinoStatic from 'routerino/vite-plugin-routerino-static';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    routerinoStatic({
-      routesFile: './src/routes.js',
-      baseUrl: 'https://mysite.com',
-      generateSitemap: true
-    })
-  ],
+  plugins: [react()],
   build: {
     outDir: 'dist'
   }
@@ -257,6 +249,9 @@ export default defineConfig({
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:static": "routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://mysite.com",
+    "build:sitemap": "routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://mysite.com outputDir=dist",
+    "build:all": "npm run build && npm run build:static && npm run build:sitemap",
     "build:static": "vite build && node build-sitemap.js",
     "preview": "vite preview"
   }

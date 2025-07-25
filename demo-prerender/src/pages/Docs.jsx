@@ -175,21 +175,6 @@ npm run build:static -- \\
   --base-url https://example.com`}</code></pre>
             </div>
 
-            <h3>Using the Vite Plugin</h3>
-            <div className="code-example">
-              <pre><code>{`// vite.config.js
-import { defineConfig } from 'vite';
-import routerinoStatic from 'routerino/vite-plugin-routerino-static';
-
-export default defineConfig({
-  plugins: [
-    routerinoStatic({
-      routesFile: './src/routes.js',
-      baseUrl: 'https://example.com'
-    })
-  ]
-});`}</code></pre>
-            </div>
           </section>
 
           <section id="prerendering">

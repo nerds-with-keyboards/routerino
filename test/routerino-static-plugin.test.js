@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { routerinoStatic } from '../vite-plugin-routerino-static.js';
+import { routerinoStatic } from '../routerino-static-plugin.js';
 
-describe('Vite Plugin - Routerino Static', () => {
+describe('Routerino Static Plugin', () => {
   it('should create a plugin with correct name', () => {
     const plugin = routerinoStatic();
-    expect(plugin.name).toBe('vite-plugin-routerino-static');
+    expect(plugin.name).toBe('routerino-static-plugin');
   });
   
   it('should accept configuration options', () => {

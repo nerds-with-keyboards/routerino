@@ -26,9 +26,28 @@ async function buildStaticSite() {
   try {
     console.log('🏗️  Building static site...\n');
     
-    // Import the routes
-    const routesModule = await import(path.resolve(routesFile));
-    const routes = routesModule.default || routesModule.routes;
+    // Check if routes file exists
+    const routesPath = path.resolve(routesFile);
+    if (!fs.existsSync(routesPath)) {
+      throw new Error(`Routes file not found: ${routesPath}`);
+    }
+    
+    let routes;
+    
+    // Try to import as a module first (for .js/.mjs files)
+    const ext = path.extname(routesPath);
+    if (ext === '.js' || ext === '.mjs' || ext === '.cjs') {
+      try {
+        const routesModule = await import(routesPath);
+        routes = routesModule.default || routesModule.routes;
+      } catch (error) {
+        console.warn(`⚠️  Could not import routes file as module, falling back to regex parsing`);
+        routes = parseRoutesFromFile(routesPath);
+      }
+    } else {
+      // For JSX/TSX files, use regex parsing like build-sitemap does
+      routes = parseRoutesFromFile(routesPath);
+    }
     
     if (!Array.isArray(routes)) {
       throw new Error('Routes must be an array');
@@ -77,7 +96,22 @@ async function buildStaticSite() {
       generatedCount++;
     }
     
-    console.log(`\n🎉 Generated ${generatedCount} static HTML files in ${outputDir}`);
+    // Generate 404.html
+    // Create a default 404 route for proper meta tags
+    const notFoundRoute = {
+      path: '/404',
+      title: '404 - Page Not Found',
+      description: 'The page you are looking for could not be found.'
+    };
+    
+    // Generate 404.html with proper meta tags
+    // The actual notFoundTemplate component will be rendered client-side
+    const notFoundHtml = generateHtmlForRoute(notFoundRoute, templateHtml, baseUrl);
+    const notFoundPath = path.join(outputPath, '404.html');
+    fs.writeFileSync(notFoundPath, notFoundHtml);
+    console.log(`✅ Generated: ${notFoundPath}`);
+    
+    console.log(`\n🎉 Generated ${generatedCount + 1} static HTML files in ${outputDir}`);
     
   } catch (error) {
     console.error('❌ Build failed:', error.message);
@@ -146,6 +180,67 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function parseRoutesFromFile(filePath) {
+  // Read file contents and strip comments
+  const fileContent = fs.readFileSync(filePath, 'utf-8')
+    .replace(/\/\/.*|\/\*[\s\S]*?\*\//g, '');
+  
+  // Find routes array in the file
+  // Matches: routes = [...], Routes = [...], export default [...], routes: [...], etc.
+  const arrayMatch = fileContent.match(
+    /(?:[rR]outes\s*[=:]\s*\{?\s*|\bexport\s+default\s+)(\[[\s\S]*?\])/
+  );
+  
+  if (!arrayMatch || !arrayMatch[1]) {
+    throw new Error('Could not find routes array in file');
+  }
+  
+  const routesArrayString = arrayMatch[1];
+  
+  // Parse routes from the array string
+  // This is a simplified parser that extracts route objects
+  const routes = [];
+  
+  // Match route objects: { path: "...", title: "...", ... }
+  const routeMatches = routesArrayString.matchAll(/\{([^{}]*)\}/g);
+  
+  for (const match of routeMatches) {
+    const routeContent = match[1];
+    const route = {};
+    
+    // Extract path (required)
+    const pathMatch = routeContent.match(/path\s*:\s*(["'`])(.*?)\1/);
+    if (pathMatch) {
+      route.path = pathMatch[2];
+    } else {
+      continue; // Skip routes without paths
+    }
+    
+    // Extract title
+    const titleMatch = routeContent.match(/title\s*:\s*(["'`])(.*?)\1/);
+    if (titleMatch) {
+      route.title = titleMatch[2];
+    }
+    
+    // Extract description
+    const descMatch = routeContent.match(/description\s*:\s*(["'`])(.*?)\1/);
+    if (descMatch) {
+      route.description = descMatch[2];
+    }
+    
+    // Extract imageUrl
+    const imageMatch = routeContent.match(/imageUrl\s*:\s*(["'`])(.*?)\1/);
+    if (imageMatch) {
+      route.imageUrl = imageMatch[2];
+    }
+    
+    routes.push(route);
+  }
+  
+  console.log(`📝 Parsed ${routes.length} routes from ${path.basename(filePath)}`);
+  return routes;
 }
 
 // Run the build

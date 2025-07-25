@@ -23,8 +23,8 @@
     "types",
     "build-sitemap.js",
     "build-static.js",
-    "vite-plugin-routerino-static.js",
-    "prerender"
+    "prerender",
+    "docs/deployment"
   ],
   "bin": {
     "routerino-build-sitemap": "build-sitemap.js",

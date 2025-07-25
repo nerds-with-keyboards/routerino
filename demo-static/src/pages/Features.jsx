@@ -51,22 +51,18 @@ const Features = () => {
             <p>Generate static HTML files for better performance and SEO:</p>
             <ul>
               <li>Build-time static HTML generation</li>
-              <li>Vite plugin for seamless integration</li>
+              <li>Simple command-line interface</li>
               <li>Proper meta tags in static files</li>
               <li>Works with any hosting provider</li>
             </ul>
             <div className="code-example">
-              <pre><code>{`// vite.config.js
-import routerinoStatic from 'routerino/vite-plugin-routerino-static';
+              <pre><code>{`// package.json
+"scripts": {
+  "build:static": "routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://example.com"
+}
 
-export default {
-  plugins: [
-    routerinoStatic({
-      routesFile: './src/routes.js',
-      baseUrl: 'https://example.com'
-    })
-  ]
-}`}</code></pre>
+// Run the command
+npm run build:static`}</code></pre>
             </div>
           </div>
 

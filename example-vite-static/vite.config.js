@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { routerinoStatic } from '../vite-plugin-routerino-static.js';
+import { routerinoStatic } from '../routerino-static-plugin.js';
 
 export default defineConfig({
   plugins: [
