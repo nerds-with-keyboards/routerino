@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import prerender from 'prerender';
-import prerenderMemoryCache from 'prerender-memory-cache';
 
 // Default search engine crawlers (these typically don't need JavaScript)
 const DEFAULT_SEARCH_ENGINE_BOTS = 'googlebot|bingbot|yandex|yandexbot|baiduspider|duckduckbot|slurp|ia_archiver|applebot|ahrefsbot|seznambot|dotbot|msnbot|semrushbot|blexbot|sogou|exabot|facebot';
@@ -51,10 +50,8 @@ server.use(prerender.httpHeaders());
 
 // Add memory cache
 if (config.cacheMaxAge > 0) {
-  server.use(prerenderMemoryCache({
-    maxAge: config.cacheMaxAge * 1000 // Convert to milliseconds
-  }));
-  console.log(`Memory cache enabled with ${config.cacheMaxAge}s TTL`);
+  // TODO: Fix memory cache import for ES modules
+  console.log(`Memory cache disabled temporarily - ES module import issue`);
 }
 
 // Prerender user agent checking middleware

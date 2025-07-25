@@ -59,7 +59,7 @@ Configure the server using environment variables:
 | `HOST` | 0.0.0.0 | Host to bind to |
 | `ALLOWED_DOMAINS` | (empty) | Comma-separated list of allowed domains. Empty allows all domains. Supports wildcards like `*.example.com` |
 | `PRERENDER_USER_AGENTS` | all | User agents to prerender for. Set to `all` to prerender all requests, or provide a custom regex pattern |
-| `STRIP_JS_USER_AGENTS` | (search engines) | User agents to strip JavaScript for. Defaults to major search engines only. Set to `none` to keep JS for all, or provide a custom regex pattern |
+| `STRIP_JS_USER_AGENTS` | (search engines) | User agents to strip JavaScript for. Defaults to major search engines only (excludes social media bots). Set to `none` to keep JS for all, or provide a custom regex pattern |
 | `CACHE_MAXAGE` | 3600 | Cache TTL in seconds (0 to disable) |
 | `LOG_REQUESTS` | true | Enable request logging |
 | `WAIT_AFTER_LAST_REQUEST` | 500 | Milliseconds to wait after last request before considering page loaded |
@@ -67,7 +67,7 @@ Configure the server using environment variables:
 
 ### Common Configuration Patterns
 
-The default configuration (`PRERENDER_USER_AGENTS=all`, `STRIP_JS_USER_AGENTS=search engines`) is recommended for most use cases. It prerenders for everyone (improving performance) while only stripping JavaScript for search engines (optimizing SEO).
+The default configuration (`PRERENDER_USER_AGENTS=all`, `STRIP_JS_USER_AGENTS=search engines`) is recommended for most use cases. It prerenders for everyone (improving performance) while only stripping JavaScript for search engines (optimizing SEO). Social media bots like Facebook, Twitter, and LinkedIn preserve JavaScript for rich previews.
 
 1. **Default/SEO-Optimized (Recommended)**
    - Prerender for all users to improve performance
@@ -279,6 +279,8 @@ The server exposes a health endpoint at `/health` that returns:
    ```bash
    -e CACHE_MAXAGE=86400  # 24 hour cache
    ```
+   
+   **Note**: Memory caching is temporarily disabled due to ES module compatibility issues with the prerender-memory-cache package. The server will still function but without in-memory caching of rendered pages.
 
 3. **Scaling**: Run multiple instances behind a load balancer for high-traffic sites.
 

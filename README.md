@@ -422,11 +422,11 @@ Routerino includes tools to generate static HTML files for each route, improving
 Use the `routerino-build-static` command to generate static HTML files:
 
 ```sh
-routerino-build-static routesFile=src/routes.js outputDir=dist template=index.html baseUrl=https://example.com
+routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://example.com
 ```
 
 **Parameters:**
-- `routesFile` - Path to your routes configuration file
+- `routesFile` - Path to your routes configuration file (supports .js, .jsx, .ts, .tsx)
 - `outputDir` - Directory where static HTML files will be generated
 - `template` - HTML template file to use as the base
 - `baseUrl` - Base URL for meta tags (optional but recommended for SEO)
@@ -434,33 +434,12 @@ routerino-build-static routesFile=src/routes.js outputDir=dist template=index.ht
 Add it to your build process in package.json:
 
 ```json
-"build": "vite build && routerino-build-static routesFile=src/routes.js outputDir=dist template=index.html baseUrl=https://example.com"
+"build": "vite build && routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://example.com"
 ```
 
-### Method 2: Vite Plugin
+### Method 2: Vite Plugin (Deprecated)
 
-For deeper integration with Vite, use the included plugin:
-
-```javascript
-// vite.config.js
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { routerinoStatic } from 'routerino/vite-plugin-routerino-static.js';
-
-export default defineConfig({
-  plugins: [
-    react(),
-    routerinoStatic({
-      routesFile: './src/routes.js',
-      baseUrl: 'https://example.com',
-      globalMeta: {
-        siteName: 'My Site',
-        description: 'Default site description'
-      }
-    })
-  ]
-});
-```
+**Note: The Vite plugin approach is deprecated. Please use the standalone build script method above.**
 
 ### What Gets Generated
 
@@ -502,7 +481,9 @@ Routerino includes a production-ready Docker container for running your own prer
 
 ```bash
 # Using the included Docker setup
-cd node_modules/routerino/prerender
+# Copy the prerender directory from node_modules
+cp -r node_modules/routerino/prerender ./prerender
+cd prerender
 docker-compose up -d
 
 # Or build and run directly
@@ -516,7 +497,7 @@ The prerender server is configured via environment variables:
 
 - `ALLOWED_DOMAINS` - Comma-separated list of allowed domains (empty = allow all)
 - `PRERENDER_USER_AGENTS` - Who to prerender for (default: `all`)
-- `STRIP_JS_USER_AGENTS` - Who to strip JS for (default: search engines, or set to `none`)
+- `STRIP_JS_USER_AGENTS` - Who to strip JS for (default: search engines only, preserves JS for social media bots)
 - `CACHE_MAXAGE` - Cache TTL in seconds (default: 3600)
 - `PORT` - Port to listen on (default: 3000)
 - `LOG_REQUESTS` - Enable request logging (default: true)

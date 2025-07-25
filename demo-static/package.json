@@ -1,0 +1,24 @@
+{
+  "name": "routerino-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Demo website for Routerino - the lightweight React router",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:static": "npm run build && npx routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://routerino.dev",
+    "build:sitemap": "npx routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://routerino.dev outputDir=dist",
+    "build:all": "npm run build && npm run build:static && npm run build:sitemap"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "routerino": "file:.."
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.5.0",
+    "vite": "^6.3.5"
+  }
+}
