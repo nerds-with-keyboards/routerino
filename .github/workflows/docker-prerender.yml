@@ -71,8 +71,26 @@ jobs:
         run: |
           # Use the first tag from the metadata
           IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          echo "Testing image: ${IMAGE_TAG}"
+
+          # Start the container
           docker run -d -p 3000:3000 --name test-prerender ${IMAGE_TAG}
-          sleep 10
-          curl -f http://localhost:3000/health || exit 1
+
+          # Wait for startup
+          echo "Waiting for prerender service to start..."
+          sleep 15
+
+          # Show logs for debugging
+          echo "=== Docker logs ==="
           docker logs test-prerender
+
+          # Test health endpoint
+          echo "=== Testing health endpoint ==="
+          curl -v http://localhost:3000/health || {
+            echo "Health check failed!"
+            docker logs test-prerender
+            exit 1
+          }
+
+          # Clean up
           docker stop test-prerender
