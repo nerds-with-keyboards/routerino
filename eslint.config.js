@@ -45,7 +45,13 @@ export default [
     },
   },
   {
-    files: ["demo-prerender/**/*.{js,jsx}", "demo-static/**/*.{js,jsx}"],
+    files: [
+      "demo-prerender/**/*.{js,jsx}",
+      "demo-static/**/*.{js,jsx}",
+      "example-basic/**/*.{js,jsx}",
+      "example-prerender/**/*.{js,jsx}",
+      "example-vite-static/**/*.{js,jsx}",
+    ],
     rules: {
       "react/no-unescaped-entities": "off",
       "react/prop-types": "off",
