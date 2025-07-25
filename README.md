@@ -74,6 +74,13 @@ Ensure that you have React and React DOM installed in your project as peer depen
 npm i routerino -D
 ```
 
+### Compatibility
+
+Routerino supports:
+- **React 17, 18, and 19** - All versions are tested and supported
+- **Preact** - Compatible via `@preact/compat`
+- **Node.js 18+** - Tested on Node.js 18, 20, and 22
+
 ## Usage
 
 Here's a quick example of using Routerino in your React application:
