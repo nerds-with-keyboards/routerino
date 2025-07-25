@@ -42,7 +42,7 @@ async function buildStaticSite() {
       try {
         const routesModule = await import(routesPath);
         routes = routesModule.default || routesModule.routes;
-      } catch (error) {
+      } catch {
         console.warn(
           `⚠️  Could not import routes file as module, falling back to regex parsing`
         );

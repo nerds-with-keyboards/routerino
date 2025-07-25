@@ -47,6 +47,8 @@
     "test:node-versions": "node test-node-versions.js",
     "prepublishOnly": "vite build",
     "lint": "eslint --fix . --max-warnings=0",
+    "lint:fix": "eslint --fix .",
+    "fix:entities": "find demo-prerender demo-static -name '*.jsx' -exec sed -i '' 's/\"/{\\\"}/g; s/'\"'\"'/{\\\"'\"'\"'}/g' {} +",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"

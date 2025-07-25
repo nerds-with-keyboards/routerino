@@ -42,7 +42,7 @@ const API = () => {
                   <code>string</code>
                 </td>
                 <td>
-                  <code>""</code>
+                  <code>{""}</code>
                 </td>
                 <td>Base title for your site</td>
               </tr>
@@ -54,7 +54,7 @@ const API = () => {
                   <code>string</code>
                 </td>
                 <td>
-                  <code>" - "</code>
+                  <code>{" - "}</code>
                 </td>
                 <td>Separator between page title and site title</td>
               </tr>
@@ -66,7 +66,7 @@ const API = () => {
                   <code>string</code>
                 </td>
                 <td>
-                  <code>""</code>
+                  <code>{""}</code>
                 </td>
                 <td>Default meta description</td>
               </tr>
@@ -78,7 +78,7 @@ const API = () => {
                   <code>string</code>
                 </td>
                 <td>
-                  <code>""</code>
+                  <code>{""}</code>
                 </td>
                 <td>Default Open Graph image URL</td>
               </tr>
@@ -90,7 +90,7 @@ const API = () => {
                   <code>string</code>
                 </td>
                 <td>
-                  <code>""</code>
+                  <code>{""}</code>
                 </td>
                 <td>Apple touch icon URL</td>
               </tr>
@@ -162,7 +162,7 @@ const API = () => {
                   <code>ReactNode</code>
                 </td>
                 <td>Required</td>
-                <td>Must include an element with id="routerino-target"</td>
+                <td>Must include an element with id={'"routerino-target"'}</td>
               </tr>
             </tbody>
           </table>
@@ -294,7 +294,7 @@ const API = () => {
                   <code>string</code>
                 </td>
                 <td>
-                  <code>"meta"</code>
+                  <code>{"meta"}</code>
                 </td>
                 <td>HTML tag name</td>
               </tr>
@@ -387,10 +387,10 @@ updateHeadTag({
   href: 'https://example.com/page'
 });
 
-// Soft update (won't overwrite if exists)
+// Soft update (won{"'"}t overwrite if exists)
 updateHeadTag({
   name: 'author',
-  content: 'John Doe',
+  content: {'John Doe'},
   soft: true
 });`}</code>
             </pre>
@@ -432,7 +432,7 @@ updateHeadTag({
                   <code>string</code>
                 </td>
                 <td>
-                  <code>"Error"</code>
+                  <code>{"Error"}</code>
                 </td>
                 <td>Page title when error occurs</td>
               </tr>
@@ -470,7 +470,7 @@ function App() {
   return (
     <ErrorBoundary
       fallback={<ErrorPage />}
-      errorTitleString="Error | My Site"
+      errorTitleString={"Error | My Site"}
     >
       <Routerino routes={routes}>
         <div id="routerino-target"></div>
@@ -531,10 +531,10 @@ fetchData().then(data => {
 
 const routes: Route[] = [
   {
-    path: '/',
+    path: {'/'},
     element: <Home />,
     title: 'Home',
-    description: 'Homepage',
+    description: {'Homepage'},
     tags: [
       { property: 'og:type', content: 'website' }
     ]
@@ -543,7 +543,7 @@ const routes: Route[] = [
 
 const props: RoutePropTypes = {
   routes,
-  title: 'My App',
+  title: {'My App'},
   notFoundTemplate: <NotFound />
 };`}</code>
             </pre>

@@ -64,7 +64,7 @@ pnpm add routerino`}</code>
 
           <section id="basic-usage">
             <h2>Basic Usage</h2>
-            <p>Here's a minimal example to get you started:</p>
+            <p>Here{"'"}s a minimal example to get you started:</p>
             <div className="code-example">
               <pre>
                 <code>{`import React from 'react';
@@ -116,7 +116,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`}</code>
                 <code>{`<Routerino
   routes={routes}                    // Required: Array of route objects
   title="My Site"                    // Site title
-  titleSeparator=" | "              // Title separator (default: " - ")
+  titleSeparator={" | "}              // Title separator (default: {" - "})
   description="Site description"     // Default meta description
   imageUrl="/default-image.jpg"     // Default OG image
   touchIconUrl="/icon.png"          // Apple touch icon
@@ -264,14 +264,14 @@ location @prerender {
   notFoundTemplate={
     <div className="error-page">
       <h1>404 - Page Not Found</h1>
-      <p>The page you're looking for doesn't exist.</p>
+      <p>The page you{"'"}re looking for doesn{"'"}t exist.</p>
       <a href="/">Go Home</a>
     </div>
   }
   errorTemplate={
     <div className="error-page">
       <h1>Something went wrong</h1>
-      <p>We're sorry, but an error occurred.</p>
+      <p>We{"'"}re sorry, but an error occurred.</p>
       <a href="/">Go Home</a>
     </div>
   }
@@ -288,7 +288,7 @@ function MyApp() {
   return (
     <ErrorBoundary
       fallback={<ErrorFallback />}
-      errorTitleString="Error | My Site"
+      errorTitleString={"Error | My Site"}
     >
       <Routerino routes={routes}>
         <div id="routerino-target"></div>
