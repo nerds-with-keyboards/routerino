@@ -10,6 +10,9 @@ export default [
       "node_modules/*",
       "example-vite-static/dist/*",
       "example/dist/*",
+      "demo-prerender/dist/*",
+      "demo-static/dist/*",
+      "coverage/*",
     ],
   },
   {
@@ -32,11 +35,19 @@ export default [
   {
     rules: {
       "react/react-in-jsx-scope": "off",
+      "react/no-unescaped-entities": ["error", { forbid: [">", "}"] }],
     },
   },
   {
     files: ["test/**/*.{js,jsx}"],
     rules: {
+      "react/prop-types": "off",
+    },
+  },
+  {
+    files: ["demo-prerender/**/*.{js,jsx}", "demo-static/**/*.{js,jsx}"],
+    rules: {
+      "react/no-unescaped-entities": "off",
       "react/prop-types": "off",
     },
   },
