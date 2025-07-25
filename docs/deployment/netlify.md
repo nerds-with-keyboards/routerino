@@ -285,7 +285,6 @@ Netlify processes forms automatically:
 This is likely because Netlify's prerendering is enabled. To fix:
 
 1. **Disable Netlify prerendering**:
-
    - Site Settings → Build & deploy → Post processing → Disable "Prerendering"
 
 2. **Test your static generation**:

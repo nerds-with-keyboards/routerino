@@ -1,5 +1,5 @@
-import React from 'react';
-import Layout from '../components/Layout.jsx';
+import React from "react";
+import Layout from "../components/Layout.jsx";
 
 const Home = () => {
   return (
@@ -8,14 +8,19 @@ const Home = () => {
         <div className="hero-content">
           <h1>The Lightweight React Router</h1>
           <p className="hero-subtitle">
-            Zero dependencies. Built-in SEO. Prerendering support. Static site generation.
+            Zero dependencies. Built-in SEO. Prerendering support. Static site
+            generation.
           </p>
           <div className="hero-actions">
-            <a href="/docs" className="btn btn-primary">Get Started</a>
-            <a href="https://github.com/nerds-with-keyboards/routerino" 
-               className="btn btn-secondary"
-               target="_blank"
-               rel="noopener noreferrer">
+            <a href="/docs" className="btn btn-primary">
+              Get Started
+            </a>
+            <a
+              href="https://github.com/nerds-with-keyboards/routerino"
+              className="btn btn-secondary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               View on GitHub
             </a>
           </div>
@@ -31,19 +36,29 @@ const Home = () => {
           <div className="feature-grid">
             <div className="feature-card">
               <h3>Zero Dependencies</h3>
-              <p>No external dependencies means a smaller bundle size and fewer security concerns.</p>
+              <p>
+                No external dependencies means a smaller bundle size and fewer
+                security concerns.
+              </p>
             </div>
             <div className="feature-card">
               <h3>SEO First</h3>
-              <p>Built-in meta tag management, Open Graph support, and prerender detection.</p>
+              <p>
+                Built-in meta tag management, Open Graph support, and prerender
+                detection.
+              </p>
             </div>
             <div className="feature-card">
               <h3>Static Generation</h3>
-              <p>Generate static HTML files for each route with proper meta tags.</p>
+              <p>
+                Generate static HTML files for each route with proper meta tags.
+              </p>
             </div>
             <div className="feature-card">
               <h3>TypeScript Ready</h3>
-              <p>Full TypeScript support with comprehensive type definitions.</p>
+              <p>
+                Full TypeScript support with comprehensive type definitions.
+              </p>
             </div>
             <div className="feature-card">
               <h3>Lightweight</h3>
@@ -61,7 +76,8 @@ const Home = () => {
         <div className="container">
           <h2>Quick Start</h2>
           <div className="code-example">
-            <pre><code>{`import Routerino from 'routerino';
+            <pre>
+              <code>{`import Routerino from 'routerino';
 
 const routes = [
   {
@@ -84,9 +100,12 @@ function App() {
       <div id="routerino-target"></div>
     </Routerino>
   );
-}`}</code></pre>
+}`}</code>
+            </pre>
           </div>
-          <a href="/docs" className="btn btn-primary">Read the Documentation</a>
+          <a href="/docs" className="btn btn-primary">
+            Read the Documentation
+          </a>
         </div>
       </section>
     </Layout>

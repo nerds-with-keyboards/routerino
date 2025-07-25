@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const Footer = () => {
   return (
@@ -12,18 +12,38 @@ const Footer = () => {
           <div className="footer-section">
             <h4>Resources</h4>
             <ul>
-              <li><a href="/docs">Documentation</a></li>
-              <li><a href="/api">API Reference</a></li>
-              <li><a href="/examples">Examples</a></li>
-              <li><a href="https://github.com/nerds-with-keyboards/routerino">GitHub</a></li>
+              <li>
+                <a href="/docs">Documentation</a>
+              </li>
+              <li>
+                <a href="/api">API Reference</a>
+              </li>
+              <li>
+                <a href="/examples">Examples</a>
+              </li>
+              <li>
+                <a href="https://github.com/nerds-with-keyboards/routerino">
+                  GitHub
+                </a>
+              </li>
             </ul>
           </div>
           <div className="footer-section">
             <h4>Community</h4>
             <ul>
-              <li><a href="https://github.com/nerds-with-keyboards/routerino/issues">Issues</a></li>
-              <li><a href="https://github.com/nerds-with-keyboards/routerino/discussions">Discussions</a></li>
-              <li><a href="https://npmjs.com/package/routerino">NPM</a></li>
+              <li>
+                <a href="https://github.com/nerds-with-keyboards/routerino/issues">
+                  Issues
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/nerds-with-keyboards/routerino/discussions">
+                  Discussions
+                </a>
+              </li>
+              <li>
+                <a href="https://npmjs.com/package/routerino">NPM</a>
+              </li>
             </ul>
           </div>
         </div>

@@ -1,18 +1,21 @@
-import React from 'react';
-import Layout from '../components/Layout.jsx';
+import React from "react";
+import Layout from "../components/Layout.jsx";
 
 const Features = () => {
   return (
     <Layout>
       <div className="page-container">
         <h1>Features</h1>
-        
+
         <section className="feature-section">
           <h2>Core Features</h2>
-          
+
           <div className="feature-detail">
             <h3>Zero Runtime Dependencies</h3>
-            <p>Routerino has no runtime dependencies beyond React itself. This means:</p>
+            <p>
+              Routerino has no runtime dependencies beyond React itself. This
+              means:
+            </p>
             <ul>
               <li>Smaller bundle size</li>
               <li>Fewer security vulnerabilities</li>
@@ -32,7 +35,8 @@ const Features = () => {
               <li>Prerender detection for bots</li>
             </ul>
             <div className="code-example">
-              <pre><code>{`{
+              <pre>
+                <code>{`{
   path: '/blog/:slug',
   element: <BlogPost />,
   title: 'Blog Post Title',
@@ -42,7 +46,8 @@ const Features = () => {
     { property: 'og:type', content: 'article' },
     { name: 'twitter:card', content: 'summary_large_image' }
   ]
-}`}</code></pre>
+}`}</code>
+              </pre>
             </div>
           </div>
 
@@ -56,13 +61,15 @@ const Features = () => {
               <li>Works with any hosting provider</li>
             </ul>
             <div className="code-example">
-              <pre><code>{`// package.json
+              <pre>
+                <code>{`// package.json
 "scripts": {
   "build:static": "routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://example.com"
 }
 
 // Run the command
-npm run build:static`}</code></pre>
+npm run build:static`}</code>
+              </pre>
             </div>
           </div>
 
@@ -92,7 +99,8 @@ npm run build:static`}</code></pre>
             <h3>Dynamic Routes</h3>
             <p>Support for dynamic route parameters:</p>
             <div className="code-example">
-              <pre><code>{`const routes = [
+              <pre>
+                <code>{`const routes = [
   { path: '/user/:id', element: <UserProfile /> },
   { path: '/blog/:year/:month/:slug', element: <BlogPost /> }
 ];
@@ -101,7 +109,8 @@ npm run build:static`}</code></pre>
 function UserProfile() {
   const { id } = window.routerinoParams;
   return <div>User ID: {id}</div>;
-}`}</code></pre>
+}`}</code>
+              </pre>
             </div>
           </div>
 
@@ -117,7 +126,10 @@ function UserProfile() {
 
           <div className="feature-detail">
             <h3>Trailing Slash Normalization</h3>
-            <p>Automatic handling of trailing slashes to prevent duplicate content:</p>
+            <p>
+              Automatic handling of trailing slashes to prevent duplicate
+              content:
+            </p>
             <ul>
               <li>Configurable behavior</li>
               <li>SEO-friendly redirects</li>
@@ -128,8 +140,13 @@ function UserProfile() {
 
         <section className="cta-section">
           <h2>Ready to Get Started?</h2>
-          <p>Check out our documentation to learn how to use Routerino in your project.</p>
-          <a href="/docs" className="btn btn-primary">Read the Docs</a>
+          <p>
+            Check out our documentation to learn how to use Routerino in your
+            project.
+          </p>
+          <a href="/docs" className="btn btn-primary">
+            Read the Docs
+          </a>
         </section>
       </div>
     </Layout>

@@ -45,13 +45,11 @@ Routerino empowers developers to define and manage routing and SEO concerns in o
 Key capabilities:
 
 - Routing
-
   - Easy integration of simple routing for your React app (supports React v18, older versions have not yet been tested)
   - Zero dependencies for lighter, more maintainable projects
   - No special link components required, works great for Markdown-based pages and semantic HTML
 
 - SEO Optimization
-
   - Configure title, description, and image for each route
   - Set `<head>` tags for any route (either directly in your routes config, or dynamically after rendering)
   - Set a site-wide name to be included with page titles
@@ -61,7 +59,6 @@ Key capabilities:
   - Optimize for Googlebot with pre-rendering support
 
 - Enhanced User Experience
-
   - Support for sharing and social preview metadata
   - Snappy page transitions with automatic scroll reset, eliminating the jarring experience of landing mid-page when navigating
 
@@ -78,6 +75,7 @@ npm i routerino -D
 ### Compatibility
 
 Routerino supports:
+
 - **React 17, 18, and 19** - All versions are tested and supported
 - **Preact** - Compatible via `@preact/compat`
 - **Node.js 18+** - Tested on Node.js 18, 20, and 22
@@ -426,6 +424,7 @@ routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/in
 ```
 
 **Parameters:**
+
 - `routesFile` - Path to your routes configuration file (supports .js, .jsx, .ts, .tsx)
 - `outputDir` - Directory where static HTML files will be generated
 - `template` - HTML template file to use as the base
@@ -440,6 +439,7 @@ Add it to your build process in package.json:
 ### What Gets Generated
 
 The static build process will:
+
 - Generate an HTML file for each non-dynamic route (routes with `:param` are skipped)
 - Apply route-specific meta tags (title, description, og:tags, custom tags)
 - Add proper `data-route` attributes for client-side hydration
@@ -448,6 +448,7 @@ The static build process will:
 ### Example Output
 
 For a route configuration like:
+
 ```javascript
 {
   path: '/about',
@@ -458,13 +459,14 @@ For a route configuration like:
 ```
 
 The generated `/about.html` will include:
+
 ```html
 <title>About Us</title>
-<meta name="description" content="Learn more about our company">
-<meta property="og:title" content="About Us">
-<meta property="og:description" content="Learn more about our company">
-<meta property="og:image" content="https://example.com/about-og.jpg">
-<meta property="og:url" content="https://example.com/about">
+<meta name="description" content="Learn more about our company" />
+<meta property="og:title" content="About Us" />
+<meta property="og:description" content="Learn more about our company" />
+<meta property="og:image" content="https://example.com/about-og.jpg" />
+<meta property="og:url" content="https://example.com/about" />
 ```
 
 This provides excellent SEO while maintaining the benefits of a React SPA.
@@ -515,6 +517,7 @@ The prerender server is configured via environment variables:
 Configure your web server to route crawler requests to the prerender service:
 
 **Nginx example:**
+
 ```nginx
 location @prerender {
     set $prerender 0;
@@ -712,13 +715,13 @@ Routerino exports an `ErrorBoundary` component that you can use in your own appl
 ### Import
 
 ```jsx
-import { ErrorBoundary } from 'routerino';
+import { ErrorBoundary } from "routerino";
 ```
 
 ### Usage
 
 ```jsx
-<ErrorBoundary 
+<ErrorBoundary
   fallback={<div>Something went wrong. Please try again.</div>}
   errorTitleString="Error | My Application"
   usePrerenderTags={true}
@@ -729,12 +732,12 @@ import { ErrorBoundary } from 'routerino';
 
 ### Props
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `children` | `ReactNode` | No | The child components to render when there's no error |
-| `fallback` | `ReactNode` | No | The UI to display when an error is caught |
-| `errorTitleString` | `string` | Yes | The document title to set when an error occurs |
-| `usePrerenderTags` | `boolean` | No | Whether to set prerender meta tag (status code 500) |
+| Prop               | Type        | Required | Description                                          |
+| ------------------ | ----------- | -------- | ---------------------------------------------------- |
+| `children`         | `ReactNode` | No       | The child components to render when there's no error |
+| `fallback`         | `ReactNode` | No       | The UI to display when an error is caught            |
+| `errorTitleString` | `string`    | Yes      | The document title to set when an error occurs       |
+| `usePrerenderTags` | `boolean`   | No       | Whether to set prerender meta tag (status code 500)  |
 
 ### Features
 

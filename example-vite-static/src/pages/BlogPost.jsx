@@ -1,4 +1,4 @@
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 
 export default function BlogPost({ routerinoParams }) {
   return (
@@ -11,6 +11,6 @@ export default function BlogPost({ routerinoParams }) {
 
 BlogPost.propTypes = {
   routerinoParams: PropTypes.shape({
-    id: PropTypes.string
-  })
+    id: PropTypes.string,
+  }),
 };

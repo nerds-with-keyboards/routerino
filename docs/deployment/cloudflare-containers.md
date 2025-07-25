@@ -11,6 +11,7 @@ Cloudflare Containers (public beta 2025) is a new service that runs Docker conta
 ## Overview
 
 We'll deploy our existing prerender container to Cloudflare Containers, which will:
+
 1. Run the prerender service globally at the edge
 2. Scale to zero when not in use
 3. Automatically scale up based on demand
@@ -78,44 +79,47 @@ Create `src/index.js` to handle routing between regular users and bots:
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const userAgent = request.headers.get('User-Agent') || '';
-    
+    const userAgent = request.headers.get("User-Agent") || "";
+
     // Bot detection
-    const botPatterns = /googlebot|bingbot|yandex|facebookexternalhit|twitterbot|whatsapp|slack|discordbot|linkedinbot|pinterestbot/i;
+    const botPatterns =
+      /googlebot|bingbot|yandex|facebookexternalhit|twitterbot|whatsapp|slack|discordbot|linkedinbot|pinterestbot/i;
     const isBot = botPatterns.test(userAgent);
-    
+
     // For regular users, pass through to origin
     if (!isBot) {
       return fetch(request);
     }
-    
+
     // For bots, use the prerender container
     try {
       // Call the container binding
-      const prerenderResponse = await env.PRERENDER.fetch(new Request(
-        `http://prerender/?url=${encodeURIComponent(url.toString())}`,
-        {
-          headers: {
-            'User-Agent': userAgent,
-            'X-Forwarded-For': request.headers.get('CF-Connecting-IP'),
-            'X-Original-URL': url.toString()
+      const prerenderResponse = await env.PRERENDER.fetch(
+        new Request(
+          `http://prerender/?url=${encodeURIComponent(url.toString())}`,
+          {
+            headers: {
+              "User-Agent": userAgent,
+              "X-Forwarded-For": request.headers.get("CF-Connecting-IP"),
+              "X-Original-URL": url.toString(),
+            },
           }
-        }
-      ));
-      
+        )
+      );
+
       // Return the prerendered response with caching headers
       return new Response(prerenderResponse.body, {
         status: prerenderResponse.status,
         statusText: prerenderResponse.statusText,
         headers: {
           ...Object.fromEntries(prerenderResponse.headers),
-          'Cache-Control': 'public, max-age=3600, s-maxage=86400',
-          'X-Prerendered': 'true',
-          'X-Prerender-Service': 'cloudflare-containers'
-        }
+          "Cache-Control": "public, max-age=3600, s-maxage=86400",
+          "X-Prerendered": "true",
+          "X-Prerender-Service": "cloudflare-containers",
+        },
       });
     } catch (error) {
-      console.error('Prerender error:', error);
+      console.error("Prerender error:", error);
       // Fallback to origin on error
       return fetch(request);
     }
@@ -140,6 +144,7 @@ wrangler deploy
 ### Step 6: Configure DNS
 
 In your Cloudflare dashboard:
+
 1. Navigate to your domain
 2. Ensure your DNS records are proxied (orange cloud icon)
 3. The Worker will automatically intercept requests
@@ -166,6 +171,7 @@ curl https://yourdomain.com
 ## Cost Considerations
 
 Cloudflare Containers pricing (as of 2025 beta):
+
 - Requires paid Cloudflare plan ($20+/month)
 - Scale-to-zero: Only pay when containers are running
 - Request-based pricing after free tier
@@ -188,14 +194,14 @@ Cloudflare Containers pricing (as of 2025 beta):
 
 ## Comparison with Our Docker Setup
 
-| Feature | Docker Compose (Self-hosted) | Cloudflare Containers |
-|---------|------------------------------|----------------------|
-| Setup Complexity | Medium | Low |
-| Maintenance | High | None |
-| Scaling | Manual | Automatic |
-| Global Distribution | No | Yes |
-| Cost Model | Fixed (VPS) | Usage-based |
-| Control | Full | Limited |
+| Feature             | Docker Compose (Self-hosted) | Cloudflare Containers |
+| ------------------- | ---------------------------- | --------------------- |
+| Setup Complexity    | Medium                       | Low                   |
+| Maintenance         | High                         | None                  |
+| Scaling             | Manual                       | Automatic             |
+| Global Distribution | No                           | Yes                   |
+| Cost Model          | Fixed (VPS)                  | Usage-based           |
+| Control             | Full                         | Limited               |
 
 ## Troubleshooting
 
@@ -231,12 +237,14 @@ To migrate from our `demo-prerender` setup:
 Cloudflare Containers offers a compelling alternative to self-hosted prerendering:
 
 ✅ **When to use**:
+
 - You want global edge deployment
 - You prefer serverless architecture
 - You need automatic scaling
 - You want minimal maintenance
 
 ❌ **When to avoid**:
+
 - You need full control over the environment
 - You have very specific resource requirements
 - You're not ready for beta services

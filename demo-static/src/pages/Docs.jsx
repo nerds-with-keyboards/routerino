@@ -1,5 +1,5 @@
-import React from 'react';
-import Layout from '../components/Layout.jsx';
+import React from "react";
+import Layout from "../components/Layout.jsx";
 
 const Docs = () => {
   return (
@@ -9,38 +9,56 @@ const Docs = () => {
           <nav>
             <h3>Getting Started</h3>
             <ul>
-              <li><a href="#installation">Installation</a></li>
-              <li><a href="#basic-usage">Basic Usage</a></li>
-              <li><a href="#configuration">Configuration</a></li>
+              <li>
+                <a href="#installation">Installation</a>
+              </li>
+              <li>
+                <a href="#basic-usage">Basic Usage</a>
+              </li>
+              <li>
+                <a href="#configuration">Configuration</a>
+              </li>
             </ul>
             <h3>Guides</h3>
             <ul>
-              <li><a href="#seo">SEO Optimization</a></li>
-              <li><a href="#static-generation">Static Generation</a></li>
-              <li><a href="#prerendering">Prerendering</a></li>
-              <li><a href="#error-handling">Error Handling</a></li>
+              <li>
+                <a href="#seo">SEO Optimization</a>
+              </li>
+              <li>
+                <a href="#static-generation">Static Generation</a>
+              </li>
+              <li>
+                <a href="#prerendering">Prerendering</a>
+              </li>
+              <li>
+                <a href="#error-handling">Error Handling</a>
+              </li>
             </ul>
             <h3>API Reference</h3>
             <ul>
-              <li><a href="/api">Complete API</a></li>
+              <li>
+                <a href="/api">Complete API</a>
+              </li>
             </ul>
           </nav>
         </aside>
 
         <div className="docs-content">
           <h1>Documentation</h1>
-          
+
           <section id="installation">
             <h2>Installation</h2>
             <p>Install Routerino using npm, yarn, or pnpm:</p>
             <div className="code-example">
-              <pre><code>{`npm install routerino
+              <pre>
+                <code>{`npm install routerino
 
 # or
 yarn add routerino
 
 # or
-pnpm add routerino`}</code></pre>
+pnpm add routerino`}</code>
+              </pre>
             </div>
           </section>
 
@@ -48,7 +66,8 @@ pnpm add routerino`}</code></pre>
             <h2>Basic Usage</h2>
             <p>Here's a minimal example to get you started:</p>
             <div className="code-example">
-              <pre><code>{`import React from 'react';
+              <pre>
+                <code>{`import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Routerino from 'routerino';
 
@@ -84,7 +103,8 @@ function App() {
 }
 
 // Render
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);`}</code></pre>
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);`}</code>
+              </pre>
             </div>
           </section>
 
@@ -92,7 +112,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`}</code></
             <h2>Configuration</h2>
             <p>Routerino accepts several configuration props:</p>
             <div className="code-example">
-              <pre><code>{`<Routerino
+              <pre>
+                <code>{`<Routerino
   routes={routes}                    // Required: Array of route objects
   title="My Site"                    // Site title
   titleSeparator=" | "              // Title separator (default: " - ")
@@ -106,17 +127,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`}</code></
   debug={false}                     // Enable debug logging
 >
   <div id="routerino-target"></div>
-</Routerino>`}</code></pre>
+</Routerino>`}</code>
+              </pre>
             </div>
           </section>
 
           <section id="seo">
             <h2>SEO Optimization</h2>
             <p>Routerino makes SEO easy with built-in meta tag management:</p>
-            
+
             <h3>Route-level SEO</h3>
             <div className="code-example">
-              <pre><code>{`const routes = [
+              <pre>
+                <code>{`const routes = [
   {
     path: '/blog/my-post',
     element: <BlogPost />,
@@ -131,13 +154,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`}</code></
       { name: 'twitter:creator', content: '@johndoe' }
     ]
   }
-];`}</code></pre>
+];`}</code>
+              </pre>
             </div>
 
             <h3>Dynamic Meta Tags</h3>
             <p>You can also update meta tags dynamically:</p>
             <div className="code-example">
-              <pre><code>{`import { updateHeadTag } from 'routerino';
+              <pre>
+                <code>{`import { updateHeadTag } from 'routerino';
 
 // In your component
 useEffect(() => {
@@ -150,17 +175,19 @@ useEffect(() => {
     property: 'og:image',
     content: dynamicImageUrl
   });
-}, [dynamicDescription, dynamicImageUrl]);`}</code></pre>
+}, [dynamicDescription, dynamicImageUrl]);`}</code>
+              </pre>
             </div>
           </section>
 
           <section id="static-generation">
             <h2>Static Site Generation</h2>
             <p>Generate static HTML files for better performance:</p>
-            
+
             <h3>Using the Build Script</h3>
             <div className="code-example">
-              <pre><code>{`// package.json
+              <pre>
+                <code>{`// package.json
 {
   "scripts": {
     "build:static": "routerino-build-static"
@@ -172,18 +199,19 @@ npm run build:static -- \\
   --routes ./src/routes.js \\
   --template ./index.html \\
   --output ./dist \\
-  --base-url https://example.com`}</code></pre>
+  --base-url https://example.com`}</code>
+              </pre>
             </div>
-
           </section>
 
           <section id="prerendering">
             <h2>Prerendering</h2>
             <p>Routerino includes a Docker-based prerender server for SEO:</p>
-            
+
             <h3>Docker Compose Setup</h3>
             <div className="code-example">
-              <pre><code>{`version: '3.8'
+              <pre>
+                <code>{`version: '3.8'
 services:
   prerender:
     build: ./node_modules/routerino/prerender
@@ -193,12 +221,14 @@ services:
       - ALLOWED_DOMAINS=example.com,www.example.com
       - CACHE_TTL=86400000
       - PRERENDER_USER_AGENTS=all
-      - STRIP_JS_USER_AGENTS=googlebot|bingbot`}</code></pre>
+      - STRIP_JS_USER_AGENTS=googlebot|bingbot`}</code>
+              </pre>
             </div>
 
             <h3>Nginx Configuration</h3>
             <div className="code-example">
-              <pre><code>{`location / {
+              <pre>
+                <code>{`location / {
   try_files $uri @prerender;
 }
 
@@ -217,17 +247,19 @@ location @prerender {
   if ($prerender = 0) {
     try_files $uri $uri/ /index.html;
   }
-}`}</code></pre>
+}`}</code>
+              </pre>
             </div>
           </section>
 
           <section id="error-handling">
             <h2>Error Handling</h2>
             <p>Routerino includes built-in error handling:</p>
-            
+
             <h3>Custom Error Pages</h3>
             <div className="code-example">
-              <pre><code>{`<Routerino
+              <pre>
+                <code>{`<Routerino
   routes={routes}
   notFoundTemplate={
     <div className="error-page">
@@ -243,12 +275,14 @@ location @prerender {
       <a href="/">Go Home</a>
     </div>
   }
-/>`}</code></pre>
+/>`}</code>
+              </pre>
             </div>
 
             <h3>Using the Error Boundary</h3>
             <div className="code-example">
-              <pre><code>{`import { ErrorBoundary } from 'routerino';
+              <pre>
+                <code>{`import { ErrorBoundary } from 'routerino';
 
 function MyApp() {
   return (
@@ -261,16 +295,25 @@ function MyApp() {
       </Routerino>
     </ErrorBoundary>
   );
-}`}</code></pre>
+}`}</code>
+              </pre>
             </div>
           </section>
 
           <section className="next-steps">
             <h2>Next Steps</h2>
             <ul>
-              <li><a href="/examples">Check out examples</a></li>
-              <li><a href="/api">Read the API reference</a></li>
-              <li><a href="https://github.com/nerds-with-keyboards/routerino">View on GitHub</a></li>
+              <li>
+                <a href="/examples">Check out examples</a>
+              </li>
+              <li>
+                <a href="/api">Read the API reference</a>
+              </li>
+              <li>
+                <a href="https://github.com/nerds-with-keyboards/routerino">
+                  View on GitHub
+                </a>
+              </li>
             </ul>
           </section>
         </div>

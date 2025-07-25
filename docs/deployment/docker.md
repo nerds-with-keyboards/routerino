@@ -12,6 +12,7 @@ This guide covers deploying Routerino with server-side prerendering using Docker
 ## Architecture Overview
 
 The Docker setup includes:
+
 - **Nginx**: Web server and reverse proxy
 - **Prerender Service**: Headless Chrome for rendering
 - **Your Routerino App**: The SPA bundle
@@ -27,19 +28,22 @@ The Docker setup includes:
 ### Step 1: Prepare Your Application
 
 1. Build your Routerino app:
+
    ```bash
    npm run build
    ```
 
 2. Copy the prerender service (included with Routerino):
+
    ```bash
    cp -r node_modules/routerino/prerender ./prerender
    ```
 
 3. Create `docker-compose.yml` in your project root:
+
    ```yaml
-   version: '3.8'
-   
+   version: "3.8"
+
    services:
      web:
        image: nginx:alpine
@@ -49,11 +53,11 @@ The Docker setup includes:
        volumes:
          - ./dist:/usr/share/nginx/html
          - ./nginx.conf:/etc/nginx/nginx.conf:ro
-         - ./ssl:/etc/nginx/ssl:ro  # For SSL certificates
+         - ./ssl:/etc/nginx/ssl:ro # For SSL certificates
        depends_on:
          - prerender
        restart: unless-stopped
-   
+
      prerender:
        build: ./prerender
        environment:
@@ -82,81 +86,81 @@ events {
 http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
-    
+
     # Gzip
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-    
+
     # Rate limiting
     limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
-    
+
     server {
         listen 80;
         server_name yourdomain.com www.yourdomain.com;
-        
+
         # Redirect to HTTPS
         return 301 https://$server_name$request_uri;
     }
-    
+
     server {
         listen 443 ssl http2;
         server_name yourdomain.com www.yourdomain.com;
-        
+
         # SSL Configuration
         ssl_certificate /etc/nginx/ssl/cert.pem;
         ssl_certificate_key /etc/nginx/ssl/key.pem;
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers HIGH:!aNULL:!MD5;
-        
+
         root /usr/share/nginx/html;
         index index.html;
-        
+
         # Security headers
         add_header X-Frame-Options "SAMEORIGIN" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-XSS-Protection "1; mode=block" always;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        
+
         # Rate limiting
         limit_req zone=general burst=20 nodelay;
-        
+
         location / {
             try_files $uri @prerender;
         }
-        
+
         location @prerender {
             set $prerender 0;
-            
+
             # Detect bots
             if ($http_user_agent ~* "googlebot|bingbot|yandex|baiduspider|facebookexternalhit|twitterbot|linkedinbot|whatsapp") {
                 set $prerender 1;
             }
-            
+
             # Skip static files
             if ($uri ~* "\.(js|css|xml|less|png|jpg|jpeg|gif|pdf|doc|txt|ico|rss|zip|mp3|rar|exe|wmv|doc|avi|ppt|mpg|mpeg|tif|wav|mov|psd|ai|xls|mp4|m4a|swf|dat|dmg|iso|flv|m4v|torrent|ttf|woff|woff2|svg|eot)$") {
                 set $prerender 0;
             }
-            
+
             # Proxy headers
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header X-Forwarded-Host $host;
-            
+
             if ($prerender = 1) {
                 rewrite .* /https://$host$request_uri? break;
                 proxy_pass http://prerender:3000;
             }
-            
+
             try_files $uri /index.html;
         }
-        
+
         # Cache static assets
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
         }
-        
+
         # Health check
         location /health {
             access_log off;
@@ -170,11 +174,13 @@ http {
 ### Step 3: Deploy
 
 1. Transfer files to your server:
+
    ```bash
    rsync -avz --exclude node_modules . user@yourserver:/path/to/app
    ```
 
 2. Start the services:
+
    ```bash
    docker-compose up -d
    ```
@@ -286,6 +292,7 @@ services:
 ```
 
 View logs:
+
 ```bash
 # All logs
 docker-compose logs
@@ -333,7 +340,7 @@ services:
   redis:
     image: redis:alpine
     restart: unless-stopped
-    
+
   prerender:
     environment:
       - CACHE_BACKEND=redis
@@ -343,6 +350,7 @@ services:
 ### 2. CDN Integration
 
 Use Cloudflare or another CDN:
+
 1. Point domain to CDN
 2. Configure caching rules
 3. Exclude `/api/*` from caching
@@ -389,7 +397,7 @@ services:
     networks:
       - frontend
       - backend
-      
+
   prerender:
     networks:
       - backend
@@ -470,12 +478,14 @@ environment:
 ## Cost Estimation
 
 **VPS Requirements:**
+
 - CPU: 2 cores minimum
 - RAM: 2GB minimum (4GB recommended)
 - Storage: 20GB
 - Bandwidth: Varies by traffic
 
 **Estimated Monthly Costs:**
+
 - DigitalOcean: $12-24/month
 - AWS EC2: $15-30/month
 - Vultr: $10-20/month
@@ -484,6 +494,7 @@ environment:
 ## Summary
 
 Docker deployment is ideal when you need:
+
 - Full control over infrastructure
 - Dynamic content rendering
 - Custom configurations

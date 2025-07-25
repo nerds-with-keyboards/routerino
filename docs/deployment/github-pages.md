@@ -17,6 +17,7 @@ This method builds and deploys automatically on every push.
 #### Step 1: Configure Your Project
 
 1. Update `package.json` with your GitHub Pages URL:
+
    ```json
    {
      "scripts": {
@@ -31,9 +32,9 @@ This method builds and deploys automatically on every push.
 2. Update `vite.config.js` for the base path:
    ```javascript
    export default {
-     base: '/YOUR_REPO_NAME/',
+     base: "/YOUR_REPO_NAME/",
      // ... other config
-   }
+   };
    ```
 
 #### Step 2: Create GitHub Action
@@ -63,21 +64,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build
         run: npm run build:all
         env:
           NODE_ENV: production
-          
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -117,11 +118,13 @@ npm run build:all
 #### Step 2: Deploy to gh-pages Branch
 
 1. Install gh-pages utility:
+
    ```bash
    npm install --save-dev gh-pages
    ```
 
 2. Add deploy script to `package.json`:
+
    ```json
    {
      "scripts": {
@@ -177,10 +180,8 @@ GitHub Pages serves projects at `username.github.io/repository-name/`. You need 
 ```javascript
 // vite.config.js
 export default {
-  base: process.env.NODE_ENV === 'production' 
-    ? '/YOUR_REPO_NAME/' 
-    : '/',
-}
+  base: process.env.NODE_ENV === "production" ? "/YOUR_REPO_NAME/" : "/",
+};
 ```
 
 ### 2. Router Base Path
@@ -191,19 +192,20 @@ Ensure your Routerino routes work with the base path:
 // Consider the base path in your routes
 const routes = [
   {
-    path: '/',  // Will be /repo-name/ in production
+    path: "/", // Will be /repo-name/ in production
     element: <Home />,
   },
   {
-    path: '/about',  // Will be /repo-name/about
+    path: "/about", // Will be /repo-name/about
     element: <About />,
-  }
+  },
 ];
 ```
 
 ### 3. Asset Paths
 
 Use relative paths for assets:
+
 ```jsx
 // Good
 <img src="./logo.png" />
@@ -217,11 +219,13 @@ Use relative paths for assets:
 ### Using a Custom Domain
 
 1. Create `CNAME` file in your dist folder:
+
    ```
    yourdomain.com
    ```
 
 2. Update build scripts to preserve CNAME:
+
    ```json
    {
      "scripts": {
@@ -295,6 +299,7 @@ GitHub Pages will use your `404.html` for missing pages. Ensure your build gener
 ### Build Failures
 
 Common issues:
+
 - Node version mismatch (specify in workflow)
 - Missing dependencies (use `npm ci` not `npm install`)
 - Environment variables not set
@@ -327,7 +332,6 @@ Deploy preview and production:
 on:
   pull_request:
     branches: [main]
-
 # Deploy to username.github.io/repo-name/preview/pr-number
 ```
 
@@ -367,6 +371,7 @@ GitHub Pages is **completely free** for public repositories. Private repositorie
 ## Summary
 
 GitHub Pages is perfect for Routerino when:
+
 - You want free hosting
 - Your repository is public
 - You don't need server-side features

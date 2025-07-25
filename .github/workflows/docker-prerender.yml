@@ -5,18 +5,18 @@ on:
     branches:
       - main
     paths:
-      - 'prerender/**'
-      - '.github/workflows/docker-prerender.yml'
+      - "prerender/**"
+      - ".github/workflows/docker-prerender.yml"
   pull_request:
     paths:
-      - 'prerender/**'
-      - '.github/workflows/docker-prerender.yml'
+      - "prerender/**"
+      - ".github/workflows/docker-prerender.yml"
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Docker image tag'
+        description: "Docker image tag"
         required: false
-        default: 'latest'
+        default: "latest"
 
 env:
   REGISTRY: ghcr.io

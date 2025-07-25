@@ -46,7 +46,10 @@
     "test:react-versions": "node test-react-versions.js",
     "test:node-versions": "node test-node-versions.js",
     "prepublishOnly": "vite build",
-    "lint": "eslint --fix . --max-warnings=0"
+    "lint": "eslint --fix . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
@@ -57,8 +60,11 @@
     "eslint-plugin-react": "^7.37.5",
     "express": "^4.18.2",
     "globals": "^16.1.0",
+    "husky": "^9.1.7",
     "jsdom": "^26.1.0",
+    "lint-staged": "^16.1.2",
     "node-fetch": "^3.3.2",
+    "prettier": "^3.6.2",
     "prop-types": "^15.8.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -84,5 +90,14 @@
   "volta": {
     "node": "22.16.0",
     "npm": "10.9.2"
+  },
+  "lint-staged": {
+    "*.{js,jsx,mjs,cjs}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css,html}": [
+      "prettier --write"
+    ]
   }
 }

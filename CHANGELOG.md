@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2025-01-25
 
 ### Added
+
 - Static site generation via `routerino-build-static` command
 - Docker-based prerender server for SEO optimization
 - Comprehensive deployment guides for 6 major platforms
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Differential rendering (JS stripped for search engines, preserved for social media)
 
 ### Changed
+
 - Extended React peer dependencies to include v17
 - Improved error messages with actionable suggestions
 - Enhanced TypeScript definitions
@@ -27,15 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sitemap generation now creates robots.txt automatically
 
 ### Deprecated
+
 - `titlePrefix` and `titlePostfix` props (use `title` and `separator` instead)
 
 ### Fixed
+
 - Navigation bug where `new URL(target)` should be `new URL(target.href)`
 - JavaScript stripping incorrectly applied to social media bots
 - Docker networking issues in prerender configuration
 - File extension handling for JSX routes
 
 ### Security
+
 - Added domain whitelisting to prerender server
 - Implemented rate limiting in nginx configuration
 - Enhanced security headers in deployment examples
@@ -43,63 +48,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.10] - 2025-01-25
 
 ### Added
+
 - Test infrastructure with Vitest
 - React Testing Library integration
 - Comprehensive test coverage
 
 ### Changed
+
 - Updated dependencies
 - Improved build process
 
 ## [1.1.9] - 2024-05-23
 
 ### Changed
+
 - Upgraded packages and peer dependencies
 
 ## [1.1.8] - 2024-01-23
 
 ### Fixed
+
 - Bug fixes for new title prop functionality
 
 ## [1.1.7] - 2024-10-13
 
 ### Changed
+
 - Minor updates and optimizations
 
 ## [1.1.6] - 2024-10-13
 
 ### Changed
+
 - Package structure improvements
 
 ## [1.1.5] - 2024-10-08
 
 ### Changed
+
 - Build process enhancements
 
 ## [1.1.4] - 2024-10-08
 
 ### Fixed
+
 - Minor bug fixes
 
 ## [1.1.3] - 2024-10-08
 
 ### Changed
+
 - Code cleanup and optimizations
 
 ## [1.1.2] - 2024-10-08
 
 ### Changed
+
 - Documentation updates
 
 ## [1.1.1] - 2024-10-08
 
 ### Changed
+
 - Documentation updates
 - README improvements
 
 ## [1.1.0] - 2024-10-07
 
 ### Added
+
 - TypeScript types and exports
 - ESLint configuration
 - GitHub Actions for CI/CD
@@ -109,6 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - robots.txt generation with sitemap
 
 ### Changed
+
 - Improved click handling and link processing
 - Enhanced origin and host checking
 - Updated routing logic for same-host navigation
@@ -117,27 +135,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed defaultProps in favor of default arguments
 
 ### Fixed
+
 - Various error handling improvements
 - Code cleanup and reduced nesting
 
 ## [1.0.3] - 2023-10-31
 
 ### Changed
+
 - Updated og:title generation to limit max characters
 
 ## [1.0.2] - 2023-10-31
 
 ### Changed
+
 - Small update to og:title generation
 
 ## [1.0.1] - 2023-09-27
 
 ### Changed
+
 - Updated Node.js version limit
 
 ## [1.0.0] - 2023-09-27
 
 ### Added
+
 - Initial release of Routerino
 - Core routing functionality
 - SEO meta tag management

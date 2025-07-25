@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Nginx web server to serve the SPA

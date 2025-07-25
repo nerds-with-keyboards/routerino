@@ -15,6 +15,7 @@ Cloudflare Pages offers unlimited bandwidth, global CDN, and excellent performan
 #### Step 1: Prepare Your Repository
 
 1. Configure build scripts in `package.json`:
+
    ```json
    {
      "scripts": {
@@ -53,16 +54,19 @@ Cloudflare Pages offers unlimited bandwidth, global CDN, and excellent performan
 ### Method 2: Direct Upload (Wrangler CLI)
 
 1. Install Wrangler:
+
    ```bash
    npm install -g wrangler
    ```
 
 2. Build your project:
+
    ```bash
    npm run build:all
    ```
 
 3. Deploy:
+
    ```bash
    wrangler pages deploy dist --project-name=your-project-name
    ```
@@ -72,6 +76,7 @@ Cloudflare Pages offers unlimited bandwidth, global CDN, and excellent performan
 ### Method 3: Drag and Drop
 
 1. Build locally:
+
    ```bash
    npm run build:all
    ```
@@ -100,6 +105,7 @@ bucket = "./dist"
 Set in Pages project settings:
 
 - **Build variables**:
+
   ```
   NODE_VERSION=18
   NODE_ENV=production
@@ -157,9 +163,9 @@ Add edge computing capabilities with Workers:
 // functions/api/hello.js
 export async function onRequest(context) {
   return new Response(
-    JSON.stringify({ 
+    JSON.stringify({
       message: "Hello from Cloudflare Workers!",
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }),
     {
       headers: {
@@ -181,12 +187,12 @@ For more complex server-side logic:
 export async function onRequest({ request, env, params }) {
   // Handle dynamic routes
   const url = new URL(request.url);
-  
+
   // Add custom headers
-  if (url.pathname.startsWith('/api/')) {
+  if (url.pathname.startsWith("/api/")) {
     return fetch(env.API_URL + url.pathname);
   }
-  
+
   // Continue to static files
   return env.ASSETS.fetch(request);
 }
@@ -207,11 +213,11 @@ Or configure in Workers:
 // functions/_middleware.js
 export async function onRequest({ request, next }) {
   const response = await next();
-  
-  if (request.url.includes('/images/')) {
-    response.headers.set('Cache-Control', 'public, max-age=31536000');
+
+  if (request.url.includes("/images/")) {
+    response.headers.set("Cache-Control", "public, max-age=31536000");
   }
-  
+
   return response;
 }
 ```
@@ -249,6 +255,7 @@ Enable in project settings for faster deployments when multiple commits are push
 ### Real User Monitoring
 
 Monitor Core Web Vitals:
+
 1. Enable in Analytics settings
 2. View performance metrics
 3. Set up alerts for degradation
@@ -258,6 +265,7 @@ Monitor Core Web Vitals:
 ### Access Control
 
 Protect preview deployments:
+
 1. Go to Settings → "Access Policy"
 2. Configure authentication methods:
    - Cloudflare Access
@@ -267,6 +275,7 @@ Protect preview deployments:
 ### WAF (Web Application Firewall)
 
 Available with Cloudflare Pro:
+
 - DDoS protection (free tier included)
 - Bot protection
 - Custom firewall rules
@@ -323,14 +332,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-          
+
       - run: npm ci
       - run: npm run build:all
-      
+
       - uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -348,7 +357,6 @@ jobs:
   - Unlimited requests
   - Custom domains
   - SSL certificates
-  
 - **Pro**: $25/month
   - 5,000 builds/month
   - Advanced analytics
@@ -378,12 +386,13 @@ your-routerino-app/
 ### From Other Platforms
 
 1. **From Netlify**: Headers and redirects syntax is similar
-2. **From Vercel**: Replace vercel.json with _headers/_redirects
+2. **From Vercel**: Replace vercel.json with \_headers/\_redirects
 3. **From GitHub Pages**: Remove base path configuration
 
 ### Gradual Migration
 
 Use Cloudflare as CDN first:
+
 1. Keep existing hosting
 2. Add site to Cloudflare
 3. Test with Cloudflare proxy
@@ -392,6 +401,7 @@ Use Cloudflare as CDN first:
 ## Summary
 
 Cloudflare Pages excels for Routerino with:
+
 - Unlimited bandwidth (even free tier)
 - Global edge network (300+ locations)
 - Excellent performance

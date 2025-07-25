@@ -1,5 +1,5 @@
-import React from 'react';
-import Layout from '../components/Layout.jsx';
+import React from "react";
+import Layout from "../components/Layout.jsx";
 
 const Examples = () => {
   return (
@@ -12,7 +12,8 @@ const Examples = () => {
           <h2>Basic Blog</h2>
           <p>A simple blog with dynamic routes and SEO optimization.</p>
           <div className="code-example">
-            <pre><code>{`// routes.js
+            <pre>
+              <code>{`// routes.js
 const routes = [
   {
     path: '/',
@@ -68,15 +69,19 @@ function BlogPost() {
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
     </article>
   );
-}`}</code></pre>
+}`}</code>
+            </pre>
           </div>
         </section>
 
         <section className="example-section">
           <h2>E-commerce Product Pages</h2>
-          <p>Product pages with structured data and social sharing optimization.</p>
+          <p>
+            Product pages with structured data and social sharing optimization.
+          </p>
           <div className="code-example">
-            <pre><code>{`const routes = [
+            <pre>
+              <code>{`const routes = [
   {
     path: '/products/:id',
     element: <ProductPage />,
@@ -143,7 +148,8 @@ function ProductPage() {
   }, [id]);
   
   return product ? <ProductDisplay product={product} /> : <Loading />;
-}`}</code></pre>
+}`}</code>
+            </pre>
           </div>
         </section>
 
@@ -151,7 +157,8 @@ function ProductPage() {
           <h2>Multi-language Site</h2>
           <p>Supporting multiple languages with proper SEO tags.</p>
           <div className="code-example">
-            <pre><code>{`// Separate routes for each language
+            <pre>
+              <code>{`// Separate routes for each language
 const enRoutes = [
   {
     path: '/',
@@ -178,7 +185,8 @@ const esRoutes = [
 ];
 
 // Combine routes based on detected language
-const routes = [...enRoutes, ...esRoutes];`}</code></pre>
+const routes = [...enRoutes, ...esRoutes];`}</code>
+            </pre>
           </div>
         </section>
 
@@ -186,7 +194,8 @@ const routes = [...enRoutes, ...esRoutes];`}</code></pre>
           <h2>Protected Routes</h2>
           <p>Implementing authentication with Routerino.</p>
           <div className="code-example">
-            <pre><code>{`// Create a wrapper component for protected routes
+            <pre>
+              <code>{`// Create a wrapper component for protected routes
 function ProtectedRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -225,7 +234,8 @@ const routes = [
     element: <Login />,
     title: 'Login'
   }
-];`}</code></pre>
+];`}</code>
+            </pre>
           </div>
         </section>
 
@@ -233,7 +243,8 @@ const routes = [
           <h2>Static Site Generation</h2>
           <p>Full static site generation setup.</p>
           <div className="code-example">
-            <pre><code>{`// vite.config.js
+            <pre>
+              <code>{`// vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -262,7 +273,8 @@ export default defineConfig({
 // 2. Build command: npm run build:static
 // 3. Publish directory: dist
 // 4. Add _redirects file for client-side routing:
-/*    /index.html   200`}</code></pre>
+/*    /index.html   200`}</code>
+            </pre>
           </div>
         </section>
 
@@ -270,7 +282,8 @@ export default defineConfig({
           <h2>Integration with State Management</h2>
           <p>Using Routerino with Redux, Zustand, or Context API.</p>
           <div className="code-example">
-            <pre><code>{`// With React Context
+            <pre>
+              <code>{`// With React Context
 const AppContext = createContext();
 
 function AppProvider({ children }) {
@@ -309,17 +322,23 @@ function Profile() {
   }, [user]);
   
   return <ProfileView user={user} />;
-}`}</code></pre>
+}`}</code>
+            </pre>
           </div>
         </section>
 
         <section className="cta-section">
           <h2>Need More Examples?</h2>
-          <p>Check out our GitHub repository for more complete examples and starter templates.</p>
-          <a href="https://github.com/nerds-with-keyboards/routerino/tree/main/examples" 
-             className="btn btn-primary"
-             target="_blank"
-             rel="noopener noreferrer">
+          <p>
+            Check out our GitHub repository for more complete examples and
+            starter templates.
+          </p>
+          <a
+            href="https://github.com/nerds-with-keyboards/routerino/tree/main/examples"
+            className="btn btn-primary"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             View on GitHub
           </a>
         </section>

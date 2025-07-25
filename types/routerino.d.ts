@@ -69,7 +69,10 @@ export interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps);
   static getDerivedStateFromError(error: Error): ErrorBoundaryState;
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void;
