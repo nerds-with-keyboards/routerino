@@ -2,53 +2,106 @@ import React from "react";
 
 // Simple page components
 const HomePage = () => (
-  <div>
-    <h1>Welcome to Routerino!</h1>
-    <p>This is a basic example showing simple routing with Routerino.</p>
-    <nav>
-      <a href="/about">About</a> | <a href="/blog">Blog</a> |{" "}
-      <a href="/contact">Contact</a>
-    </nav>
+  <div className="prose lg:prose-xl mx-auto">
+    <h1 className="text-4xl font-bold text-primary">Welcome to Routerino!</h1>
+    <p className="text-lg">
+      This is a basic example showing simple routing with Routerino.
+    </p>
+    <div className="flex gap-4 mt-6">
+      <a href="/about" className="btn btn-primary">
+        About
+      </a>
+      <a href="/blog" className="btn btn-secondary">
+        Blog
+      </a>
+      <a href="/contact" className="btn btn-accent">
+        Contact
+      </a>
+    </div>
   </div>
 );
 
 const AboutPage = () => (
-  <div>
-    <h1>About Us</h1>
-    <p>We love building fast, SEO-friendly React applications!</p>
-    <a href="/">← Back to Home</a>
+  <div className="card bg-base-200 shadow-xl max-w-2xl mx-auto">
+    <div className="card-body">
+      <h1 className="card-title text-3xl text-primary">About Us</h1>
+      <p>We love building fast, SEO-friendly React applications!</p>
+      <div className="card-actions justify-start mt-4">
+        <a href="/" className="btn btn-ghost">
+          ← Back to Home
+        </a>
+      </div>
+    </div>
   </div>
 );
 
 const BlogPage = () => (
-  <div>
-    <h1>Blog</h1>
-    <p>Check out our latest posts:</p>
-    <ul>
-      <li>
-        <a href="/blog/getting-started">Getting Started with Routerino</a>
-      </li>
-      <li>
-        <a href="/blog/seo-tips">SEO Tips for React Apps</a>
-      </li>
-    </ul>
-    <a href="/">← Back to Home</a>
+  <div className="max-w-2xl mx-auto">
+    <h1 className="text-3xl font-bold mb-4">Blog</h1>
+    <p className="mb-6">Check out our latest posts:</p>
+    <div className="space-y-4">
+      <a
+        href="/blog/getting-started"
+        className="card bg-base-100 shadow-md hover:shadow-lg transition-shadow block"
+      >
+        <div className="card-body">
+          <h2 className="card-title">Getting Started with Routerino</h2>
+        </div>
+      </a>
+      <a
+        href="/blog/seo-tips"
+        className="card bg-base-100 shadow-md hover:shadow-lg transition-shadow block"
+      >
+        <div className="card-body">
+          <h2 className="card-title">SEO Tips for React Apps</h2>
+        </div>
+      </a>
+    </div>
+    <div className="mt-8">
+      <a href="/" className="btn btn-ghost">
+        ← Back to Home
+      </a>
+    </div>
   </div>
 );
 
 const BlogPost = ({ routerino }) => (
-  <div>
-    <h1>Blog Post: {routerino.params.slug}</h1>
-    <p>This is a dynamic route. The slug is: {routerino.params.slug}</p>
-    <a href="/blog">← Back to Blog</a>
+  <div className="card bg-base-100 shadow-xl max-w-2xl mx-auto">
+    <div className="card-body">
+      <h1 className="card-title text-2xl">
+        Blog Post: {routerino.params.slug}
+      </h1>
+      <div className="badge badge-primary badge-lg">
+        {routerino.params.slug}
+      </div>
+      <p className="mt-4">
+        This is a dynamic route. The slug is: {routerino.params.slug}
+      </p>
+      <div className="card-actions justify-start mt-6">
+        <a href="/blog" className="btn btn-ghost">
+          ← Back to Blog
+        </a>
+      </div>
+    </div>
   </div>
 );
 
 const ContactPage = () => (
-  <div>
-    <h1>Contact Us</h1>
-    <p>Email us at: hello@example.com</p>
-    <a href="/">← Back to Home</a>
+  <div className="hero min-h-[50vh]">
+    <div className="hero-content text-center">
+      <div className="max-w-md">
+        <h1 className="text-4xl font-bold">Contact Us</h1>
+        <p className="py-6">
+          Email us at:{" "}
+          <a href="mailto:hello@example.com" className="link link-primary">
+            hello@example.com
+          </a>
+        </p>
+        <a href="/" className="btn btn-primary">
+          ← Back to Home
+        </a>
+      </div>
+    </div>
   </div>
 );
 
