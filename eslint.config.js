@@ -8,8 +8,7 @@ export default [
     ignores: [
       "dist/*",
       "node_modules/*",
-      "example-vite-static/dist/*",
-      "example/dist/*",
+      "docs/*",
       "demo-prerender/dist/*",
       "demo-static/dist/*",
       "coverage/*",
