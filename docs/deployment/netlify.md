@@ -2,14 +2,13 @@
 
 Netlify is an excellent choice for static Routerino sites with automatic deployments, free SSL, and a generous free tier.
 
-## ⚠️ Important: Avoid Netlify's Prerendering
+## ⚠️ Important: Netlify's Prerendering (beta)
 
-**DO NOT** enable Netlify's built-in prerendering service (beta). It's unreliable and often returns 500 errors for search engine bots. Instead, use Routerino's static generation approach which provides:
+Beware Netlify's built-in prerendering service. As of mid-2025 it appears to frequently return 500 errors for search engine bots, at least in some cases. Anything less than 99.999% uptime is not acceptable for serious SEO. Instead, use Routerino's static generation approach which provides:
 
 - 100% reliable static HTML files
 - Better performance (no dynamic rendering)
 - Full control over meta tags and SEO
-- No additional costs
 
 If you've already enabled Netlify's prerendering:
 

@@ -2,13 +2,41 @@
 
 > A lightweight, SEO-optimized React router for modern websites and applications
 
-Routerino is a zero-dependency router tailored for [React](https://reactjs.org/) [client-side rendered (CSR)](https://developers.google.com/web/updates/2019/02/rendering-on-the-web#csr) websites - perfect for modern web architectures like [JAMStack](https://jamstack.org/) or simple [Vite.js](https://vitejs.dev/)-React sites. It supports [Prerender](https://github.com/prerender/prerender) tags for SEO-friendly redirects and HTTP status codes, and can **automatically generate a sitemap.xml** file from your routes. Routerino simplifies client-side routing in React apps while providing handy SEO optimizations out of the box - a **minimalist router with SEO benefits**.
+Routerino is a zero-dependency router for React (17/18/19) designed for optimal SEO performance in client-side rendered applications. Built for modern web architectures like JAMStack applications and Vite-powered React sites, it provides route & meta tag management, sitemap generation, and static site generation or [prerender](https://github.com/prerender/prerender) support to ensure your React applications are fully discoverable by search engines.
 
-As a developer, I've always been passionate about creating user-friendly applications and websites. However, I've faced challenges in routing and SEO optimization for React client-side rendered (CSR) websites. For years, the de facto routing monoculture has stifled diversity and innovation in the React ecosystem. Moreover, keeping up with the frequent API churn has been time-consuming and frustrating. Driven by these challenges, I set out to create Routerino — a lightweight, zero-dependency router that simplifies routing and offers excellent SEO benefits.
+## Table of Contents
 
-I also wanted the ability to steer clear of the JSX-soup that has become prevalent in the React ecosystem. HTML is a powerful tool and it's often enough. Attempts to abstract away the web browser have led to excessive complexity, an endless black hole of bugs, and poor developer experience and delivery speed. If you've encountered such issues, you know exactly what I mean. By using plain HTML in JSX, we can build applications with simplicity. We shouldn't use this as an excuse to introduce needless complexity.
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Props](#props-arguments)
+  - [Get route parameters](#get-route-parameters-and-the-current-route-and-updating-head-tags)
+  - [updateHeadTag](#updateheadtag)
+- [Best Practices](#routerino-best-practices)
+- [Generating a Sitemap](#generating-a-sitemap-from-routes)
+- [Static Site Generation](#static-site-generation)
+- [Deployment Guides](#deployment-guides)
+- [Prerender Server (Docker)](#prerender-server-docker)
+- [How-to Guides & Examples](#how-to-guides--example-code)
+  - [Starting a New Project](#starting-a-new-react-project-with-routerino)
+  - [Full React Example](#full-react-example)
+  - [Basic Example](#basic-example)
+- [ErrorBoundary Component](#errorboundary-component)
+- [Vendoring Routerino](#vendoring-routerino)
+- [Additional Resources](#additional-resources)
+- [Contributions](#contributions)
+- [License](#license)
 
-Here's a quick example of what using Routerino looks like:
+## Why Routerino?
+
+- **SEO-First Design**: Automatic meta tag management, sitemap generation, and prerender support ensure maximum search engine visibility
+- **Zero Dependencies**: Keeps bundle size minimal and reduces supply-chain vulnerabilities
+- **Simple API**: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
+- **Static Site Generation**: Build-tool agnostic static HTML generation for improved performance and SEO
+- **Production Ready**: Includes Docker-based prerender server for easy deployments
+- **Single File Core**: The entire routing logic fits in one file (~420 lines), making it easy to understand and customize
+
+## Quick Start
 
 ```jsx
 <Routerino
@@ -36,13 +64,11 @@ Here's a quick example of what using Routerino looks like:
 />
 ```
 
-For more details on getting started, see the [Installation](#installation) and [Usage](#usage) sections below.
+This simple configuration automatically handles routing, meta tags, and SEO optimization for your React application.
 
 ## Features
 
-Routerino empowers developers to define and manage routing and SEO concerns in one centralized location. This approach eliminates duplication when creating sitemaps and setting page metadata, such as descriptions or open-graph tags. The core of Routerino fits in a single file, making it [easy to vendor](#vendoring-routerino) if that suits your needs.
-
-Key capabilities:
+### Core Features
 
 - Routing
   - Easy integration of simple routing for your React app (supports React v18, older versions have not yet been tested)
@@ -413,27 +439,40 @@ Example package.json build script: `"build": "vite build && routerino-build-site
 
 ## Static Site Generation
 
-Routerino includes tools to generate static HTML files for each route, improving SEO and initial page load performance. There are two methods available:
+Routerino includes a build-tool agnostic static site generator that creates HTML files for each route, improving SEO and initial page load performance.
 
-### Method 1: Standalone Build Script
+### How It Works
 
-Use the `routerino-build-static` command to generate static HTML files:
+The `routerino-build-static` command is a **post-build step** that works with ANY build tool (Vite, Webpack, Parcel, etc.):
+
+1. **First**: Build your app with your preferred build tool (`npm run build`)
+2. **Then**: Run `routerino-build-static` to generate static HTML files
 
 ```sh
+# After your build completes (creates dist/index.html with bundled JS/CSS):
 routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://example.com
 ```
 
 **Parameters:**
 
 - `routesFile` - Path to your routes configuration file (supports .js, .jsx, .ts, .tsx)
-- `outputDir` - Directory where static HTML files will be generated
-- `template` - HTML template file to use as the base
+- `outputDir` - Directory where static HTML files will be generated (usually your build output)
+- `template` - Your **built** HTML file with bundled assets (e.g., dist/index.html)
 - `baseUrl` - Base URL for meta tags (optional but recommended for SEO)
 
-Add it to your build process in package.json:
+### Build Tool Examples
+
+Works with any build tool:
 
 ```json
-"build": "vite build && routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://example.com"
+// Vite
+"build": "vite build && routerino-build-static routesFile=src/routes.js outputDir=dist template=dist/index.html"
+
+// Webpack
+"build": "webpack && routerino-build-static routesFile=src/routes.js outputDir=build template=build/index.html"
+
+// Parcel
+"build": "parcel build index.html && routerino-build-static routesFile=src/routes.js outputDir=dist template=dist/index.html"
 ```
 
 ### What Gets Generated
@@ -536,8 +575,8 @@ See the [prerender directory](./prerender) for complete documentation, examples,
 ## How-to Guides & Example Code
 
 1. [Starting a New React Project with Routerino](#starting-a-new-react-project-with-routerino)
-2. [Basic Example](#basic-example)
-3. [Full React Example](#full-react-example)
+2. [Full React Example](#full-react-example)
+3. [Basic Example](#basic-example)
 
 ### Starting a New React Project with Routerino
 
@@ -584,65 +623,6 @@ npm install routerino --save-dev
 This command will install the latest version of Routerino and save it to your `package.json` file under the `devDependencies` section.
 
 With these steps, you'll have a new React project set up with Vite as the build tool and Routerino installed as a development dependency. You can now start building your application with React & Routerino.
-
-### Basic Example
-
-Somewhere in your project, such as in your `src/App.jsx` file, import Routerino and add it to your code. Define your routes and configure the site title.
-
-```jsx
-import React from "react";
-import Routerino from "routerino";
-
-// example pages
-import HomePage from "./HomePage";
-import AboutPage from "./AboutPage";
-import ContactPage from "./ContactPage";
-
-const routes = [
-  {
-    path: "/",
-    element: <HomePage />,
-    title: "Home",
-    description: "Welcome to my website!",
-  },
-  {
-    path: "/about/",
-    element: <AboutPage />,
-    title: "About",
-    description: "Learn more about us.",
-  },
-  {
-    path: "/contact/",
-    element: <ContactPage />,
-    title: "Contact",
-    description: "Get in touch with us.",
-  },
-];
-
-const App = () => (
-  <main>
-    <nav>
-      <a href="/">Home</a>
-    </nav>
-
-    <Routerino
-      title="Foo.com"
-      routes={routes}
-      notFoundTitle="Sorry, but this page does not exist."
-      errorTitle="Yikes! Something went wrong."
-    />
-
-    <footer>
-      <p>
-        Learn more <a href="/about/">about us</a> or{" "}
-        <a href="/contact/">contact us</a> today.
-      </p>
-    </footer>
-  </main>
-);
-
-export default App;
-```
 
 ### Full React Example
 
@@ -706,6 +686,65 @@ const App = () => (
 );
 
 render(<App />, document.getElementById("root"));
+```
+
+### Basic Example
+
+Somewhere in your project, such as in your `src/App.jsx` file, import Routerino and add it to your code. Define your routes and configure the site title.
+
+```jsx
+import React from "react";
+import Routerino from "routerino";
+
+// example pages
+import HomePage from "./HomePage";
+import AboutPage from "./AboutPage";
+import ContactPage from "./ContactPage";
+
+const routes = [
+  {
+    path: "/",
+    element: <HomePage />,
+    title: "Home",
+    description: "Welcome to my website!",
+  },
+  {
+    path: "/about/",
+    element: <AboutPage />,
+    title: "About",
+    description: "Learn more about us.",
+  },
+  {
+    path: "/contact/",
+    element: <ContactPage />,
+    title: "Contact",
+    description: "Get in touch with us.",
+  },
+];
+
+const App = () => (
+  <main>
+    <nav>
+      <a href="/">Home</a>
+    </nav>
+
+    <Routerino
+      title="Foo.com"
+      routes={routes}
+      notFoundTitle="Sorry, but this page does not exist."
+      errorTitle="Yikes! Something went wrong."
+    />
+
+    <footer>
+      <p>
+        Learn more <a href="/about/">about us</a> or{" "}
+        <a href="/contact/">contact us</a> today.
+      </p>
+    </footer>
+  </main>
+);
+
+export default App;
 ```
 
 ## ErrorBoundary Component
