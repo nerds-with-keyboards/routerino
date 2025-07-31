@@ -193,12 +193,12 @@ export default function Routerino({
   // Deprecation warnings
   if (titlePrefix !== "") {
     console.warn(
-      "Routerino: titlePrefix is deprecated and will be removed in v2.0. Use the title and separator props instead."
+      "Routerino: titlePrefix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
     );
   }
   if (titlePostfix !== "") {
     console.warn(
-      "Routerino: titlePostfix is deprecated and will be removed in v2.0. Use the title and separator props instead."
+      "Routerino: titlePostfix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
     );
   }
 
@@ -351,16 +351,19 @@ export default function Routerino({
 
     // START 404 HANDLING
     if (!match) {
-      console.group("⚠️ Routerino 404 - No matching route");
-      console.warn(`Requested path: ${currentRoute}`);
-      console.warn(
-        "Available routes:",
-        routes.map((r) => r.path)
-      );
-      console.warn(
-        "Consider adding a catch-all route or checking your route paths"
-      );
-      console.groupEnd();
+      if (
+        debug ||
+        window.location.host === "localhost" ||
+        window.location.host.includes("localhost:")
+      ) {
+        console.group("⚠️ Routerino 404 - No matching route");
+        console.warn(`Requested path: ${currentRoute}`);
+        console.warn(
+          "Available routes:",
+          routes.map((r) => r.path)
+        );
+        console.groupEnd();
+      }
 
       document.title = notFoundTitleString;
       if (usePrerenderTags) {

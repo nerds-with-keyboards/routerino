@@ -5,28 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2025-01-25
+## [1.2.0] - 2025-07-31
 
 ### Added
 
 - Static site generation via `routerino-build-static` command
-- Docker-based prerender server for SEO optimization
-- Comprehensive deployment guides for 6 major platforms
-- Demo sites showcasing static and prerender deployment strategies
-- Support for React 17 (previously 18+ only)
+- Support for React 17 (previously 18/19 only)
 - ErrorBoundary component export for custom error handling
-- TypeScript support for route files (.ts, .tsx)
-- Automatic robots.txt generation with sitemap command
-- Health check endpoints for prerender server
-- Differential rendering (JS stripped for search engines, preserved for social media)
 
 ### Changed
 
 - Extended React peer dependencies to include v17
 - Improved error messages with actionable suggestions
-- Enhanced TypeScript definitions
-- Better meta tag handling for social media platforms
-- Sitemap generation now creates robots.txt automatically
+- Updated TypeScript definitions
 
 ### Deprecated
 
@@ -35,28 +26,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Navigation bug where `new URL(target)` should be `new URL(target.href)`
-- JavaScript stripping incorrectly applied to social media bots
-- Docker networking issues in prerender configuration
-- File extension handling for JSX routes
 
 ### Security
 
 - Added domain whitelisting to prerender server
-- Implemented rate limiting in nginx configuration
 - Enhanced security headers in deployment examples
 
-## [1.1.10] - 2025-01-25
+## [1.1.10] - 2025-07-25
 
 ### Added
 
 - Test infrastructure with Vitest
 - React Testing Library integration
 - Comprehensive test coverage
+- Automatic robots.txt generation with sitemap command
 
 ### Changed
 
 - Updated dependencies
 - Improved build process
+- Sitemap generation now creates robots.txt automatically if not present
 
 ## [1.1.9] - 2024-05-23
 

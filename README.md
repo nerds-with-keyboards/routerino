@@ -4,6 +4,15 @@
 
 Routerino is a zero-dependency router for React (17/18/19) designed for optimal SEO performance in client-side rendered applications. Built for modern web architectures like JAMStack applications and Vite-powered React sites, it provides route & meta tag management, sitemap generation, and static site generation or [prerender](https://github.com/prerender/prerender) support to ensure your React applications are fully discoverable by search engines.
 
+## Why Routerino?
+
+- **SEO-First Design**: Automatic meta tag management, sitemap generation, and prerender support ensure maximum search engine visibility
+- **Zero Dependencies**: Keeps bundle size minimal and reduces supply-chain vulnerabilities
+- **Simple API**: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
+- **Static Site Generation**: Build-tool agnostic static HTML generation for improved performance and SEO
+- **Production Ready**: Includes Docker-based prerender server for easy deployments
+- **Single File Core**: The entire routing logic fits in one file (~420 lines), making it easy to understand and customize
+
 ## Table of Contents
 
 - [Features](#features)
@@ -26,15 +35,6 @@ Routerino is a zero-dependency router for React (17/18/19) designed for optimal 
 - [Additional Resources](#additional-resources)
 - [Contributions](#contributions)
 - [License](#license)
-
-## Why Routerino?
-
-- **SEO-First Design**: Automatic meta tag management, sitemap generation, and prerender support ensure maximum search engine visibility
-- **Zero Dependencies**: Keeps bundle size minimal and reduces supply-chain vulnerabilities
-- **Simple API**: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
-- **Static Site Generation**: Build-tool agnostic static HTML generation for improved performance and SEO
-- **Production Ready**: Includes Docker-based prerender server for easy deployments
-- **Single File Core**: The entire routing logic fits in one file (~420 lines), making it easy to understand and customize
 
 ## Quick Start
 
@@ -68,10 +68,8 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
 
 ## Features
 
-### Core Features
-
 - Routing
-  - Easy integration of simple routing for your React app (supports React v18, older versions have not yet been tested)
+  - Easy integration of simple routing for your React app (supports React versions 17, 18, and 19)
   - Zero dependencies for lighter, more maintainable projects
   - No special link components required, works great for Markdown-based pages and semantic HTML
 
@@ -88,8 +86,6 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
   - Support for sharing and social preview metadata
   - Snappy page transitions with automatic scroll reset, eliminating the jarring experience of landing mid-page when navigating
 
-Routerino is designed to work with modern browsers and has been tested with the latest versions of Chrome, Firefox, Safari, and Edge.
-
 ## Installation
 
 Ensure that you have React and React DOM installed in your project as peer dependencies. To add as a dev dependency:
@@ -103,8 +99,8 @@ npm i routerino -D
 Routerino supports:
 
 - **React 17, 18, and 19** - All versions are tested and supported
-- **Preact** - Compatible via `@preact/compat`
-- **Node.js 18+** - Tested on Node.js 18, 20, and 22
+- **Preact** - Compatible via `@preact/compat` (needs verification)
+- **Node.js 18+** - Tested on Node.js 18, 20, and 22. Can run on earlier versions if we drop tests.
 
 ## Usage
 
@@ -124,7 +120,7 @@ Here's a quick example of using Routerino in your React application:
 />
 ```
 
-Links are just regular HTML anchor tags. No need to use special `<Link>` components and you can handle styling however you wish. For example: `<a href="/some-page/>a link</a>`
+Links are just regular HTML anchor tags. No need to use special `<Link>` components and you can handle styling however you wish. For example: `<a href="/some-page/">a link</a>`
 
 See [props](#props-arguments) for full explanations and [example code](#how-to-guides--example-code) for more complete code samples.
 
@@ -170,7 +166,7 @@ See [RouteConfig props](#routeconfig-props) for more details. At a minimum a pat
 
 ##### `separator`: string;
 
-A string to separate the page title from the site title. The default is `|` (a pipe character w/space around). Set this to customize the separator.
+A string to separate the page title from the site title. The default is `" | "` (a pipe character w/space around). Set this to customize the separator.
 
 ##### `notFoundTemplate`: element;
 
@@ -510,68 +506,6 @@ The generated `/about.html` will include:
 
 This provides excellent SEO while maintaining the benefits of a React SPA.
 
-## Deployment Guides
-
-Comprehensive deployment guides are available for various platforms:
-
-- [**Overview & Platform Comparison**](./docs/deployment/README.md)
-- [Netlify](./docs/deployment/netlify.md) - Static hosting with automatic deployments
-- [Vercel](./docs/deployment/vercel.md) - Edge network with serverless functions
-- [GitHub Pages](./docs/deployment/github-pages.md) - Free hosting from your repository
-- [Cloudflare Pages](./docs/deployment/cloudflare-pages.md) - Unlimited bandwidth with Workers
-- [Docker](./docs/deployment/docker.md) - Self-hosted with prerendering
-- [AWS](./docs/deployment/aws.md) - S3/CloudFront or ECS options
-
-## Prerender Server (Docker)
-
-Routerino includes a production-ready Docker container for running your own prerender server. This allows you to render your JavaScript application for search engines and social media bots.
-
-### Quick Start
-
-```bash
-# Using the included Docker setup
-# Copy the prerender directory from node_modules
-cp -r node_modules/routerino/prerender ./prerender
-cd prerender
-docker-compose up -d
-
-# Or build and run directly
-docker build -t routerino-prerender .
-docker run -p 3000:3000 -e ALLOWED_DOMAINS="yourdomain.com,*.yourdomain.com" routerino-prerender
-```
-
-### Configuration
-
-The prerender server is configured via environment variables:
-
-- `ALLOWED_DOMAINS` - Comma-separated list of allowed domains (empty = allow all)
-- `PRERENDER_USER_AGENTS` - Who to prerender for (default: `all`)
-- `STRIP_JS_USER_AGENTS` - Who to strip JS for (default: search engines only, preserves JS for social media bots)
-- `CACHE_MAXAGE` - Cache TTL in seconds (default: 3600)
-- `PORT` - Port to listen on (default: 3000)
-- `LOG_REQUESTS` - Enable request logging (default: true)
-
-### Web Server Integration
-
-Configure your web server to route crawler requests to the prerender service:
-
-**Nginx example:**
-
-```nginx
-location @prerender {
-    set $prerender 0;
-    if ($http_user_agent ~* "googlebot|bingbot|facebookexternalhit|twitterbot|whatsapp") {
-        set $prerender 1;
-    }
-    if ($prerender = 1) {
-        rewrite .* /https://$host$request_uri? break;
-        proxy_pass http://localhost:3000;
-    }
-}
-```
-
-See the [prerender directory](./prerender) for complete documentation, examples, and deployment guides.
-
 ## How-to Guides & Example Code
 
 1. [Starting a New React Project with Routerino](#starting-a-new-react-project-with-routerino)
@@ -626,42 +560,12 @@ With these steps, you'll have a new React project set up with Vite as the build 
 
 ### Full React Example
 
-This example includes the full React configuration. It might take the place of `src/main.jsx` or an `index.js` file. Also suitable for use in a code-pen.
+This example includes the full React configuration. It might take the place of `src/main.jsx` or an `index.js` file.
 
 ```jsx
 import React from "react";
 import { render } from "react-dom";
 import Routerino from "routerino";
-
-const title = "Example.com";
-const routes = [
-  {
-    path: "/",
-    element: <p>Welcome to Home</p>,
-    title: "Home",
-    description: "Welcome to my website!",
-  },
-  {
-    path: "/about/",
-    element: <p>About us...</p>,
-    title: "About",
-    description: "Learn more about us.",
-  },
-  {
-    path: "/contact/",
-    element: (
-      <div>
-        <h1>Contact Us</h1>
-        <p>
-          Please <a href="mailto:user@example.com">send us an email</a> at
-          user@example.com
-        </p>
-      </div>
-    ),
-    title: "Contact",
-    description: "Get in touch with us.",
-  },
-];
 
 const App = () => (
   <main>
@@ -670,10 +574,37 @@ const App = () => (
     </nav>
 
     <Routerino
-      {...{
-        title,
-        routes,
-      }}
+      title="Example.com"
+      notFoundTitle="Sorry, but this page does not exist."
+      errorTitle="Yikes! Something went wrong."
+      routes={[
+        {
+          path: "/",
+          element: <p>Welcome to Home</p>,
+          title: "Home",
+          description: "Welcome to my website!",
+        },
+        {
+          path: "/about/",
+          element: <p>About us...</p>,
+          title: "About",
+          description: "Learn more about us.",
+        },
+        {
+          path: "/contact/",
+          element: (
+            <div>
+              <h1>Contact Us</h1>
+              <p>
+                Please <a href="mailto:user@example.com">send us an email</a> at
+                user@example.com
+              </p>
+            </div>
+          ),
+          title: "Contact",
+          description: "Get in touch with us.",
+        },
+      ]}
     />
 
     <footer>
@@ -688,68 +619,9 @@ const App = () => (
 render(<App />, document.getElementById("root"));
 ```
 
-### Basic Example
-
-Somewhere in your project, such as in your `src/App.jsx` file, import Routerino and add it to your code. Define your routes and configure the site title.
-
-```jsx
-import React from "react";
-import Routerino from "routerino";
-
-// example pages
-import HomePage from "./HomePage";
-import AboutPage from "./AboutPage";
-import ContactPage from "./ContactPage";
-
-const routes = [
-  {
-    path: "/",
-    element: <HomePage />,
-    title: "Home",
-    description: "Welcome to my website!",
-  },
-  {
-    path: "/about/",
-    element: <AboutPage />,
-    title: "About",
-    description: "Learn more about us.",
-  },
-  {
-    path: "/contact/",
-    element: <ContactPage />,
-    title: "Contact",
-    description: "Get in touch with us.",
-  },
-];
-
-const App = () => (
-  <main>
-    <nav>
-      <a href="/">Home</a>
-    </nav>
-
-    <Routerino
-      title="Foo.com"
-      routes={routes}
-      notFoundTitle="Sorry, but this page does not exist."
-      errorTitle="Yikes! Something went wrong."
-    />
-
-    <footer>
-      <p>
-        Learn more <a href="/about/">about us</a> or{" "}
-        <a href="/contact/">contact us</a> today.
-      </p>
-    </footer>
-  </main>
-);
-
-export default App;
-```
-
 ## ErrorBoundary Component
 
-Routerino exports an `ErrorBoundary` component that you can use in your own applications to catch and handle React component errors gracefully.
+Routerino exports an `ErrorBoundary` component that you can use in your own applications to catch and handle React component errors gracefully. Fun fact: error boundary components are one of the last cases that still require using a React Class! Since this library aims to include everything you need to build a multiple page React SPA, and enable users to be able to know which component had an issue without confusing it with a Routerino bug.
 
 ### Import
 
@@ -825,7 +697,7 @@ By vendoring Routerino, you have full control over the code and can make any nec
 
 ## Additional Resources
 
-There is a lot of information on SEO and social previews. Here are some sources for further reading on best-practices.
+Here are some sources for further reading on SEO best-practices.
 
 - [Apple's best practices for link previews](https://developer.apple.com/library/archive/technotes/tn2444/_index.html)
 - [Use Open Graph tags](https://ahrefs.com/blog/open-graph-meta-tags/)

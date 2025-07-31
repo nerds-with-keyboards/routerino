@@ -1,8 +1,0 @@
-node_modules
-dist
-.git
-.gitignore
-README.md
-.dockerignore
-docker-compose.yml
-.env
