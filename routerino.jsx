@@ -190,18 +190,6 @@ export default function Routerino({
   touchIconUrl = null,
   debug = false,
 }) {
-  // Deprecation warnings
-  if (titlePrefix !== "") {
-    console.warn(
-      "Routerino: titlePrefix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
-    );
-  }
-  if (titlePostfix !== "") {
-    console.warn(
-      "Routerino: titlePostfix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
-    );
-  }
-
   // Pre-compute title strings
   const errorTitleString = `${titlePrefix}${errorTitle}${
     titlePostfix || `${separator}${title}`
@@ -209,23 +197,38 @@ export default function Routerino({
   const notFoundTitleString = `${titlePrefix}${notFoundTitle}${
     titlePostfix || `${separator}${title}`
   }`;
-
-  // Development-only checks
-  if (process.env.NODE_ENV !== "production") {
-    // Check for duplicate routes
-    const paths = routes.map((r) => r.path);
-    const duplicates = paths.filter(
-      (path, index) => paths.indexOf(path) !== index
-    );
-    if (duplicates.length > 0) {
-      console.warn("⚠️ Routerino: Duplicate route paths detected:", [
-        ...new Set(duplicates),
-      ]);
-      console.warn("The first matching route will be used");
-    }
-  }
-
   try {
+    // Development-only checks
+    if (
+      debug ||
+      window.location.host === "localhost" ||
+      window.location.host.includes("localhost:")
+    ) {
+      // Deprecation warnings
+      if (titlePrefix !== "") {
+        console.warn(
+          "Routerino: titlePrefix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
+        );
+      }
+      if (titlePostfix !== "") {
+        console.warn(
+          "Routerino: titlePostfix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
+        );
+      }
+
+      // Check for duplicate routes
+      const paths = routes.map((r) => r.path);
+      const duplicates = paths.filter(
+        (path, index) => paths.indexOf(path) !== index
+      );
+      if (duplicates.length > 0) {
+        console.warn("⚠️ Routerino: Duplicate route paths detected:", [
+          ...new Set(duplicates),
+        ]);
+        console.warn("The first matching route will be used");
+      }
+    }
+
     // we use this state to track the URL internally and control React updates
     const [href, setHref] = useState(window.location.href);
 
