@@ -34,7 +34,7 @@ describe("Deprecation Warnings", () => {
     render(<Routerino routes={routes} titlePostfix=" - DEPRECATED" />);
 
     expect(warnSpy).toHaveBeenCalledWith(
-      "Routerino: titlePrefix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
+      "Routerino: titlePostfix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
     );
   });
 
