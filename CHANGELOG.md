@@ -27,11 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Navigation bug where `new URL(target)` should be `new URL(target.href)`
 
-### Security
-
-- Added domain whitelisting to prerender server
-- Enhanced security headers in deployment examples
-
 ## [1.1.10] - 2025-07-25
 
 ### Added
@@ -39,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test infrastructure with Vitest
 - React Testing Library integration
 - Comprehensive test coverage
-- Automatic robots.txt generation with sitemap command
 
 ### Changed
 
