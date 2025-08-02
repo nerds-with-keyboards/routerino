@@ -1,5 +1,28 @@
-import { cloneElement, useEffect, useState, Component } from "react";
+import {
+  Component,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import PropTypes from "prop-types";
+
+// Create RouterinoContext for sharing router state
+const RouterinoContext = createContext(null);
+
+/**
+ * Hook to access Routerino router state
+ * @returns {Object} Router state including currentRoute, params, routePattern, and updateHeadTag
+ */
+export function useRouterino() {
+  const context = useContext(RouterinoContext);
+  if (!context) {
+    throw new Error(
+      "useRouterino must be used within a Routerino router. Make sure your component is rendered inside a <Routerino> component."
+    );
+  }
+  return context;
+}
 
 /**
  * update a head tag
@@ -184,19 +207,13 @@ export default function Routerino({
   usePrerenderTags = true,
   title = "",
   separator = " | ",
-  titlePrefix = "",
-  titlePostfix = "",
   imageUrl = null,
   touchIconUrl = null,
   debug = false,
 }) {
   // Pre-compute title strings
-  const errorTitleString = `${titlePrefix}${errorTitle}${
-    titlePostfix || `${separator}${title}`
-  }`;
-  const notFoundTitleString = `${titlePrefix}${notFoundTitle}${
-    titlePostfix || `${separator}${title}`
-  }`;
+  const errorTitleString = `${errorTitle}${separator}${title}`;
+  const notFoundTitleString = `${notFoundTitle}${separator}${title}`;
   try {
     // Development-only checks
     if (
@@ -204,18 +221,6 @@ export default function Routerino({
       window.location.host === "localhost" ||
       window.location.host.includes("localhost:")
     ) {
-      // Deprecation warnings
-      if (titlePrefix !== "") {
-        console.warn(
-          "Routerino: titlePrefix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
-        );
-      }
-      if (titlePostfix !== "") {
-        console.warn(
-          "Routerino: titlePostfix is deprecated and will be removed in v2.0. Please migrate to the title and separator props instead."
-        );
-      }
-
       // Check for duplicate routes
       const paths = routes.map((r) => r.path);
       const duplicates = paths.filter(
@@ -395,9 +400,7 @@ export default function Routerino({
     // set the title, og:title
     if (match.title) {
       // calculate the title
-      const fullTitle = `${match.titlePrefix ?? titlePrefix}${match.title}${
-        match.titlePostfix || titlePostfix || `${separator}${title}`
-      }`;
+      const fullTitle = `${match.title}${separator}${title}`;
 
       // set the doc title
       document.title = fullTitle;
@@ -486,23 +489,17 @@ export default function Routerino({
         updateHeadTag,
       };
 
-      // add the route params to the React component
-      // nb: cloneElement won't re-trigger componentDidMount lifecycle
-      const elementWithProps = cloneElement(match.element, {
-        // we allow access via both uppercase and lowercase
-        routerino: routerinoProps,
-        Routerino: routerinoProps,
-      });
-
       return (
-        <ErrorBoundary
-          fallback={errorTemplate}
-          errorTitleString={errorTitleString}
-          usePrerenderTags={usePrerenderTags}
-          routePath={currentRoute}
-        >
-          {elementWithProps}
-        </ErrorBoundary>
+        <RouterinoContext.Provider value={routerinoProps}>
+          <ErrorBoundary
+            fallback={errorTemplate}
+            errorTitleString={errorTitleString}
+            usePrerenderTags={usePrerenderTags}
+            routePath={currentRoute}
+          >
+            {match.element}
+          </ErrorBoundary>
+        </RouterinoContext.Provider>
       );
     }
 
@@ -515,7 +512,7 @@ export default function Routerino({
 
     return notFoundTemplate;
   } catch (e) {
-    // router threw up (ಥ﹏ಥ)
+    // router blew up (ಥ﹏ಥ)
     console.group("💥 Routerino Fatal Error");
     console.error(
       "An error occurred in the router itself (not in a route component)"
@@ -541,10 +538,6 @@ const RouteProps = PropTypes.exact({
   title: PropTypes.string,
   description: PropTypes.string,
   tags: PropTypes.arrayOf(PropTypes.object),
-  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
-  titlePrefix: PropTypes.string,
-  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
-  titlePostfix: PropTypes.string,
   imageUrl: PropTypes.string,
 });
 
@@ -558,10 +551,6 @@ Routerino.propTypes = {
   errorTitle: PropTypes.string,
   useTrailingSlash: PropTypes.bool,
   usePrerenderTags: PropTypes.bool,
-  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
-  titlePrefix: PropTypes.string,
-  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
-  titlePostfix: PropTypes.string,
   imageUrl: PropTypes.string,
   touchIconUrl: PropTypes.string,
   debug: PropTypes.bool,
