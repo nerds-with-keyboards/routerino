@@ -100,7 +100,7 @@ Routerino supports:
 
 - **React 17, 18, and 19** - All versions are tested and supported
 - **Preact** - Compatible via `@preact/compat` (needs verification)
-- **Node.js 18+** - Tested on Node.js 18, 20, and 22. Can run on earlier versions if we drop tests.
+- **Node.js 18+** - Tested on Node.js 18, 20, 22, and 24. Could be used on earlier versions if we don't run tests.
 
 ## Usage
 
