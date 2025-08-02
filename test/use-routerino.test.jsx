@@ -29,20 +29,14 @@ describe("useRouterino hook", () => {
     // Reset the DOM
     document.body.innerHTML = "";
     document.head.innerHTML = "";
-    global.window = {
-      location: {
-        href: "http://localhost/test/123",
-        pathname: "/test/123",
-        search: "",
-        host: "localhost",
-      },
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      history: {
-        pushState: vi.fn(),
-        replaceState: vi.fn(),
-      },
-    };
+
+    // Reset window location
+    delete window.location;
+    window.location = new URL("http://localhost/test/123");
+
+    // Mock history API
+    vi.spyOn(window.history, "pushState").mockImplementation(() => {});
+    vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -129,13 +123,16 @@ describe("useRouterino hook", () => {
       },
     ];
 
-    global.window.location.pathname = "/";
+    // Start at root
+    delete window.location;
+    window.location = new URL("http://localhost/");
+
     const { rerender } = render(<Routerino routes={routes} />);
     expect(screen.getByText("Current Route: /")).toBeTruthy();
 
     // Simulate route change
-    global.window.location.pathname = "/other";
-    global.window.location.href = "http://localhost/other";
+    delete window.location;
+    window.location = new URL("http://localhost/other");
 
     // Force re-render
     rerender(<Routerino routes={routes} key="rerender" />);
