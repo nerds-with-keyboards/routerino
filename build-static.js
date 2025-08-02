@@ -3,7 +3,6 @@
 import fs from "fs";
 import path from "path";
 import React from "react";
-import ReactDOMServer from "react-dom/server";
 import { pathToFileURL } from "url";
 
 // Parse command line arguments
@@ -30,6 +29,9 @@ if (!routesFile) {
 async function buildStaticSite() {
   try {
     console.log("🏗️  Building static site with SSR...\n");
+
+    // Dynamic import of ReactDOMServer for ESM compatibility
+    const { renderToString } = await import("react-dom/server");
 
     // Check if routes file exists
     const routesPath = path.resolve(routesFile);
@@ -113,7 +115,8 @@ async function buildStaticSite() {
         templateHtml,
         baseUrl,
         routes,
-        Routerino
+        Routerino,
+        renderToString
       );
 
       // Determine output file path
@@ -147,7 +150,8 @@ async function buildStaticSite() {
       templateHtml,
       baseUrl,
       routes,
-      Routerino
+      Routerino,
+      renderToString
     );
     const notFoundPath = path.join(outputPath, "404.html");
     fs.writeFileSync(notFoundPath, notFoundHtml);
@@ -167,7 +171,8 @@ async function generateHtmlForRoute(
   templateHtml,
   baseUrl,
   allRoutes,
-  Routerino
+  Routerino,
+  renderToString
 ) {
   let html = templateHtml;
 
@@ -255,9 +260,10 @@ async function generateHtmlForRoute(
       description: route.description,
     });
 
-    renderedHtml = ReactDOMServer.renderToString(app);
+    renderedHtml = renderToString(app);
   } catch (error) {
     console.warn(`⚠️  Failed to render route ${route.path}: ${error.message}`);
+    console.error(error.stack);
     // Fallback to empty div if rendering fails
     renderedHtml = "";
   }
