@@ -19,6 +19,12 @@ jobs:
             packages: "react@^18.0.0 react-dom@^18.0.0"
           - name: "React 19"
             packages: "react@^19.0.0 react-dom@^19.0.0"
+        exclude:
+          # React 17 has compatibility issues with Node 24
+          - node-version: 24
+            react-config:
+              name: "React 17"
+              packages: "react@^17.0.0 react-dom@^17.0.0 @testing-library/react@^12.1.5"
 
     steps:
       - uses: actions/checkout@v3
