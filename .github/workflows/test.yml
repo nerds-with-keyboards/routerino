@@ -35,6 +35,9 @@ jobs:
       - name: Install ${{ matrix.react-config.name }}
         run: npm install --no-save ${{ matrix.react-config.packages }}
 
+      - name: Build library
+        run: npm run build
+
       - name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.react-config.name }})
         run: npm test -- --run
 
