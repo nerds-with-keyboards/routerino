@@ -26,10 +26,6 @@ export interface RouteConfig {
   title?: string;
   description?: string;
   tags?: HeadTag[];
-  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
-  titlePrefix?: string;
-  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
-  titlePostfix?: string;
   imageUrl?: string;
 }
 
@@ -43,10 +39,6 @@ export interface RouterinoProps {
   useTrailingSlash?: boolean;
   usePrerenderTags?: boolean;
   separator?: string;
-  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
-  titlePrefix?: string;
-  /** @deprecated Use title and separator props instead. Will be removed in v2.0 */
-  titlePostfix?: string;
   imageUrl?: string;
   touchIconUrl?: string;
   debug?: boolean;
@@ -68,6 +60,15 @@ export interface ErrorBoundaryProps {
 export interface ErrorBoundaryState {
   hasError: boolean;
 }
+
+export interface RouterinoContextValue {
+  currentRoute: string;
+  params: Record<string, string>;
+  routePattern: string;
+  updateHeadTag: (tag: HeadTag) => void;
+}
+
+export function useRouterino(): RouterinoContextValue;
 
 export class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,

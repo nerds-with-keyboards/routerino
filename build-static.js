@@ -2,6 +2,8 @@
 
 import fs from "fs";
 import path from "path";
+import React from "react";
+import { pathToFileURL } from "url";
 
 // Parse command line arguments
 const args = process.argv.slice(2).reduce((acc, arg) => {
@@ -26,7 +28,10 @@ if (!routesFile) {
 
 async function buildStaticSite() {
   try {
-    console.log("🏗️  Building static site...\n");
+    console.log("🏗️  Building static site with SSR...\n");
+
+    // Dynamic import of ReactDOMServer for ESM compatibility
+    const { renderToString } = await import("react-dom/server");
 
     // Check if routes file exists
     const routesPath = path.resolve(routesFile);
@@ -35,17 +40,40 @@ async function buildStaticSite() {
     }
 
     let routes;
+    let Routerino;
+
+    // Import Routerino - check if we have a built version first
+    const distRouterinoPath = path.resolve(
+      path.dirname(new URL(import.meta.url).pathname),
+      "dist/routerino.js"
+    );
+    if (fs.existsSync(distRouterinoPath)) {
+      const routerinoModule = await import(pathToFileURL(distRouterinoPath));
+      Routerino = routerinoModule.default;
+    } else {
+      // Fallback to node_modules
+      try {
+        const routerinoModule = await import("routerino");
+        Routerino = routerinoModule.default;
+      } catch {
+        throw new Error(
+          "Could not find Routerino component. Please run 'npm run build' first."
+        );
+      }
+    }
 
     // Try to import as a module first (for .js/.mjs files)
     const ext = path.extname(routesPath);
     if (ext === ".js" || ext === ".mjs" || ext === ".cjs") {
       try {
-        const routesModule = await import(routesPath);
+        // Use file URL to ensure proper import
+        const routesModule = await import(pathToFileURL(routesPath));
         routes = routesModule.default || routesModule.routes;
-      } catch {
+      } catch (error) {
         console.warn(
           `⚠️  Could not import routes file as module, falling back to regex parsing`
         );
+        console.warn(`   Error: ${error.message}`);
         routes = parseRoutesFromFile(routesPath);
       }
     } else {
@@ -82,7 +110,14 @@ async function buildStaticSite() {
       }
 
       // Generate HTML for this route
-      const html = generateHtmlForRoute(route, templateHtml, baseUrl);
+      const html = await generateHtmlForRoute(
+        route,
+        templateHtml,
+        baseUrl,
+        routes,
+        Routerino,
+        renderToString
+      );
 
       // Determine output file path
       const routePath = route.path === "/" ? "/index" : route.path;
@@ -109,11 +144,14 @@ async function buildStaticSite() {
     };
 
     // Generate 404.html with proper meta tags
-    // The actual notFoundTemplate component will be rendered client-side
-    const notFoundHtml = generateHtmlForRoute(
+    // The actual notFoundTemplate component will be rendered
+    const notFoundHtml = await generateHtmlForRoute(
       notFoundRoute,
       templateHtml,
-      baseUrl
+      baseUrl,
+      routes,
+      Routerino,
+      renderToString
     );
     const notFoundPath = path.join(outputPath, "404.html");
     fs.writeFileSync(notFoundPath, notFoundHtml);
@@ -128,8 +166,107 @@ async function buildStaticSite() {
   }
 }
 
-function generateHtmlForRoute(route, templateHtml, baseUrl) {
+async function generateHtmlForRoute(
+  route,
+  templateHtml,
+  baseUrl,
+  allRoutes,
+  Routerino,
+  renderToString
+) {
   let html = templateHtml;
+
+  // Mock window.location for SSR
+  global.window = {
+    location: {
+      href: baseUrl ? `${baseUrl}${route.path}` : route.path,
+      pathname: route.path,
+      search: "",
+      host: baseUrl ? new URL(baseUrl).host : "localhost",
+    },
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    history: {
+      pushState: () => {},
+      replaceState: () => {},
+    },
+  };
+
+  // Track created elements for better mocking
+  const createdElements = new Map();
+  const headElements = [];
+
+  // Mock document for SSR
+  global.document = {
+    title: "",
+    querySelector: (selector) => {
+      if (selector === "head") {
+        return {
+          appendChild: (element) => {
+            headElements.push(element);
+            return element;
+          },
+          querySelector: () => null,
+        };
+      }
+      // Return existing elements if they match
+      for (const element of createdElements.values()) {
+        if (selector.includes(element.tagName) && selector.includes("=")) {
+          // Simple attribute matching
+          const attrMatch = selector.match(/\[(\w+)=['"]([^'"]+)['"]\]/);
+          if (attrMatch) {
+            const [, attr, value] = attrMatch;
+            if (element.attributes && element.attributes[attr] === value) {
+              return element;
+            }
+          }
+        }
+      }
+      return null;
+    },
+    querySelectorAll: () => [],
+    createElement: (tag) => {
+      const element = {
+        tagName: tag.toUpperCase(),
+        attributes: {},
+        setAttribute: function (name, value) {
+          this.attributes[name] = value;
+        },
+        appendChild: () => {},
+        removeChild: () => {},
+        style: {},
+      };
+      createdElements.set(Date.now() + Math.random(), element);
+      return element;
+    },
+    head: {
+      querySelector: () => null,
+      appendChild: (element) => {
+        headElements.push(element);
+        return element;
+      },
+    },
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+
+  // Render the React app with Routerino
+  let renderedHtml = "";
+  try {
+    const app = React.createElement(Routerino, {
+      routes: allRoutes,
+      title: route.title || "",
+      separator: " | ",
+      description: route.description,
+    });
+
+    renderedHtml = renderToString(app);
+  } catch (error) {
+    console.warn(`⚠️  Failed to render route ${route.path}: ${error.message}`);
+    console.error(error.stack);
+    // Fallback to empty div if rendering fails
+    renderedHtml = "";
+  }
 
   // Update title
   if (route.title) {
@@ -183,10 +320,10 @@ function generateHtmlForRoute(route, templateHtml, baseUrl) {
   const metaTagsHtml = metaTags.join("\n  ");
   html = html.replace("</head>", `  ${metaTagsHtml}\n</head>`);
 
-  // Add route info as data attribute for client-side hydration
+  // Replace the root div with rendered content
   html = html.replace(
-    '<div id="root">',
-    `<div id="root" data-route="${escapeHtml(route.path)}">`
+    /<div\s+id="root"[^>]*>.*?<\/div>/,
+    `<div id="root" data-route="${escapeHtml(route.path)}">${renderedHtml}</div>`
   );
 
   return html;
