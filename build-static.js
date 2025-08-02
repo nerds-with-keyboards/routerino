@@ -4,7 +4,6 @@ import fs from "fs";
 import path from "path";
 import React from "react";
 import { pathToFileURL } from "url";
-import { createRequire } from "module";
 
 // Parse command line arguments
 const args = process.argv.slice(2).reduce((acc, arg) => {
@@ -31,29 +30,8 @@ async function buildStaticSite() {
   try {
     console.log("🏗️  Building static site with SSR...\n");
 
-    // Dynamic import of ReactDOMServer with multiple fallbacks
-    let renderToString;
-    try {
-      // Try ESM import first
-      const ReactDOMServer = await import("react-dom/server");
-      renderToString =
-        ReactDOMServer.renderToString || ReactDOMServer.default?.renderToString;
-    } catch (esmError) {
-      // Try using createRequire for CommonJS compatibility
-      try {
-        const require = createRequire(import.meta.url);
-        const ReactDOMServer = require("react-dom/server");
-        renderToString = ReactDOMServer.renderToString;
-      } catch (cjsError) {
-        throw new Error(
-          `Cannot import react-dom/server. ESM error: ${esmError.message}, CJS error: ${cjsError.message}`
-        );
-      }
-    }
-
-    if (!renderToString) {
-      throw new Error("renderToString function not found in react-dom/server");
-    }
+    // Dynamic import of ReactDOMServer for ESM compatibility
+    const { renderToString } = await import("react-dom/server");
 
     // Check if routes file exists
     const routesPath = path.resolve(routesFile);
