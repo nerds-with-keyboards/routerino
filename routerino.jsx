@@ -25,7 +25,7 @@ export function useRouterino() {
 }
 
 /**
- * update a head tag
+ * Update a head tag, creating the tag if necessary
  *
  * @typedef {Object} HeadTag
  * @property {string} [tag] - The tag name to update (default: meta)
@@ -44,7 +44,6 @@ export function useRouterino() {
  * @property {string} [media] - The media attribute of the tag
  * @property {string} [hrefLang] - The hrefLang attribute of the tag
  * @property {string} [target] - The target attribute of the tag
- *
  */
 export function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
   // first, get an array of the attribute names
@@ -121,37 +120,26 @@ export class ErrorBoundary extends Component {
     super(props);
     this.state = { hasError: false };
   }
-
   static getDerivedStateFromError() {
     return { hasError: true };
   }
-
   componentDidCatch(error, errorInfo) {
-    // Enhanced error logging
-    console.group("🚨 Routerino Error Boundary Caught an Error");
-    console.error("Error:", error);
-    console.error("Component Stack:", errorInfo.componentStack);
-
-    if (this.props.routePath) {
-      console.error("Failed Route:", this.props.routePath);
+    if (this.props.debug) {
+      console.group("Routerino Error Boundary Caught an Error", error);
+      console.error("Component Stack:", errorInfo.componentStack);
+      if (this.props.routePath)
+        console.error("Failed Route:", this.props.routePath);
+      console.error("Error occurred at:", new Date().toISOString());
+      console.groupEnd();
     }
-
-    console.error("Error occurred at:", new Date().toISOString());
-    console.groupEnd();
-
     // Set error title and meta tags
     document.title = this.props.errorTitleString;
-
     if (this.props.usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "500" });
     }
   }
-
   render() {
-    if (this.state.hasError) {
-      return this.props.fallback;
-    }
-    return this.props.children;
+    return this.state.hasError ? this.props.fallback : this.props.children;
   }
 }
 
@@ -166,6 +154,8 @@ ErrorBoundary.propTypes = {
   usePrerenderTags: PropTypes.bool,
   /** The current route path for better error context (optional) */
   routePath: PropTypes.string,
+  /** Whether to log debug messages to console (optional) */
+  debug: PropTypes.bool,
 };
 
 // Routerino Component
@@ -216,11 +206,7 @@ export default function Routerino({
   const notFoundTitleString = `${notFoundTitle}${separator}${title}`;
   try {
     // Development-only checks
-    if (
-      debug ||
-      window.location.host === "localhost" ||
-      window.location.host.includes("localhost:")
-    ) {
+    if (debug) {
       // Check for duplicate routes
       const paths = routes.map((r) => r.path);
       const duplicates = paths.filter(
@@ -255,19 +241,38 @@ export default function Routerino({
           }
           return;
         }
-        if (debug) {
-          console.debug(`click target ${target}`);
+
+        // Get the href from the anchor element
+        const href = target.getAttribute("href") || target.href;
+        if (!href) {
+          if (debug) {
+            console.debug("anchor tag has no href");
+          }
+          return;
         }
-        let targetUrl = new URL(target);
+
+        if (debug) {
+          console.debug(`click target href: ${href}`);
+        }
+
+        let targetUrl;
+        try {
+          targetUrl = new URL(href, window.location.href);
+        } catch (e) {
+          if (debug) {
+            console.debug(`Invalid URL: ${href}`, e);
+          }
+          return;
+        }
 
         if (debug) {
           console.debug(`targetUrl: ${targetUrl}, current: ${window.location}`);
         }
         // check for links to be updated without reloading (same origin)
-        if (window.location.origin === targetUrl.origin) {
+        if (targetUrl && window.location.origin === targetUrl.origin) {
           if (debug) {
             console.debug(
-              "target link is same origin, push-state transitioning"
+              "target link is same origin, Routerino will use push-state transitioning"
             );
           }
           event.preventDefault();
@@ -285,7 +290,7 @@ export default function Routerino({
           });
         } else if (debug) {
           console.debug(
-            "target link does not share an origin, standard link handling applies"
+            "target link does not share an origin, standard browser link handling applies (Routerino does nothing)"
           );
         }
       };
@@ -354,16 +359,13 @@ export default function Routerino({
 
     const match = exactMatch ?? addSlashMatch ?? paramsMatch;
     if (debug) {
+      // matching debugging helper
       console.debug({ match, exactMatch, addSlashMatch, paramsMatch });
     }
 
     // START 404 HANDLING
     if (!match) {
-      if (
-        debug ||
-        window.location.host === "localhost" ||
-        window.location.host.includes("localhost:")
-      ) {
+      if (debug) {
         console.group("⚠️ Routerino 404 - No matching route");
         console.warn(`Requested path: ${currentRoute}`);
         console.warn(
@@ -496,6 +498,7 @@ export default function Routerino({
             errorTitleString={errorTitleString}
             usePrerenderTags={usePrerenderTags}
             routePath={currentRoute}
+            debug={debug}
           >
             {match.element}
           </ErrorBoundary>
@@ -503,37 +506,55 @@ export default function Routerino({
       );
     }
 
-    // no search result
-    console.error(`No route found for ${currentRoute}`);
+    // no match
+    if (debug) console.error(`No route found for ${currentRoute}`);
     document.title = notFoundTitleString;
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "404" });
     }
-
     return notFoundTemplate;
   } catch (e) {
-    // router blew up (ಥ﹏ಥ)
-    console.group("💥 Routerino Fatal Error");
-    console.error(
-      "An error occurred in the router itself (not in a route component)"
-    );
-    console.error("Error:", e);
-    console.error(
-      "This typically means an issue with route configuration or router setup"
-    );
-    console.groupEnd();
+    // router code threw
+    if (debug) {
+      console.group("💥 Routerino Fatal Error");
+      console.error(
+        "An error occurred in the router itself (not in a route component)"
+      );
+      console.error("Error:", e);
+      console.error(
+        "This typically means an issue with route configuration or router setup"
+      );
+      console.groupEnd();
+    }
 
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "500" });
     }
     document.title = errorTitleString;
-
     return errorTemplate;
   }
 }
 
 const RouteProps = PropTypes.exact({
-  path: PropTypes.string.isRequired,
+  path: (props, propName, componentName) => {
+    const value = props[propName];
+    if (value == null) {
+      return new Error(
+        `The prop \`${propName}\` is marked as required in \`${componentName}\`, but its value is \`${value}\`.`
+      );
+    }
+    if (typeof value !== "string") {
+      return new Error(
+        `Invalid prop \`${propName}\` of type \`${typeof value}\` supplied to \`${componentName}\`, expected \`string\`.`
+      );
+    }
+    if (!value.startsWith("/")) {
+      return new Error(
+        `Invalid prop \`${propName}\` value \`${value}\` supplied to \`${componentName}\`. Route paths must start with a forward slash (/).`
+      );
+    }
+    return null;
+  },
   element: PropTypes.element.isRequired,
   title: PropTypes.string,
   description: PropTypes.string,

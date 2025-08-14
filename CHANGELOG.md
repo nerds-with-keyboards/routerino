@@ -5,6 +5,79 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-08-11
+
+### Added
+
+- Automatic JSX transformation in `routerino-build-static` - JSX files are now automatically transformed when detected
+- New `routerino-transform-jsx` CLI tool for manual JSX to JavaScript transformation
+- Vite plugin for static HTML generation with meta tags
+- Comprehensive documentation for static site generation
+- Node.js 24 support in test matrix
+
+### Fixed
+
+- Static build now works with JSX files without manual pre-compilation
+- Static build tests excluded for React 17
+- Fixed ESM import issues for `react-dom/server` in different Node.js environments
+- Fixed `useRouterino` hook test failures with proper window mocking
+
+### Changed
+
+- Simplified documentation structure in `/docs` folder
+- GitHub Actions workflow now builds before running tests
+- Static build provides better error messages when JSX is detected
+- Improved error handling and user feedback throughout
+
+### Developer Experience
+
+- More documentation for CLI tools
+
+## [2.0.0] - 2025-08-02
+
+### Breaking Changes
+
+- Removed props-based API - Components no longer receive router props directly
+- Removed deprecated fields from router state
+- Components must now use `useRouterino()` hook to access router state
+
+### Added
+
+- New `useRouterino()` hook for accessing router state and methods
+- Hook provides: `currentRoute`, `params`, `routePattern`, `updateHeadTag`
+
+### Changed
+
+- Updated all tests to use the new hook API
+- Updated TypeScript definitions to reflect new API
+
+### Removed
+
+- Props injection into route components (use `useRouterino()` instead)
+- Deprecated router state fields
+- `titlePrefix` and `titlePostfix` props (use `title` and `separator` instead)
+
+### Migration Guide
+
+Before:
+
+```jsx
+function MyComponent(props) {
+  return <div>Current route: {props.routerino.currentRoute}</div>;
+}
+```
+
+After:
+
+```jsx
+import { useRouterino } from "routerino";
+
+function MyComponent() {
+  const { currentRoute } = useRouterino();
+  return <div>Current route: {currentRoute}</div>;
+}
+```
+
 ## [1.2.0] - 2025-07-31
 
 ### Added
@@ -150,6 +223,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sitemap generation
 - Basic documentation
 
+[2.0.1]: https://github.com/nerds-with-keyboards/routerino/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/nerds-with-keyboards/routerino/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/nerds-with-keyboards/routerino/compare/v1.1.10...v1.2.0
 [1.1.10]: https://github.com/nerds-with-keyboards/routerino/compare/v1.1.9...v1.1.10
 [1.1.9]: https://github.com/nerds-with-keyboards/routerino/compare/v1.1.8...v1.1.9
