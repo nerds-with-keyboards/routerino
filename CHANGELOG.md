@@ -5,6 +5,71 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-08-14
+
+### Added
+
+- Node.js 24 support in test matrix
+- **Routerino Forge** (`routerino/forge`)
+  - Static site generation at build time with Vite
+  - Generation of sitemap.xml with proper XML schema
+  - Generation of robots.txt with sitemap reference
+  - Test suite for Forge build output validation
+
+### Changed
+
+- Improved TypeScript RouteConfig types
+- `build-sitemap.js` now integrated into Forge
+
+### Fixed
+
+- Syntax issue where `new URL(target)` was used instead of `new URL(target.href)`
+
+## [2.0.0] - 2025-08-02
+
+### Breaking Changes
+
+- Removed props-based API - Components no longer receive router props directly
+- Removed deprecated fields from router state
+- Components must now use `useRouterino()` hook to access router state
+
+### Added
+
+- New `useRouterino()` hook for accessing router state and methods
+- Hook provides: `currentRoute`, `params`, `routePattern`, `updateHeadTag`
+
+### Changed
+
+- Updated all tests to use the new hook API
+- Updated TypeScript definitions to reflect new API
+
+### Removed
+
+- Props injection into route components (use `useRouterino()` instead)
+- Deprecated router state fields
+- `titlePrefix` and `titlePostfix` props (use `title` and `separator` instead)
+
+### Migration Guide
+
+Before:
+
+```jsx
+function MyComponent(props) {
+  return <div>Current route: {props.routerino.currentRoute}</div>;
+}
+```
+
+After:
+
+```jsx
+import { useRouterino } from "routerino";
+
+function MyComponent() {
+  const { currentRoute } = useRouterino();
+  return <div>Current route: {currentRoute}</div>;
+}
+```
+
 ## [1.2.0] - 2025-07-31
 
 ### Added
@@ -150,6 +215,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sitemap generation
 - Basic documentation
 
+[2.0.1]: https://github.com/nerds-with-keyboards/routerino/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/nerds-with-keyboards/routerino/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/nerds-with-keyboards/routerino/compare/v1.1.10...v1.2.0
 [1.1.10]: https://github.com/nerds-with-keyboards/routerino/compare/v1.1.9...v1.1.10
 [1.1.9]: https://github.com/nerds-with-keyboards/routerino/compare/v1.1.8...v1.1.9

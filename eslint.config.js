@@ -6,7 +6,7 @@ export default [
   { files: ["**/*.{js,mjs,cjs,jsx}"] },
   {
     ignores: [
-      "dist/*",
+      "**/dist/*",
       "node_modules/*",
       "docs/*",
       "demo-prerender/dist/*",
