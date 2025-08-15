@@ -11,7 +11,7 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
 - **Simple API**: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
 - **Static Site Generation**: Build-tool agnostic static HTML generation for improved performance and SEO
 - **Production Ready**: Includes Docker-based prerender server for easy deployments
-- **Single File Core**: The entire routing logic fits in one file (~420 lines), making it easy to understand and customize
+- **Single File Core**: The entire routing logic fits in one file, making it easy to understand and customize
 
 ## Table of Contents
 
