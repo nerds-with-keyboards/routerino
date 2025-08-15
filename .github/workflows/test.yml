@@ -13,8 +13,6 @@ jobs:
       matrix:
         node-version: [18, 20, 22, 24]
         react-config:
-          - name: "React 17"
-            packages: "react@^17.0.0 react-dom@^17.0.0 @testing-library/react@^12.1.5"
           - name: "React 18"
             packages: "react@^18.0.0 react-dom@^18.0.0"
           - name: "React 19"
@@ -40,13 +38,6 @@ jobs:
 
       - name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.react-config.name }})
         run: npm test -- --run
-        # Skip static build tests for React 17 due to jsx-runtime compatibility
-        if: matrix.react-config.name != 'React 17'
-
-      - name: Run tests without static build (Node ${{ matrix.node-version }}, ${{ matrix.react-config.name }})
-        run: npm test -- --run --exclude="**/static-build.test.*"
-        # Only run for React 17
-        if: matrix.react-config.name == 'React 17'
 
       - name: Run linter
         run: npm run lint

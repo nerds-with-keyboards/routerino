@@ -2,7 +2,7 @@
 
 > A lightweight, SEO-optimized React router for modern websites and applications
 
-Routerino is a zero-dependency router for React (17/18/19) designed for optimal SEO performance in client-side rendered applications. Built for modern web architectures like JAMStack applications and Vite-powered React sites, it provides route & meta tag management, sitemap generation, and static site generation or [prerender](https://github.com/prerender/prerender) support to ensure your React applications are fully discoverable by search engines.
+Routerino is a zero-dependency router for React designed for optimal SEO performance in client-side rendered applications. Built for modern web architectures like JAMStack applications and Vite-powered React sites, it provides route & meta tag management, sitemap generation, and static site generation or [prerender](https://github.com/prerender/prerender) support to ensure your React applications are fully discoverable by search engines.
 
 ## Why Routerino?
 
@@ -69,7 +69,7 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
 ## Features
 
 - Routing
-  - Easy integration of simple routing for your React app (supports React versions 17, 18, and 19)
+  - Easy integration of simple routing for your React app (supports React 18 and 19)
   - Zero dependencies for lighter, more maintainable projects
   - No special link components required, works great for Markdown-based pages and semantic HTML
 
@@ -98,13 +98,13 @@ npm i routerino -D
 
 Routerino supports:
 
-- **React 17, 18, and 19** - All versions are tested and supported
-- **Preact** - Compatible via `@preact/compat` (needs verification)
-- **Node.js 18+** - Tested on Node.js 18, 20, 22, and 24. Could be used on earlier versions if we don't run tests.
+- **React 18 and 19** - Both versions are tested and supported
+- **Preact** - Compatible via `@preact/compat`
+- **Node.js 18+** - Tested on Node.js 18, 20, 22, and 24. Could be used on earlier versions if we skip tests
 
 ## Usage
 
-Here's a quick example of using Routerino in your React application:
+Here's a short example of using Routerino in your React application:
 
 ```jsx
 <Routerino
@@ -117,6 +117,7 @@ Here's a quick example of using Routerino in your React application:
       description: "Welcome to my home page!",
     },
   ]}
+  debug={window.location.host.includes("localhost:")}
 />
 ```
 
@@ -143,6 +144,7 @@ All of these are optional, so it's easy to get started with nothing but a bare-b
 | [errorTitle](#errortitle-string)               | string          | Error page title                  | `"Page error [500]"`          |
 | [useTrailingSlash](#usetrailingslash-bool)     | boolean         | Use trailing slashes in URLs      | `true`                        |
 | [usePrerenderTags](#useprerendertags-bool)     | boolean         | Use pre-render meta tags          | `true`                        |
+| [baseUrl](#baseurl-string)                     | string          | Base URL for canonical tags       | `null` (uses window.location) |
 | [imageUrl](#imageurl-string)                   | string          | Default image URL for sharing     | `null`                        |
 | [touchIconUrl](#touchiconurl-string)           | string          | Image URL for PWA homescreen icon | `null`                        |
 | [debug](#debug-boolean)                        | boolean         | Enable debug mode                 | `false`                       |
@@ -222,6 +224,14 @@ Include meta tags to enable proper error codes like 404 when serving pages to a 
 
 Default: `true`
 
+##### `baseUrl`: string;
+
+The base URL to use for canonical tags and og:url meta tags. If not provided, uses `window.location.origin`. This is useful when you want to specify the production URL regardless of the current environment.
+
+Example: `"https://example.com"`
+
+Default: `null` (uses window.location.origin)
+
 ##### `titlePrefix`: string;
 
 Deprecated: use `title` instead. A string to preprend to every title. Should include the brand name, a separator, and spacing, such as `Example.com | `<- Note the extra end space.
@@ -258,7 +268,7 @@ There is a default RouteConfig that will be loaded if you don't specify any rout
 
 ##### path: string;
 
-The path of the desired route, for example: `"/foo/"`.
+The path of the desired route. **Must start with a forward slash (`/`)**. For example: `"/foo/"`, or `"/about/"`.
 
 ##### element: React.ReactNode;
 
@@ -381,8 +391,8 @@ To optimize your site for SEO and social previews when using Routerino, consider
 
 ### Sitemap Generation
 
-- Automate the creation of `sitemap.xml` during your build process with Routerino.
-- Use the `routerino-build-sitemap` command to generate the sitemap from your routes (see [Generating a Sitemap from Routes](#generating-a-sitemap-from-routes)).
+- Automate the creation of `sitemap.xml` and `robots.txt` during your build process with Routerino Forge.
+- The Vite plugin automatically generates these files when building static sites (see [Static Site Generation](#static-site-generation)).
 
 ### Social Previews
 
@@ -405,79 +415,120 @@ To optimize your site for SEO and social previews when using Routerino, consider
 
 By following these practices, you'll improve your site's SEO performance and social media presence when using Routerino.
 
-## Generating a sitemap from routes
+## Sitemap and robots.txt Generation
 
-You can use the included CLI tool `routerino-build-sitemap` to create a sitemap.xml for your site. Adjust the arguments to your needs. Make sure to run a build first (or otherwise ensure the directory for the sitemap exists). Routes with route params are not added to the sitemap. This sitemap only includes the location entry, as the others are [mostly ignored by Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#additional-notes-about-xml-sitemaps). Node 16+ should be installed and available in the path. Since it would be an SEO problem to not have the `robots.txt` file pointing to the sitemap, we include it if missing. If you create your own, make sure to include the sitemap URL in it.
+When using Routerino Forge for static site generation, `sitemap.xml` and `robots.txt` files are automatically generated during the build process:
 
-### Arguments
+- **sitemap.xml**: Contains all static routes (dynamic routes with parameters like `:id` are excluded)
+- **robots.txt**: Created with a reference to the sitemap (if it doesn't already exist)
 
-- routeFilePath: The path to whichever file contains your routes, in order for the sitemap build tool to find them. The routes can be defined either inline in the Routerino props, or kept in an array named `routes`, `Routes`, or just exported as default. This might be something like `src/Router/index.jsx`, or `src/App.jsx`. Whichever file you've put your routes in should be used.
-- hostname: The domain to use as the base for the URLs in the sitemap. E.g. `https://example.com`. Make sure to include or exclude the `www` prefix as desired.
-- outputDir: The path to write the new sitemap XML file. This would usually be a build directory, e.g. `dist` or `build`, or maybe something like `public` if you wanted to check in the sitemap to your repo (set it as a pre-commit step in that case).
+These files are generated automatically when you build with the Routerino Forge Vite plugin - no additional configuration needed!
 
-### Example Usage
+### Sample Build Output:
 
-```sh
-routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputDir=dist
 ```
-
-### Sample Output:
-
-`✅ sitemap.xml with 42 URLs written to dist`
-
-`✅ robots.txt written to dist`
-
-### Adding to package.json scripts
-
-Add `routerino-build-sitemap` to your build command to update automatically on every build.
-
-Example package.json build script: `"build": "vite build && routerino-build-sitemap routeFilePath=src/routes.jsx hostname=https://example.com outputDir=dist",`
+✓ Generated sitemap.xml with 42 URLs
+✓ Generated robots.txt
+✓ Generated 42 static pages + 404.html
+```
 
 ## Static Site Generation
 
-Routerino includes a build-tool agnostic static site generator that creates HTML files for each route, improving SEO and initial page load performance.
+Routerino provides static site generation (SSG), creating fully-rendered HTML files at build time with "just clean JSX elements that render identically on server and client."
 
-### How It Works
+### Routerino Forge - Vite Plugin for SSG
 
-The `routerino-build-static` command is a **post-build step** that works with ANY build tool (Vite, Webpack, Parcel, etc.):
+The Vite plugin generates static HTML files with your React components fully rendered at build time. Zero configuration required - the plugin automatically handles all the complexity!
 
-1. **First**: Build your app with your preferred build tool (`npm run build`)
-2. **Then**: Run `routerino-build-static` to generate static HTML files
+```js
+// vite.config.js
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { routerinoForge } from "routerino/forge";
 
-```sh
-# After your build completes (creates dist/index.html with bundled JS/CSS):
-routerino-build-static routesFile=src/routes.jsx outputDir=dist template=dist/index.html baseUrl=https://example.com
+export default defineConfig({
+  plugins: [
+    react(),
+    routerinoForge({
+      baseUrl: "https://example.com", // Your production URL
+      // Optional settings (these are the defaults):
+      // routes: "./src/routes.jsx", // Your routes file
+      // outputDir: "dist",
+      // generateSitemap: true,
+      // prerenderStatusCode: true,
+      // useTrailingSlash: true, // Set to false for /about instead of /about/
+      // verbose: false,
+    }),
+  ],
+});
 ```
 
-**Parameters:**
+**Requirements:**
 
-- `routesFile` - Path to your routes configuration file (supports .js, .jsx, .ts, .tsx)
-- `outputDir` - Directory where static HTML files will be generated (usually your build output)
-- `template` - Your **built** HTML file with bundled assets (e.g., dist/index.html)
-- `baseUrl` - Base URL for meta tags (optional but recommended for SEO)
+- Your `index.html` must have `<div id="root"></div>` (standard for all React apps)
+- Routes must be exported from your routes file (see below)
 
-### Build Tool Examples
+**Features:**
 
-Works with any build tool:
+- Renders your components to HTML at build time (SSG)
+- Generates dual files for maximum URL compatibility:
+  - `/about` → `about.html`
+  - `/about/` → `about/index.html`
+  - Canonical URLs and redirects based on `useTrailingSlash` setting
+  - Prerender compatible 301 redirects for non-canonical versions
+- Automatic canonical URL and og:url meta tags
+- Injects rendered HTML into your root div
+- Generates sitemap.xml and robots.txt
+- Creates a 404.html page
+- Skips dynamic routes (with `:param` syntax)
+- SEO optimized: Complete HTML with meta tags
+- Easy configuration: Works out of the box with Vite and minimal setup
 
-```json
-// Vite
-"build": "vite build && routerino-build-static routesFile=src/routes.js outputDir=dist template=dist/index.html"
+#### Routes Configuration
 
-// Webpack
-"build": "webpack && routerino-build-static routesFile=src/routes.js outputDir=build template=build/index.html"
+Define routes with `element` property containing JSX elements:
 
-// Parcel
-"build": "parcel build index.html && routerino-build-static routesFile=src/routes.js outputDir=dist template=dist/index.html"
+```jsx
+// src/routes.jsx
+export const routes = [
+  {
+    path: "/",
+    element: <HomePage featured="Latest News" />, // Props preserved!
+    title: "Home - My Site",
+    description: "Welcome to our site",
+    imageUrl: "/images/home-og.jpg", // Optional social image
+  },
+  {
+    path: "/about/",
+    element: <AboutPage />,
+    title: "About Us",
+    description: "Learn more about our team",
+  },
+  {
+    path: "/products/:id", // Dynamic route - won't be statically generated
+    element: <ProductDetail />,
+    title: "Product Detail",
+  },
+];
+
+// Optional: Custom 404 page
+export const notFoundTemplate = (
+  <div>
+    <h1>404 - Page Not Found</h1>
+    <p>Sorry, the page you're looking for doesn't exist.</p>
+  </div>
+);
 ```
 
 ### What Gets Generated
 
 The static build process will:
 
-- Generate an HTML file for each non-dynamic route (routes with `:param` are skipped)
-- Apply route-specific meta tags (title, description, og:tags, custom tags)
+- Generate an HTML file for each static route (e.g., `/about/` → `about/index.html`)
+- Skip dynamic routes with parameters (e.g., `/user/:id`)
+- Apply route-specific meta tags (title, description, og:image, keywords)
 - Add proper `data-route` attributes for client-side hydration
+- Generate `sitemap.xml` with all static routes (Vite plugin only)
 - Preserve your existing HTML structure and assets
 
 ### Example Output
@@ -486,14 +537,14 @@ For a route configuration like:
 
 ```javascript
 {
-  path: '/about',
+  path: '/about/',
   title: 'About Us',
   description: 'Learn more about our company',
   imageUrl: 'https://example.com/about-og.jpg'
 }
 ```
 
-The generated `/about.html` will include:
+The generated `/about/index.html` will include:
 
 ```html
 <title>About Us</title>
@@ -501,7 +552,7 @@ The generated `/about.html` will include:
 <meta property="og:title" content="About Us" />
 <meta property="og:description" content="Learn more about our company" />
 <meta property="og:image" content="https://example.com/about-og.jpg" />
-<meta property="og:url" content="https://example.com/about" />
+<meta property="og:url" content="https://example.com/about/" />
 ```
 
 This provides excellent SEO while maintaining the benefits of a React SPA.
@@ -691,7 +742,7 @@ import { Router } from "./vendor/routerino";
 
 4. You're all set! Routerino is now vendored in your project, and you can use it as before.
 
-5. If you want to use the [sitemap generation script](./build-sitemap.js), copy `build-sitemap.js` into your project and reference it directly with the same arguments [as above](#generating-a-sitemap-from-routes). For example: `./build-sitemap.js routeFilePath=src/App.jsx hostname=https://example.com outputDir=build`
+5. If using the Routerino Forge plugin for SSG and to automatically generate a sitemap during the build process, be sure to copy it over as well.
 
 By vendoring Routerino, you have full control over the code and can make any necessary modifications directly to the `routerino.jsx` file. However, keep in mind that you'll need to manually update the vendored file if you want to incorporate any future updates or bug fixes from the main Routerino repository.
 

@@ -1,6 +1,6 @@
 {
   "name": "routerino",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A lightweight, SEO-optimized React router for modern web applications",
   "repository": {
     "type": "git",
@@ -21,28 +21,29 @@
   "files": [
     "dist",
     "types",
-    "build-sitemap.js",
-    "build-static.js",
+    "routerino-forge.js",
     "prerender",
-    "docs/deployment"
+    "docs"
   ],
-  "bin": {
-    "routerino-build-sitemap": "build-sitemap.js",
-    "routerino-build-static": "build-static.js"
-  },
   "type": "module",
   "types": "types/routerino.d.ts",
   "main": "./dist/routerino.umd.cjs",
   "exports": {
-    "types": "./types/routerino.d.ts",
-    "import": "./dist/routerino.js",
-    "require": "./dist/routerino.umd.cjs"
+    ".": {
+      "types": "./types/routerino.d.ts",
+      "import": "./dist/routerino.js",
+      "require": "./dist/routerino.umd.cjs"
+    },
+    "./forge": {
+      "import": "./routerino-forge.js"
+    }
   },
   "scripts": {
     "build": "vite build",
-    "build:static": "node build-static.js",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:app": "cd test-apps/vite-app && npm run build",
+    "test:integration": "npm run build && npm run test:app",
     "test:react-versions": "node test-react-versions.js",
     "test:node-versions": "node test-node-versions.js",
     "prepublishOnly": "vite build",
@@ -75,8 +76,8 @@
   },
   "peerDependencies": {
     "prop-types": "^15.0.0",
-    "react": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^10.0.0",
-    "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^10.0.0"
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {
     "react": {

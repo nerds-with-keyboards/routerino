@@ -21,7 +21,7 @@ export interface HeadTag {
 }
 
 export interface RouteConfig {
-  path: string;
+  path: `/${string}/`;
   element: React.ReactNode;
   title?: string;
   description?: string;
@@ -38,6 +38,7 @@ export interface RouterinoProps {
   errorTitle?: string;
   useTrailingSlash?: boolean;
   usePrerenderTags?: boolean;
+  baseUrl?: string;
   separator?: string;
   imageUrl?: string;
   touchIconUrl?: string;
@@ -55,6 +56,8 @@ export interface ErrorBoundaryProps {
   usePrerenderTags?: boolean;
   /** The current route path for better error context (optional) */
   routePath?: string;
+  /** Whether to log debug messages to console (optional) */
+  debug?: boolean;
 }
 
 export interface ErrorBoundaryState {
