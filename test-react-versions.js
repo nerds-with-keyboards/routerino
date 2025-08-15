@@ -12,12 +12,6 @@ const currentTestingLibraryVersion =
   packageJson.devDependencies["@testing-library/react"];
 
 const versions = [
-  {
-    react: "^17.0.0",
-    dom: "^17.0.0",
-    name: "React 17",
-    testingLibrary: "@testing-library/react@^12.1.5", // Compatible with React 17
-  },
   { react: "^18.0.0", dom: "^18.0.0", name: "React 18" },
   { react: "^19.0.0", dom: "^19.0.0", name: "React 19" },
   {

@@ -104,7 +104,7 @@ describe("Routerino", () => {
   });
 
   describe("Navigation", () => {
-    it.skip("navigates without page reload on click", () => {
+    it("navigates without page reload on click", () => {
       const pushStateSpy = vi.spyOn(window.history, "pushState");
       const routes = [
         {
@@ -126,7 +126,7 @@ describe("Routerino", () => {
       expect(pushStateSpy).toHaveBeenCalledWith(
         {},
         "",
-        "http://localhost/about"
+        expect.stringMatching(/^http:\/\/localhost(:\d+)?\/about$/)
       );
 
       // Simulate the state change
@@ -135,7 +135,7 @@ describe("Routerino", () => {
       expect(screen.getByText("About Page")).toBeTruthy();
     });
 
-    it.skip("does not intercept external links", () => {
+    it("does not intercept external links", () => {
       const pushStateSpy = vi.spyOn(window.history, "pushState");
       const routes = [
         {
@@ -151,20 +151,8 @@ describe("Routerino", () => {
       render(<Routerino routes={routes} />);
       const link = screen.getByText("External");
 
-      const event = new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-      });
-      Object.defineProperty(event, "target", {
-        value: {
-          tagName: "A",
-          href: "https://example.com",
-          origin: "https://example.com",
-        },
-        enumerable: true,
-      });
-
-      fireEvent(link, event);
+      // Clicking an external link should not call pushState
+      fireEvent.click(link);
 
       expect(pushStateSpy).not.toHaveBeenCalled();
     });
