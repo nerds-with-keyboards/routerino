@@ -11,10 +11,10 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
 ## Why Routerino?
 
 - SEO-First Design: Automatic meta tag management, sitemap generation, and prerender support ensure maximum search engine visibility
-- Zero Dependencies: Keeps bundle size minimal and reduces supply-chain vulnerabilities
+- Zero Added Dependencies: Keeps bundle size minimal and reduces supply-chain vulnerabilities
 - Simple API: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
 - Static Site Generation: Build-tool agnostic static HTML generation for improved performance and SEO
-- Production Ready: Includes Docker-based prerender server for easy deployments
+- Prerender Ready: Works with prerender servers (such as prerender/prerender) via dedicated meta tags for correct crawler status codes
 - Single File Core: The entire routing logic fits in one file, making it easy to understand and customize
 
 ## Table of Contents
@@ -23,7 +23,7 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
 - [Installation](#installation)
 - [Usage](#usage)
   - [Props](#props-arguments)
-  - [Get route parameters](#get-route-parameters-and-the-current-route-and-updating-head-tags)
+  - [useRouterino Hook](#using-the-userouterino-hook)
   - [updateHeadTag](#updateheadtag)
 - [Best Practices](#routerino-best-practices)
 - [Generating a Sitemap](#generating-a-sitemap-from-routes)
@@ -41,29 +41,29 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
 ## Quick Start
 
 ```jsx
-<Routerino
-  title="Example.com"
-  routes={[
-    {
-      path: "/",
-      element: <p>This is the home page!</p>,
-      title: "My Home Page!",
-      description: "Welcome to my home page!",
-    },
-    {
-      path: "/blog/my-first-post/",
-      element: (
-        <article>
-          <h1>My First Post</h1>
-          <p>Lorem ipsum...</p>
-        </article>
-      ),
-      title: "My First Post",
-      description: "The first post on my new home page!",
-      tags: [{ property: "og:type", content: "article" }],
-    },
-  ]}
-/>
+// export your routes for SSG, not required for CSR-only
+export const routes = [
+  {
+    path: "/",
+    element: <p>This is the home page!</p>,
+    title: "My Home Page!",
+    description: "Welcome to my home page!",
+  },
+  {
+    path: "/blog/my-first-post/",
+    element: (
+      <article>
+        <h1>My First Post</h1>
+        <p>Lorem ipsum...</p>
+      </article>
+    ),
+    title: "My First Post",
+    description: "The first post on my new home page!",
+    tags: [{ property: "og:type", content: "article" }],
+  },
+];
+
+<Routerino title="Example.com" routes={routes} />;
 ```
 
 This simple configuration automatically handles routing, meta tags, and SEO optimization for your React application.
@@ -83,6 +83,7 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
   - Generate static HTML files for each route with proper meta tags
   - Implement SEO best practices out-of-the-box
   - Optimize for Googlebot with pre-rendering support
+  - Automatic image optimization with blur placeholders
 
 - Enhanced User Experience
   - Support for sharing and social preview metadata
@@ -90,40 +91,41 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
 
 ## Installation
 
-Ensure that you have React and React DOM installed in your project as peer dependencies. To add as a dev dependency:
-
 ```sh
 npm i routerino
 ```
+
+Note: Routerino requires React, React DOM, and PropTypes as peer dependencies. These are typically already installed in React projects.
 
 ### Compatibility
 
 Routerino supports:
 
-- **React 18 and 19** - Both versions are tested and supported
-- **Preact** - Compatible via `@preact/compat`
-- **Node.js 18+** - Tested on Node.js 18, 20, 22, and 24. Could be used on earlier versions if we skip tests
+- React 18 and 19: Both versions are tested and supported. React 17 works for CSR-only.
+- Node.js 18+: Tested on Node.js 18, 20, 22, and 24. Could be used on earlier versions if we skip tests.
+- Preact: Compatible via `@preact/compat`. See [using Preact](#using-preact) below.
 
 ## Usage
 
 Here's a short example of using Routerino in your React application:
 
 ```jsx
+export const routes = [
+  {
+    path: "/",
+    element: <p>This is the home page!</p>,
+    title: "My Home Page!",
+    description: "Welcome to my home page!",
+  },
+];
 <Routerino
   title="Example.com"
-  routes={[
-    {
-      path: "/",
-      element: <p>This is the home page!</p>,
-      title: "My Home Page!",
-      description: "Welcome to my home page!",
-    },
-  ]}
-  debug={window.location.host.includes("localhost:")}
-/>
+  routes={routes}
+  debug={window.location.hostname === "localhost"}
+/>;
 ```
 
-Links are just standard HTML anchor tags. No need to use special `<Link>` components—you can use whatever components or design system you like. For example: <a href="/some-page/">a link</a> is perfectly valid. This is very handy for markdown-based content. With standard link support in Routerino, you won't need to [transform your markdown content with custom React components](https://github.com/remarkjs/react-markdown?tab=readme-ov-file#appendix-b-components).
+Links are just standard HTML anchor tags. No need to use special `<Link>` components—you can use whatever components or design system you like. For example: <a href="/some-page/">a link</a> is perfectly valid. This is very handy for markdown-based content. With standard link support in Routerino, you won't need to [transform your markdown content with custom React components](https://github.com/remarkjs/react-markdown?tab=readme-ov-file#appendix-b-components). Routerino handles same-origin anchor clicks. Cross-origin links and non-HTTP schemes (e.g., mailto:, tel:) are handled by the browser as usual.
 
 ### Programmatic Navigation
 
@@ -148,19 +150,52 @@ See [props](#props-arguments) for full explanations and [example code](#how-to-g
 
 ### Using Preact
 
-For Preact projects, configure your bundler to alias React to @preact/compat:
+Routerino is fully compatible with Preact via the `@preact/compat` compatibility layer. This allows you to use Routerino in Preact projects with the same API.
+
+#### Setup Instructions
+
+1. Install Preact and the compatibility layer:
+
+```sh
+npm i preact @preact/compat
+```
+
+2. Configure your bundler to alias React to @preact/compat:
+
+**Vite Configuration:**
 
 ```js
 // vite.config.js
-export default {
+import { defineConfig } from "vite";
+import preact from "@preact/preset-vite";
+
+export default defineConfig({
+  plugins: [preact()],
   resolve: {
     alias: {
       react: "@preact/compat",
       "react-dom": "@preact/compat",
+      "react/jsx-runtime": "@preact/compat/jsx-runtime",
+    },
+  },
+});
+```
+
+**Webpack Configuration:**
+
+```js
+// webpack.config.js
+module.exports = {
+  resolve: {
+    alias: {
+      react: "preact/compat",
+      "react-dom": "preact/compat",
     },
   },
 };
 ```
+
+3. Use Routerino exactly as you would in a React project - the API is identical!
 
 ### Props (arguments)
 
@@ -180,13 +215,11 @@ All of these are optional, so it's easy to get started with nothing but a bare-b
 | [errorTemplate](#errortemplate-element)        | React.ReactNode | Error page template               | `<DefaultErrorTemplate />`    |
 | [errorTitle](#errortitle-string)               | string          | Error page title                  | `"Page error [500]"`          |
 | [useTrailingSlash](#usetrailingslash-bool)     | boolean         | Use trailing slashes in URLs      | `true`                        |
-| [usePrerenderTags](#useprerendertags-bool)     | boolean         | Use pre-render meta tags          | `true`                        |
+| [usePrerenderTags](#useprerendertags-bool)     | boolean         | Use pre-render meta tags          | `false`                       |
 | [baseUrl](#baseurl-string)                     | string          | Base URL for canonical tags       | `null` (uses window.location) |
 | [imageUrl](#imageurl-string)                   | string          | Default image URL for sharing     | `null`                        |
 | [touchIconUrl](#touchiconurl-string)           | string          | Image URL for PWA homescreen icon | `null`                        |
 | [debug](#debug-boolean)                        | boolean         | Enable debug mode                 | `false`                       |
-| [titlePrefix](#titleprefix-string)             | string          | Deprecated: Title prefix          | `""`                          |
-| [titlePostfix](#titlepostfix-string)           | string          | Deprecated: Title postfix         | `""`                          |
 
 ##### `title`: string;
 
@@ -257,9 +290,9 @@ Default: `true`
 
 ##### `usePrerenderTags`: bool;
 
-Include meta tags to enable proper error codes like 404 when serving pages to a search crawler.
+Include prerender-specific meta tags to enable proper error codes like 404 when serving prerendered pages to a search crawler. This means that Routerino uses <meta name="prerender-status-code" content="..."> and <meta name="prerender-header" content="Location: ..."> to signal status codes and redirects to prerender servers.
 
-Default: `true`
+Default: `false`
 
 ##### `baseUrl`: string;
 
@@ -268,18 +301,6 @@ The base URL to use for canonical tags and og:url meta tags. If not provided, us
 Example: `"https://example.com"`
 
 Default: `null` (uses window.location.origin)
-
-##### `titlePrefix`: string;
-
-Deprecated: use `title` instead. A string to preprend to every title. Should include the brand name, a separator, and spacing, such as `Example.com | `<- Note the extra end space.
-
-Default: `""` (empty string)
-
-##### `titlePostfix`: string;
-
-Deprecated: use `title` instead. A string to append to every title. Should include the brand name, a separator, and spacing, such as the following example. Note the extra starting space ->` - Example.com`.
-
-Default: `""` (empty string)
 
 ##### `imageUrl`: string;
 
@@ -295,7 +316,21 @@ Default: `null`
 
 ##### `debug`: boolean;
 
-Enable debug mode for additional logging and information.
+Enable debug mode for additional logging and information. When enabled, Routerino logs detailed information to the console including:
+
+- Route changes and pattern matching
+- Meta tag updates
+- Error boundaries and component failures
+- Performance timing information
+
+Example debug output:
+
+```
+[Routerino] Route changed to: /products/laptop/
+[Routerino] Matched pattern: /products/:id/
+[Routerino] Route params: { id: "laptop" }
+[Routerino] Updated meta tag: og:title = "Laptop Pro - $1299"
+```
 
 Default: `false`
 
@@ -322,14 +357,6 @@ The page's description, which will show up on search results pages.
 ##### tags?: HeadTag[];
 
 Any desired head tags for that route. See [HeadTag props](#headtag-props) for details.
-
-##### titlePrefix?: string;
-
-Deprecated: a title prefix for this route to override the default. Use title and separator instead.
-
-##### titlePostfix?: string;
-
-Deprecated: a title postfix for this route to override the default. Use title and separator instead.
 
 ##### imageUrl?: string;
 
@@ -371,14 +398,39 @@ An array of HeadTag objects that can be added to the route to manage meta tags, 
 
 - `target` (string): The "target" attribute of the tag. Defines where to open the linked resource.
 
-### Get route parameters and the current route, and updating head tags
+### Using the `useRouterino` Hook
 
-Child components can access the current route and its parameters via the `Routerino` or `routerino` props. This prop is an object with the following properties:
+The `useRouterino` hook provides access to router state from any child component. This is the primary way to access route information and update head tags dynamically.
 
-- routePattern: The current route path pattern, such as `/foo/:id/`.
-- currentRoute: The current route path, such as `/foo/bar/`.
-- params: a dictionary of route parameters, such as `{id: "bar"}`. These will match the route pattern provided by the `path` prop.
-- updateHeadTag: a function that takes a [HeadTag object](#headtag-props) and updates the head tags for the current route. This is useful for setting custom `<head>` child tags for each route, such as Open Graph tags for social previews. You may need to set this after doing some data fetches, for example. See the next section for more details.
+```jsx
+import { useRouterino } from "routerino";
+
+function MyComponent() {
+  const { currentRoute, params, routePattern, updateHeadTag } = useRouterino();
+
+  // Access current route information
+  console.log("Current path:", currentRoute); // e.g., "/products/laptop/"
+  console.log("Route pattern:", routePattern); // e.g., "/products/:id/"
+  console.log("Route params:", params); // e.g., { id: "laptop" }
+
+  // Update meta tags dynamically
+  useEffect(() => {
+    updateHeadTag({
+      name: "description",
+      content: `Product page for ${params.id}`,
+    });
+  }, [params.id]);
+
+  return <div>Product: {params.id}</div>;
+}
+```
+
+#### Hook Return Values
+
+- **`currentRoute`**: The current URL path (e.g., `/foo/bar/`)
+- **`routePattern`**: The matched route pattern with parameters (e.g., `/foo/:id/`)
+- **`params`**: Object containing route parameters (e.g., `{id: "bar"}`)
+- **`updateHeadTag`**: Function to dynamically update head tags (see [updateHeadTag](#updateheadtag) section)
 
 ### `updateHeadTag`
 
@@ -607,6 +659,8 @@ export default defineConfig({
       // prerenderStatusCode: true,
       // useTrailingSlash: true, // Set to false for /about instead of /about/
       // verbose: false,
+      // ssgCacheDir: "node_modules/.cache/routerino-forge", // SSG cache directory
+      // optimizeImages: true, // Enable image optimization (see below)
     }),
   ],
 });
@@ -615,7 +669,7 @@ export default defineConfig({
 **Requirements:**
 
 - Your `index.html` must have `<div id="root"></div>` (standard for all React apps)
-- Routes must be exported from your routes file (see below)
+- **IMPORTANT**: Routes must be exported from a separate file (not defined inline) for SSG to work
 
 **Features:**
 
@@ -635,14 +689,44 @@ export default defineConfig({
 - Creates a 404.html page
 - Skips dynamic routes (with `:param` syntax)
 - SEO optimized: Complete HTML with meta tags
+- **Image optimization**: Automatic blur placeholders and lazy loading
 - Easy configuration: Works out of the box with Vite and minimal setup
 
+#### Image Optimization
+
+Routerino Forge can automatically optimize images in your static builds for faster loading:
+
+```js
+routerinoForge({
+  optimizeImages: true, // Enable with defaults
+  // Or configure in detail:
+  optimizeImages: {
+    enabled: true,
+    placeholderSize: 20, // Size of blur placeholder (20x20 pixels)
+    blur: 4, // Blur radius for placeholder
+    maxSize: 10485760, // Maximum image size to process (10MB)
+    minSize: 1024, // Minimum image size to process (1KB)
+    cacheDir: "node_modules/.cache/routerino-forge", // Cache directory
+  },
+});
+```
+
+**What it does:**
+
+- Generates tiny blur placeholders for images (base64 encoded)
+- Adds lazy loading attributes automatically
+- Caches processed images to speed up subsequent builds
+- Preserves original images while enhancing loading performance
+- Skips external images (http/https), data URIs, and SVGs
+
 #### Routes Configuration
+
+**Critical for SSG**: Routes MUST be exported from a separate file for the build plugin to discover them. The plugin needs to import your routes at build time, so inline route definitions won't work.
 
 Define routes with `element` property containing JSX elements:
 
 ```jsx
-// src/routes.jsx
+// src/routes.jsx - REQUIRED: Must be a separate file with exports!
 export const routes = [
   {
     path: "/",
@@ -850,6 +934,8 @@ With these steps, you'll have a new React project set up with Vite as the build 
 
 This example includes the full React configuration. It might take the place of `src/main.jsx` or an `index.js` file.
 
+**Note**: This inline route definition works for client-side rendering but NOT for SSG. For SSG, routes must be in a separate file (see [Routes Configuration](#routes-configuration)).
+
 ```jsx
 import React from "react";
 import { createRoot } from "react-dom/client";
@@ -923,7 +1009,6 @@ import { ErrorBoundary } from "routerino";
 <ErrorBoundary
   fallback={<div>Something went wrong. Please try again.</div>}
   errorTitleString="Error | My Application"
-  usePrerenderTags={true}
   debug={window.location.hostname === "localhost"} // Auto-enable on localhost
 >
   <MyComponent />
@@ -937,7 +1022,7 @@ import { ErrorBoundary } from "routerino";
 | `children`         | `ReactNode` | No       | The child components to render when there's no error              |
 | `fallback`         | `ReactNode` | No       | The UI to display when an error is caught                         |
 | `errorTitleString` | `string`    | Yes      | The document title to set when an error occurs                    |
-| `usePrerenderTags` | `boolean`   | No       | Whether to set prerender meta tag (status code 500)               |
+| `usePrerenderTags` | `boolean`   | No       | Whether to set prerender meta tags (status code 500)              |
 | `routePath`        | `string`    | No       | The current route path for better error context (used internally) |
 | `debug`            | `boolean`   | No       | Enable detailed console logging of errors (default: `false`)      |
 

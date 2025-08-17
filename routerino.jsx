@@ -194,7 +194,7 @@ export default function Routerino({
   ),
   errorTitle = "Page error [500]",
   useTrailingSlash = true,
-  usePrerenderTags = true,
+  usePrerenderTags = false,
   baseUrl = null,
   title = "",
   separator = " | ",
