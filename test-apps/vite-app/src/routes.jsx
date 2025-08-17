@@ -5,6 +5,7 @@ const HomePage = ({ featured = "Latest News" }) => (
     <h1>Home Page</h1>
     <p>Welcome to the test app!</p>
     <p>Featured: {featured}</p>
+    <img src="/test-image.jpg" alt="Test Image" />
     <nav>
       <a href="/about/">About</a> | <a href="/products/">Products</a> |{" "}
       <a href="/contact/">Contact</a>
@@ -103,7 +104,7 @@ export const notFoundTemplate = (
 export const routes = [
   {
     path: "/",
-    element: <HomePage featured="SSR Works with Props!" />,
+    element: <HomePage featured="Works with Props!" />,
     title: "Home",
     description: "Welcome to our test application",
     imageUrl: "/images/home-og.jpg",

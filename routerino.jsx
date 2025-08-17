@@ -468,6 +468,14 @@ export default function Routerino({
       });
     }
 
+    // set the twitter summary card to ensure rich previews
+    if (!match.tags?.find(({ property }) => property === "twitter:card")) {
+      updateHeadTag({
+        name: "twitter:card",
+        content: "summary_large_image",
+      });
+    }
+
     if (touchIconUrl) {
       updateHeadTag({
         tag: "link",

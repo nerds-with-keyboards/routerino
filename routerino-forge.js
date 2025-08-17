@@ -2,6 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import { pathToFileURL } from "url";
 import { build } from "vite";
+import crypto from "crypto";
+import { spawn } from "child_process";
 
 /**
  * Routerino Forge - Static Site Generation for React with Vite
@@ -11,6 +13,325 @@ import { build } from "vite";
  * render identically on server and client.
  */
 
+// Helper to check if a route is dynamic (contains :param)
+const isDynamicRoute = (path) =>
+  path.split("/").some((segment) => segment.startsWith(":"));
+
+// Helper to check if an image should be skipped
+const shouldSkipImage = (src) =>
+  src.startsWith("http") || src.startsWith("data:") || src.endsWith(".svg");
+
+// Normalize image optimization config
+function normalizeImageConfig(config) {
+  if (config === false) return null;
+  if (config === true) {
+    return {
+      enabled: true,
+      placeholderSize: 20,
+      blur: 4,
+      maxSize: 10485760, // 10MB
+      minSize: 1024, // 1KB
+      cacheDir: "node_modules/.cache/routerino-forge",
+    };
+  }
+  return {
+    enabled: true,
+    placeholderSize: config.placeholderSize ?? 20,
+    blur: config.blur ?? 4,
+    maxSize: config.maxSize ?? 10485760,
+    minSize: config.minSize ?? 1024,
+    cacheDir: config.cacheDir ?? "node_modules/.cache/routerino-forge",
+  };
+}
+
+// Get image dimensions using ffprobe
+function getImageDimensionsWithFfprobe(inputPath) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=width,height",
+      "-of",
+      "json",
+      inputPath,
+    ];
+
+    const ffprobe = spawn("ffprobe", args);
+
+    let output = "";
+    let errorOutput = "";
+
+    ffprobe.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+
+    ffprobe.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffprobe.on("error", (err) => {
+      reject(new Error(`Failed to spawn ffprobe: ${err.message}`));
+    });
+
+    ffprobe.on("close", (code) => {
+      if (code !== 0) {
+        return reject(
+          new Error(`ffprobe exited with code ${code}. Error: ${errorOutput}`)
+        );
+      }
+
+      try {
+        const result = JSON.parse(output);
+        const stream = result.streams?.[0];
+        if (stream?.width && stream?.height) {
+          resolve({ width: stream.width, height: stream.height });
+        } else {
+          reject(new Error("Could not extract dimensions from ffprobe output"));
+        }
+      } catch (error) {
+        reject(new Error(`Failed to parse ffprobe output: ${error.message}`));
+      }
+    });
+  });
+}
+
+/**
+ * Resize an image to a given height (keeping aspect ratio)
+ * and return a base64 data URI (data:image/png;base64,...).
+ *
+ * @param {string} inputPath - Path to input image file
+ * @param {number} targetHeight - Desired output height (default 16px)
+ * @returns {Promise<string>} - Base64 Data URI for PNG
+ */
+function resizeImageToBase64(inputPath, targetHeight = 16) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      "-i",
+      inputPath,
+      "-vf",
+      `scale=-1:${targetHeight}`,
+      "-f",
+      "image2pipe",
+      "-vcodec",
+      "png",
+      "-loglevel",
+      "error",
+      "pipe:1",
+    ];
+
+    const ffmpeg = spawn("ffmpeg", args);
+
+    let chunks = [];
+    let errorOutput = "";
+
+    ffmpeg.stdout.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+
+    ffmpeg.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffmpeg.on("error", (err) => {
+      reject(new Error(`Failed to spawn ffmpeg: ${err.message}`));
+    });
+
+    ffmpeg.on("close", (code) => {
+      if (code !== 0) {
+        return reject(
+          new Error(`ffmpeg exited with code ${code}. Error: ${errorOutput}`)
+        );
+      }
+      const buffer = Buffer.concat(chunks);
+      const base64 = buffer.toString("base64");
+      const dataUri = `data:image/png;base64,${base64}`;
+      resolve(dataUri);
+    });
+  });
+}
+
+// Generate a tiny placeholder image using ffmpeg
+async function generatePlaceholder(imagePath, config) {
+  try {
+    // Use ffmpeg to create a small placeholder (16px height by default)
+    const targetHeight = config.placeholderSize || 16;
+
+    // Get dimensions using ffprobe (part of ffmpeg)
+    const dimensions = await getImageDimensionsWithFfprobe(imagePath).catch(
+      () => null
+    );
+
+    const placeholder = await resizeImageToBase64(imagePath, targetHeight);
+
+    return {
+      placeholder,
+      width: dimensions?.width || 0,
+      height: dimensions?.height || 0,
+    };
+  } catch (error) {
+    if (config.verbose) {
+      console.warn(
+        `  ⚠️ Could not process image ${imagePath} (requires ffmpeg):`,
+        error.message
+      );
+    }
+    return null;
+  }
+}
+
+// Get cache key for an image
+async function getImageCacheKey(imagePath, config) {
+  try {
+    const stats = await fs.stat(imagePath);
+    const hash = crypto.createHash("md5");
+    hash.update(imagePath);
+    hash.update(stats.mtime.toISOString());
+    hash.update(stats.size.toString());
+    hash.update(config.placeholderSize.toString());
+    hash.update("v2-grid8x8"); // Version the cache format
+    return hash.digest("hex");
+  } catch {
+    return null;
+  }
+}
+
+// Process images in HTML
+async function processImagesInHTML(html, outputDir, config) {
+  if (!config.optimizeImages || !config.optimizeImages.enabled) {
+    return { html, stats: null };
+  }
+
+  const imageConfig = config.optimizeImages;
+  const stats = {
+    processed: 0,
+    skipped: 0,
+    totalSize: 0,
+    placeholderSize: 0,
+    errors: [],
+  };
+
+  // Ensure cache directory exists
+  const cacheDir = path.resolve(imageConfig.cacheDir);
+  await fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
+
+  // Find all img tags
+  const imgRegex = /<img\s+([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
+  const matches = [...html.matchAll(imgRegex)];
+
+  let processedHTML = html;
+
+  for (const match of matches) {
+    const [fullMatch, beforeSrc, src, afterSrc] = match;
+
+    // Skip external URLs, data URLs, and SVGs
+    if (shouldSkipImage(src)) {
+      stats.skipped++;
+      continue;
+    }
+
+    // Resolve image path
+    const imagePath = path.join(outputDir, src);
+
+    // Check if file exists and size
+    try {
+      const fileStats = await fs.stat(imagePath);
+
+      if (
+        fileStats.size < imageConfig.minSize ||
+        fileStats.size > imageConfig.maxSize
+      ) {
+        stats.skipped++;
+        continue;
+      }
+
+      stats.totalSize += fileStats.size;
+
+      // Check cache
+      const cacheKey = await getImageCacheKey(imagePath, imageConfig);
+      if (!cacheKey) {
+        stats.skipped++;
+        continue;
+      }
+
+      const cacheFile = path.join(cacheDir, `${cacheKey}.json`);
+      let imageData;
+
+      try {
+        // Try to read from cache
+        const cached = JSON.parse(await fs.readFile(cacheFile, "utf-8"));
+        imageData = cached;
+      } catch {
+        // Generate placeholder
+        imageData = await generatePlaceholder(imagePath, imageConfig);
+
+        if (!imageData) {
+          stats.skipped++;
+          continue;
+        }
+
+        // Save to cache
+        await fs
+          .writeFile(cacheFile, JSON.stringify(imageData))
+          .catch(() => {});
+      }
+
+      // Build new img tag
+      let newImg = `<img ${beforeSrc}src="${src}"${afterSrc}`;
+
+      // Add dimensions to prevent layout shift
+      if (
+        imageData.width &&
+        imageData.height &&
+        !fullMatch.includes("width=")
+      ) {
+        newImg = newImg.replace(
+          "<img ",
+          `<img width="${imageData.width}" height="${imageData.height}" `
+        );
+      }
+
+      const dataUri = imageData.placeholder;
+
+      // The inline style for the placeholder effect.
+      const style = `background: url('${dataUri}') center/cover; filter: blur(${imageConfig.blur}px); transition: filter 0.2s ease-out;`;
+
+      // Simple onload handler to remove blur
+      const onload = `this.style.filter='none'`;
+
+      // Inject the style attribute.
+      if (fullMatch.includes("style=")) {
+        newImg = newImg.replace(
+          /style=["']([^"']+)["']/,
+          `style="${style} $1"`
+        );
+      } else {
+        newImg = newImg.replace("<img ", `<img style="${style}" `);
+      }
+
+      // Add the onload handler
+      // The check for ">" handles self-closing tags vs. regular tags.
+      if (!newImg.includes(">")) {
+        newImg = newImg + ` onload="${onload}">`;
+      } else {
+        newImg = newImg.replace(/>$/, ` onload="${onload}">`);
+      }
+
+      processedHTML = processedHTML.replace(fullMatch, newImg);
+
+      stats.processed++;
+      stats.placeholderSize += imageData.placeholder.length;
+    } catch (error) {
+      stats.errors.push({ src, error: error.message });
+      stats.skipped++;
+    }
+  }
+
+  return { html: processedHTML, stats };
+}
+
 export function routerinoForge(options = {}) {
   // Configuration with defaults
   const config = {
@@ -19,9 +340,11 @@ export function routerinoForge(options = {}) {
     outputDir: options.outputDir || "dist",
     baseUrl: options.baseUrl || "",
     generateSitemap: options.generateSitemap ?? true,
-    prerenderStatusCode: options.prerenderStatusCode ?? true,
     verbose: options.verbose ?? false,
     useTrailingSlash: options.useTrailingSlash ?? true, // Default to trailing slashes
+    optimizeImages: normalizeImageConfig(options.optimizeImages ?? true),
+    ssgCacheDir:
+      options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
   };
 
   let viteConfig;
@@ -35,22 +358,22 @@ export function routerinoForge(options = {}) {
     },
 
     async closeBundle() {
-      if (hasRun || viteConfig.build.ssr) return; // Skip if already run or if this IS the SSR build
+      if (hasRun || viteConfig.build.ssr) return; // Skip if already run or if this IS the SSG build
       hasRun = true;
 
       let tempEntryPath = null;
 
       try {
         // Step 1: Build bundle for static generation
-        let ssrEntryPath = path.resolve(
+        let ssgEntryPath = path.resolve(
           viteConfig.root,
           "src/entry-server.jsx"
         );
-        const ssrOutDir = path.resolve(viteConfig.root, "dist-ssr");
+        const ssgOutDir = path.resolve(viteConfig.root, config.ssgCacheDir);
 
         // Check if user has custom entry-server, otherwise create temp one
         try {
-          await fs.access(ssrEntryPath);
+          await fs.access(ssgEntryPath);
         } catch {
           // Create temp entry-server in the user's build directory (already gitignored)
           const buildDir = viteConfig.build.outDir || "dist";
@@ -60,7 +383,7 @@ export function routerinoForge(options = {}) {
             ".forge-temp"
           );
           tempEntryPath = path.resolve(tempDir, "entry-server.jsx");
-          ssrEntryPath = tempEntryPath;
+          ssgEntryPath = tempEntryPath;
 
           // Calculate relative path from temp location to routes
           const routesPath = path.resolve(viteConfig.root, config.routes);
@@ -80,12 +403,14 @@ const notFoundTemplate = routesModule.notFoundTemplate;
 if (!routes) {
   throw new Error('Could not find routes export. Expected "export const routes" or "export default" from ${relativePath}');
 }
+// Helper to check if a route is dynamic (contains :param)
+const isDynamicRoute = (path) => path.split("/").some(segment => segment.startsWith(":"));
 export { routes };
 export function render(url) {
   const route = routes.find(r => {
     if (r.path === url) return true;
     if (r.path === '/' && url === '/') return true;
-    if (r.path.split('/').some(segment => segment.startsWith(':'))) return false;
+    if (isDynamicRoute(r.path)) return false;
     return r.path === url;
   }); 
   if (!route) {
@@ -123,12 +448,12 @@ export function render(url) {
           }
         }
 
-        console.log("Building SSG bundle...");
+        console.log("Routerino: Forging SSG bundle...");
         await build({
           root: viteConfig.root,
           build: {
-            ssr: ssrEntryPath,
-            outDir: ssrOutDir,
+            ssr: ssgEntryPath,
+            outDir: ssgOutDir,
             rollupOptions: {
               output: {
                 format: "es",
@@ -140,7 +465,7 @@ export function render(url) {
 
         // Step 2: Load the built module
         const ssgModule = await import(
-          pathToFileURL(path.join(ssrOutDir, "entry-server.js")).href
+          pathToFileURL(path.join(ssgOutDir, "entry-server.js")).href
         );
         let { render, routes } = ssgModule;
 
@@ -176,10 +501,7 @@ export function render(url) {
 
         // Count only static routes (excluding dynamic routes with parameters)
         const staticRoutes =
-          routes?.filter(
-            (route) =>
-              !route.path.split("/").some((segment) => segment.startsWith(":"))
-          ) || [];
+          routes?.filter((route) => !isDynamicRoute(route.path)) || [];
         console.log(
           `Found ${routes?.length || 0} routes (${staticRoutes.length} static, ${(routes?.length || 0) - staticRoutes.length} dynamic)`
         );
@@ -219,7 +541,7 @@ export function render(url) {
         }
 
         // Generate static HTML for each route
-        await generateStaticPages({
+        const imageStats = await generateStaticPages({
           routes,
           template,
           outputDir: path.resolve(viteConfig.root, config.outputDir),
@@ -251,6 +573,38 @@ export function render(url) {
         console.log(
           `  ✓ Generated ${fileCount} HTML files (${staticRoutes.length} routes) + 404.html`
         );
+
+        // Display image optimization stats
+        if (config.optimizeImages && imageStats && imageStats.processed > 0) {
+          const totalSizeMB = (imageStats.totalSize / 1024 / 1024).toFixed(2);
+          const placeholderSizeKB = (imageStats.placeholderSize / 1024).toFixed(
+            1
+          );
+          const reductionPercent = (
+            (1 - imageStats.placeholderSize / imageStats.totalSize) *
+            100
+          ).toFixed(0);
+          console.log(
+            `  ✓ Optimized ${imageStats.processed} images (${totalSizeMB}MB total optimized, ${placeholderSizeKB}KB placeholders, ${reductionPercent}% reduction)`
+          );
+
+          if (config.verbose && imageStats.skipped > 0) {
+            console.log(
+              `    ⚠️ Skipped ${imageStats.skipped} images (external URLs, SVGs, or size limits)`
+            );
+          }
+
+          if (imageStats.errors.length > 0) {
+            console.warn(
+              `    ⚠️ ${imageStats.errors.length} images had processing errors`
+            );
+            if (config.verbose) {
+              imageStats.errors.forEach(({ src, error }) => {
+                console.warn(`      - ${src}: ${error}`);
+              });
+            }
+          }
+        }
       } catch (error) {
         console.error("❌ Failed to generate static pages:", error.message);
         if (config.verbose) {
@@ -258,10 +612,10 @@ export function render(url) {
         }
         // Don't throw to allow build to continue
       } finally {
-        // Clean up dist-ssr directory
-        const ssrOutDir = path.resolve(viteConfig.root, "dist-ssr");
+        // Clean up SSG cache directory
+        const ssgOutDir = path.resolve(viteConfig.root, config.ssgCacheDir);
         try {
-          await fs.rm(ssrOutDir, { recursive: true, force: true });
+          await fs.rm(ssgOutDir, { recursive: true, force: true });
         } catch {
           // Ignore if it doesn't exist or can't be removed
         }
@@ -293,9 +647,17 @@ async function generateStaticPages({
   config,
   render,
 }) {
+  const allImageStats = {
+    processed: 0,
+    skipped: 0,
+    totalSize: 0,
+    placeholderSize: 0,
+    errors: [],
+  };
+
   for (const route of routes) {
     // Skip dynamic routes with parameters
-    if (route.path.split("/").some((segment) => segment.startsWith(":"))) {
+    if (isDynamicRoute(route.path)) {
       if (config.verbose) {
         console.log(`  Skipped dynamic route: ${route.path}`);
       }
@@ -333,7 +695,6 @@ async function generateStaticPages({
         // Root only needs index.html
         filesToGenerate.push({
           path: path.join(outputDir, "index.html"),
-          isCanonical: true,
         });
       } else {
         // For all other routes, generate both formats
@@ -342,24 +703,21 @@ async function generateStaticPages({
         // Determine which version is canonical based on useTrailingSlash
         filesToGenerate.push({
           path: path.join(outputDir, `${cleanPath}.html`),
-          isCanonical: !config.useTrailingSlash,
           urlPath: cleanPath,
         });
 
         filesToGenerate.push({
           path: path.join(outputDir, cleanPath, "index.html"),
-          isCanonical: config.useTrailingSlash,
           urlPath: `${cleanPath}/`,
         });
       }
 
       // Write files with appropriate meta tags
       for (const file of filesToGenerate) {
-        // Generate meta tags (with canonical URL and potential redirect)
+        // Generate meta tags with canonical URL
         const metaTags = generateMetaTags(
           route,
           config,
-          file.isCanonical,
           file.urlPath || route.path
         );
 
@@ -409,6 +767,23 @@ async function generateStaticPages({
           );
         }
 
+        // Process images in HTML
+        const { html: processedHTML, stats } = await processImagesInHTML(
+          html,
+          outputDir,
+          config
+        );
+        html = processedHTML;
+
+        // Accumulate stats
+        if (stats) {
+          allImageStats.processed += stats.processed;
+          allImageStats.skipped += stats.skipped;
+          allImageStats.totalSize += stats.totalSize;
+          allImageStats.placeholderSize += stats.placeholderSize;
+          allImageStats.errors.push(...stats.errors);
+        }
+
         // Ensure directory exists
         await fs.mkdir(path.dirname(file.path), { recursive: true });
 
@@ -416,19 +791,19 @@ async function generateStaticPages({
         await fs.writeFile(file.path, html);
 
         if (config.verbose) {
-          console.log(
-            `  Generated: ${file.path}${file.isCanonical ? " (canonical)" : ""}`
-          );
+          console.log(`  Generated: ${file.path}`);
         }
       }
     } catch (error) {
       console.error(`Failed to generate ${route.path}:`, error);
     }
   }
+
+  return allImageStats;
 }
 
 // Generate meta tags
-function generateMetaTags(route, config, isCanonical, urlPath) {
+function generateMetaTags(route, config, urlPath) {
   const tags = [];
 
   // Determine the canonical URL
@@ -469,24 +844,10 @@ function generateMetaTags(route, config, isCanonical, urlPath) {
       ? config.baseUrl + route.imageUrl
       : route.imageUrl;
     tags.push(`<meta property="og:image" content="${imageUrl}">`);
-    tags.push(`<meta name="twitter:image" content="${imageUrl}">`);
   }
 
   // Twitter card
   tags.push(`<meta name="twitter:card" content="summary_large_image">`);
-
-  if (config.prerenderStatusCode) {
-    if (!isCanonical) {
-      // For non-canonical versions, add redirect to canonical
-      tags.push(`<meta name="prerender-status-code" content="301">`);
-      tags.push(
-        `<meta name="prerender-header" content="Location: ${canonicalUrl}">`
-      );
-    } else {
-      // For canonical version, return 200
-      tags.push(`<meta name="prerender-status-code" content="200">`);
-    }
-  }
 
   return tags.join("\n");
 }
@@ -505,9 +866,6 @@ async function generate404Page({ template, outputDir, config, render }) {
     // Generate meta tags for 404 page
     const metaTags = [];
     metaTags.push(`<meta name="robots" content="noindex">`);
-    if (config.prerenderStatusCode) {
-      metaTags.push(`<meta name="prerender-status-code" content="404">`);
-    }
     metaTags.push(`<meta name="twitter:card" content="summary_large_image">`);
 
     // Inject meta tags and content into template
@@ -549,6 +907,14 @@ async function generate404Page({ template, outputDir, config, render }) {
       console.warn(`  ⚠️  Could not find <div id="root"> for 404.html`);
     }
 
+    // Process images in 404 page
+    const { html: processedHTML } = await processImagesInHTML(
+      html,
+      outputDir,
+      config
+    );
+    html = processedHTML;
+
     // Write 404.html
     const filePath = path.join(outputDir, "404.html");
     await fs.writeFile(filePath, html);
@@ -564,9 +930,7 @@ async function generate404Page({ template, outputDir, config, render }) {
 // Generate sitemap and robots.txt
 async function generateSitemap(routes, config) {
   // Filter out dynamic routes
-  const staticRoutes = routes.filter(
-    (route) => !route.path.split("/").some((segment) => segment.startsWith(":"))
-  );
+  const staticRoutes = routes.filter((route) => !isDynamicRoute(route.path));
 
   const urls = staticRoutes
     .map((route) => {
