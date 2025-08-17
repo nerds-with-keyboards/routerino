@@ -10,12 +10,12 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
 
 ## Why Routerino?
 
-- **SEO-First Design**: Automatic meta tag management, sitemap generation, and prerender support ensure maximum search engine visibility
-- **Zero Dependencies**: Keeps bundle size minimal and reduces supply-chain vulnerabilities
-- **Simple API**: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
-- **Static Site Generation**: Build-tool agnostic static HTML generation for improved performance and SEO
-- **Production Ready**: Includes Docker-based prerender server for easy deployments
-- **Single File Core**: The entire routing logic fits in one file, making it easy to understand and customize
+- SEO-First Design: Automatic meta tag management, sitemap generation, and prerender support ensure maximum search engine visibility
+- Zero Dependencies: Keeps bundle size minimal and reduces supply-chain vulnerabilities
+- Simple API: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
+- Static Site Generation: Build-tool agnostic static HTML generation for improved performance and SEO
+- Production Ready: Includes Docker-based prerender server for easy deployments
+- Single File Core: The entire routing logic fits in one file, making it easy to understand and customize
 
 ## Table of Contents
 
@@ -439,10 +439,10 @@ When multiple URLs show the same content (like `/about` vs `/about/`), search en
 
 **Best practices that Routerino implements**
 
-- **Consistency**: Sitemap, canonical, and redirects all agree
-- **Dual file generation (SSG)**: Creates both `/about.html` and `/about/index.html` so both URLs work
-- **Prerender support (SPA)**: Includes meta tags that tell prerender services to serve proper status codes
-- **Absolute URLs**: When `baseUrl` is provided, canonical tags use the provided base instead of defaulting to the current domain
+- Consistency: Sitemap, canonical, and redirects all agree
+- Dual file generation (SSG): Creates both `/about.html` and `/about/index.html` so both URLs work
+- Prerender support (SPA): Includes meta tags that tell prerender services to serve proper status codes
+- Absolute URLs: When `baseUrl` is provided, canonical tags use the provided base instead of defaulting to the current domain
 
 **Example of what's generated**
 
@@ -479,9 +479,9 @@ Routerino automatically sets the core Open Graph tags (`og:title`, `og:descripti
 
 #### Image Best Practices
 
-- **Size**: Use 1200×630 pixels (1.91:1 ratio) for maximum compatibility
-- **Content**: Avoid text in images - use metadata for text instead (per Apple's guidelines)
-- **Add dimensions** for faster first-share rendering:
+- Size: Use 1200×630 pixels (1.91:1 ratio) for maximum compatibility
+- Content: Avoid text in images - use metadata for text instead (per Apple's guidelines)
+- Add dimensions for faster first-share rendering:
   ```js
   // In your route's component or after data loading
   updateHeadTag({ property: "og:image:width", content: "1200" });
@@ -490,16 +490,16 @@ Routerino automatically sets the core Open Graph tags (`og:title`, `og:descripti
 
 #### Title & Branding
 
-- **Don't duplicate branding** in `og:title` - Routerino uses your page title directly
-- **For site-wide branding**, add `og:site_name` instead:
+- Don't duplicate branding in `og:title` - Routerino uses your page title directly
+- For site-wide branding, add `og:site_name` instead:
   ```js
   updateHeadTag({ property: "og:site_name", content: "Your Brand" });
   ```
 
 #### Platform-Specific Enhancements
 
-- **Apple/iMessage**: Set `touchIconUrl` prop for iMessage link previews
-- **Video content**: Add direct playable assets when possible:
+- Apple/iMessage: Set `touchIconUrl` prop for iMessage link previews
+- Video content: Add direct playable assets when possible:
   ```js
   updateHeadTag({
     property: "og:video",
@@ -568,8 +568,8 @@ By following these practices, you'll improve your site's SEO performance and soc
 
 When using Routerino Forge for static site generation, `sitemap.xml` and `robots.txt` files are automatically generated during the build process:
 
-- **sitemap.xml**: Contains all static routes (dynamic routes with parameters like `:id` are excluded)
-- **robots.txt**: Created with a reference to the sitemap (if it doesn't already exist)
+- sitemap.xml: Contains all static routes (dynamic routes with parameters like `:id` are excluded)
+- robots.txt: Created with a reference to the sitemap (if it doesn't already exist)
 
 These files are generated automatically when you build with the Routerino Forge Vite plugin - no additional configuration needed.
 
