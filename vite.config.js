@@ -19,6 +19,8 @@ export default defineConfig({
           "prop-types": "PropTypes",
           "react/jsx-runtime": "react/jsx-runtime",
         },
+        // Suppress warning about mixed exports - this is intentional for backward compatibility
+        exports: "named",
       },
     },
   },

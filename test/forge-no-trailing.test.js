@@ -24,7 +24,7 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
   });
 
   describe("Canonical URLs and Redirects", () => {
-    it("should generate canonical tags and redirects with useTrailingSlash: false", () => {
+    it("should generate canonical tags with useTrailingSlash: false", () => {
       // With useTrailingSlash: false, flat files (about.html) should be canonical
       const aboutFlat = fs.readFileSync(
         path.join(distDir, "about.html"),
@@ -51,14 +51,8 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
         "utf8"
       );
 
-      // about.html should have status 200 (canonical)
-      expect(aboutFlat).toContain(
-        '<meta name="prerender-status-code" content="200">'
-      );
-      expect(aboutFlat).not.toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(aboutFlat).not.toContain('<meta name="prerender-header"');
+      // about.html should be canonical with useTrailingSlash: false
+      // Prerender tags removed from forge plugin
       expect(aboutFlat).toContain(
         '<link rel="canonical" href="https://example.com/about">'
       );
@@ -66,13 +60,7 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
         '<meta property="og:url" content="https://example.com/about">'
       );
 
-      // about/index.html should redirect to canonical (without trailing slash)
-      expect(aboutNested).toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(aboutNested).toContain(
-        '<meta name="prerender-header" content="Location: https://example.com/about">'
-      );
+      // about/index.html has canonical pointing to non-trailing slash version
       expect(aboutNested).toContain(
         '<link rel="canonical" href="https://example.com/about">'
       );
@@ -81,10 +69,7 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
       );
 
       // Test products page
-      expect(productsFlat).toContain(
-        '<meta name="prerender-status-code" content="200">'
-      );
-      expect(productsFlat).not.toContain('<meta name="prerender-header"');
+      // Prerender tags removed from forge plugin
       expect(productsFlat).toContain(
         '<link rel="canonical" href="https://example.com/products">'
       );
@@ -92,12 +77,7 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
         '<meta property="og:url" content="https://example.com/products">'
       );
 
-      expect(productsNested).toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(productsNested).toContain(
-        '<meta name="prerender-header" content="Location: https://example.com/products">'
-      );
+      // Products nested has canonical pointing to non-trailing slash version
       expect(productsNested).toContain(
         '<link rel="canonical" href="https://example.com/products">'
       );
@@ -106,10 +86,7 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
       );
 
       // Test contact page
-      expect(contactFlat).toContain(
-        '<meta name="prerender-status-code" content="200">'
-      );
-      expect(contactFlat).not.toContain('<meta name="prerender-header"');
+      // Prerender tags removed from forge plugin
       expect(contactFlat).toContain(
         '<link rel="canonical" href="https://example.com/contact">'
       );
@@ -117,12 +94,7 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
         '<meta property="og:url" content="https://example.com/contact">'
       );
 
-      expect(contactNested).toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(contactNested).toContain(
-        '<meta name="prerender-header" content="Location: https://example.com/contact">'
-      );
+      // Contact nested has canonical pointing to non-trailing slash version
       expect(contactNested).toContain(
         '<link rel="canonical" href="https://example.com/contact">'
       );
@@ -141,13 +113,7 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
       expect(indexHtml).toContain(
         '<meta property="og:url" content="https://example.com/">'
       );
-      expect(indexHtml).toContain(
-        '<meta name="prerender-status-code" content="200">'
-      );
-      expect(indexHtml).not.toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(indexHtml).not.toContain('<meta name="prerender-header"');
+      // Root page should only have canonical
     });
 
     it("should verify all pages have proper canonical and og:url tags", () => {
@@ -208,13 +174,7 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
       const html = fs.readFileSync(notFoundPath, "utf8");
 
       // Check prerender status code
-      expect(html).toContain(
-        '<meta name="prerender-status-code" content="404">'
-      );
-      expect(html).not.toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(html).not.toContain('<meta name="prerender-header"');
+      // 404 page no longer has prerender tags
 
       // Should have proper HTML structure
       expect(html).toContain("<!DOCTYPE html>");

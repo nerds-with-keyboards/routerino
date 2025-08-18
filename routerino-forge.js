@@ -2,6 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import { pathToFileURL } from "url";
 import { build } from "vite";
+import crypto from "crypto";
+import { spawn } from "child_process";
 
 /**
  * Routerino Forge - Static Site Generation for React with Vite
@@ -11,6 +13,321 @@ import { build } from "vite";
  * render identically on server and client.
  */
 
+// Helper to check if a route is dynamic (contains :param)
+const isDynamicRoute = (path) =>
+  path.split("/").some((segment) => segment.startsWith(":"));
+
+// Helper to check if an image should be skipped
+const shouldSkipImage = (src) =>
+  src.startsWith("http") || src.startsWith("data:") || src.endsWith(".svg");
+
+// Normalize image optimization config
+function normalizeImageConfig(config) {
+  if (config === false) return null;
+  if (config === true) {
+    return {
+      enabled: true,
+      placeholderSize: 20,
+      blur: 4,
+      maxSize: 10485760, // 10MB
+      minSize: 1024, // 1KB
+      cacheDir: "node_modules/.cache/routerino-forge",
+    };
+  }
+  return {
+    enabled: true,
+    placeholderSize: config.placeholderSize ?? 20,
+    blur: config.blur ?? 4,
+    maxSize: config.maxSize ?? 10485760,
+    minSize: config.minSize ?? 1024,
+    cacheDir: config.cacheDir ?? "node_modules/.cache/routerino-forge",
+  };
+}
+
+// Get image dimensions using ffprobe
+function getImageDimensionsWithFfprobe(inputPath) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=width,height",
+      "-of",
+      "json",
+      inputPath,
+    ];
+
+    const ffprobe = spawn("ffprobe", args);
+
+    let output = "";
+    let errorOutput = "";
+
+    ffprobe.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+
+    ffprobe.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffprobe.on("error", (err) => {
+      reject(new Error(`Failed to spawn ffprobe: ${err.message}`));
+    });
+
+    ffprobe.on("close", (code) => {
+      if (code !== 0) {
+        return reject(
+          new Error(`ffprobe exited with code ${code}. Error: ${errorOutput}`)
+        );
+      }
+
+      try {
+        const result = JSON.parse(output);
+        const stream = result.streams?.[0];
+        if (stream?.width && stream?.height) {
+          resolve({ width: stream.width, height: stream.height });
+        } else {
+          reject(new Error("Could not extract dimensions from ffprobe output"));
+        }
+      } catch (error) {
+        reject(new Error(`Failed to parse ffprobe output: ${error.message}`));
+      }
+    });
+  });
+}
+
+/**
+ * Resize an image to a given height (keeping aspect ratio)
+ * and return a base64 data URI (data:image/png;base64,...).
+ *
+ * @param {string} inputPath - Path to input image file
+ * @param {number} targetHeight - Desired output height (default 16px)
+ * @returns {Promise<string>} - Base64 Data URI for PNG
+ */
+function resizeImageToBase64(inputPath, targetHeight = 16) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      "-i",
+      inputPath,
+      "-vf",
+      `scale=-1:${targetHeight}`,
+      "-f",
+      "image2pipe",
+      "-vcodec",
+      "png",
+      "-loglevel",
+      "error",
+      "pipe:1",
+    ];
+
+    const ffmpeg = spawn("ffmpeg", args);
+
+    let chunks = [];
+    let errorOutput = "";
+
+    ffmpeg.stdout.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+
+    ffmpeg.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffmpeg.on("error", (err) => {
+      reject(new Error(`Failed to spawn ffmpeg: ${err.message}`));
+    });
+
+    ffmpeg.on("close", (code) => {
+      if (code !== 0) {
+        return reject(
+          new Error(`ffmpeg exited with code ${code}. Error: ${errorOutput}`)
+        );
+      }
+      const buffer = Buffer.concat(chunks);
+      const base64 = buffer.toString("base64");
+      const dataUri = `data:image/png;base64,${base64}`;
+      resolve(dataUri);
+    });
+  });
+}
+
+// Generate a tiny placeholder image using ffmpeg
+async function generatePlaceholder(imagePath, config) {
+  try {
+    // Use ffmpeg to create a small placeholder (16px height by default)
+    const targetHeight = config.placeholderSize || 16;
+
+    // Get dimensions using ffprobe (part of ffmpeg)
+    const dimensions = await getImageDimensionsWithFfprobe(imagePath).catch(
+      () => null
+    );
+
+    const placeholder = await resizeImageToBase64(imagePath, targetHeight);
+
+    return {
+      placeholder,
+      width: dimensions?.width || 0,
+      height: dimensions?.height || 0,
+    };
+  } catch (error) {
+    if (config.verbose) {
+      console.warn(
+        `[Routerino Forge] Could not process image ${imagePath} (requires ffmpeg):`,
+        error.message
+      );
+    }
+    return null;
+  }
+}
+
+// Get cache key for an image
+async function getImageCacheKey(imagePath, config) {
+  try {
+    const stats = await fs.stat(imagePath);
+    const hash = crypto.createHash("md5");
+    hash.update(imagePath);
+    hash.update(stats.mtime.toISOString());
+    hash.update(stats.size.toString());
+    hash.update(config.placeholderSize.toString());
+    hash.update("v2-grid8x8"); // Version the cache format
+    return hash.digest("hex");
+  } catch {
+    return null;
+  }
+}
+
+// Process images in HTML
+async function processImagesInHTML(html, outputDir, config) {
+  if (!config.optimizeImages || !config.optimizeImages.enabled) {
+    return { html, stats: null };
+  }
+
+  const imageConfig = config.optimizeImages;
+  const stats = {
+    processed: 0,
+    skipped: 0,
+    totalSize: 0,
+    placeholderSize: 0,
+    errors: [],
+  };
+
+  // Ensure cache directory exists
+  const cacheDir = path.resolve(imageConfig.cacheDir);
+  await fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
+
+  // Find all img tags
+  const imgRegex = /<img\s+([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
+  const matches = [...html.matchAll(imgRegex)];
+
+  let processedHTML = html;
+
+  for (const match of matches) {
+    // eslint-disable-next-line no-unused-vars
+    const [fullMatch, beforeSrc, src, afterSrc] = match;
+
+    // Skip external URLs, data URLs, and SVGs
+    if (shouldSkipImage(src)) {
+      stats.skipped++;
+      continue;
+    }
+
+    // Resolve image path
+    const imagePath = path.join(outputDir, src);
+
+    // Check if file exists and size
+    try {
+      const fileStats = await fs.stat(imagePath);
+
+      if (
+        fileStats.size < imageConfig.minSize ||
+        fileStats.size > imageConfig.maxSize
+      ) {
+        stats.skipped++;
+        continue;
+      }
+
+      stats.totalSize += fileStats.size;
+
+      // Check cache
+      const cacheKey = await getImageCacheKey(imagePath, imageConfig);
+      if (!cacheKey) {
+        stats.skipped++;
+        continue;
+      }
+
+      const cacheFile = path.join(cacheDir, `${cacheKey}.json`);
+      let imageData;
+
+      try {
+        // Try to read from cache
+        const cached = JSON.parse(await fs.readFile(cacheFile, "utf-8"));
+        imageData = cached;
+      } catch {
+        // Generate placeholder
+        imageData = await generatePlaceholder(imagePath, imageConfig);
+
+        if (!imageData) {
+          stats.skipped++;
+          continue;
+        }
+
+        // Save to cache
+        await fs
+          .writeFile(cacheFile, JSON.stringify(imageData))
+          .catch(() => {});
+      }
+
+      const dataUri = imageData.placeholder;
+
+      // Create a wrapper span with the blurred background positioned behind
+      // Set explicit dimensions if we have them to show placeholder before image loads
+      let spanStyle = `position: relative; display: inline-block;`;
+
+      if (imageData.width && imageData.height) {
+        spanStyle += ` width: ${imageData.width}px; height: ${imageData.height}px;`;
+      }
+
+      // Create the blur background as a pseudo-element that sits behind (z-index: -1)
+      // Using a unique class to avoid conflicts
+      const uniqueClass = `lqip-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Style for the ::before pseudo-element that creates the blur background
+      const beforeStyle = `
+        .${uniqueClass}::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-image: url('${dataUri}');
+          background-size: cover;
+          background-position: center;
+          filter: blur(${imageConfig.blur}px);
+          z-index: -1;
+        }
+      `;
+
+      const styleTag = `<style>${beforeStyle}</style>`;
+
+      // Wrap img in span with blur background, leaving img completely untouched
+      const wrappedImg = `${styleTag}<span class="forge-lqip ${uniqueClass}" style="${spanStyle}">${fullMatch}</span>`;
+
+      processedHTML = processedHTML.replace(fullMatch, wrappedImg);
+
+      stats.processed++;
+      stats.placeholderSize += imageData.placeholder.length;
+    } catch (error) {
+      stats.errors.push({ src, error: error.message });
+      stats.skipped++;
+    }
+  }
+
+  return { html: processedHTML, stats };
+}
+
 export function routerinoForge(options = {}) {
   // Configuration with defaults
   const config = {
@@ -19,10 +336,26 @@ export function routerinoForge(options = {}) {
     outputDir: options.outputDir || "dist",
     baseUrl: options.baseUrl || "",
     generateSitemap: options.generateSitemap ?? true,
-    prerenderStatusCode: options.prerenderStatusCode ?? true,
     verbose: options.verbose ?? false,
     useTrailingSlash: options.useTrailingSlash ?? true, // Default to trailing slashes
+    optimizeImages: normalizeImageConfig(options.optimizeImages ?? true),
+    ssgCacheDir:
+      options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
   };
+
+  // Normalize baseUrl: strip trailing slashes to ensure correct canonical composition
+  if (typeof config.baseUrl === "string" && config.baseUrl.length > 0) {
+    const normalized = config.baseUrl.replace(/\/+$/, "");
+    if (normalized !== config.baseUrl) {
+      console.warn(
+        "[Routerino Forge] Normalized baseUrl by removing trailing slash:",
+        config.baseUrl,
+        "->",
+        normalized
+      );
+      config.baseUrl = normalized;
+    }
+  }
 
   let viteConfig;
   let hasRun = false;
@@ -35,22 +368,22 @@ export function routerinoForge(options = {}) {
     },
 
     async closeBundle() {
-      if (hasRun || viteConfig.build.ssr) return; // Skip if already run or if this IS the SSR build
+      if (hasRun || viteConfig.build.ssr) return; // Skip if already run or if this IS the SSG build
       hasRun = true;
 
       let tempEntryPath = null;
 
       try {
         // Step 1: Build bundle for static generation
-        let ssrEntryPath = path.resolve(
+        let ssgEntryPath = path.resolve(
           viteConfig.root,
           "src/entry-server.jsx"
         );
-        const ssrOutDir = path.resolve(viteConfig.root, "dist-ssr");
+        const ssgOutDir = path.resolve(viteConfig.root, config.ssgCacheDir);
 
         // Check if user has custom entry-server, otherwise create temp one
         try {
-          await fs.access(ssrEntryPath);
+          await fs.access(ssgEntryPath);
         } catch {
           // Create temp entry-server in the user's build directory (already gitignored)
           const buildDir = viteConfig.build.outDir || "dist";
@@ -60,7 +393,7 @@ export function routerinoForge(options = {}) {
             ".forge-temp"
           );
           tempEntryPath = path.resolve(tempDir, "entry-server.jsx");
-          ssrEntryPath = tempEntryPath;
+          ssgEntryPath = tempEntryPath;
 
           // Calculate relative path from temp location to routes
           const routesPath = path.resolve(viteConfig.root, config.routes);
@@ -80,12 +413,14 @@ const notFoundTemplate = routesModule.notFoundTemplate;
 if (!routes) {
   throw new Error('Could not find routes export. Expected "export const routes" or "export default" from ${relativePath}');
 }
+// Helper to check if a route is dynamic (contains :param)
+const isDynamicRoute = (path) => path.split("/").some(segment => segment.startsWith(":"));
 export { routes };
 export function render(url) {
   const route = routes.find(r => {
     if (r.path === url) return true;
     if (r.path === '/' && url === '/') return true;
-    if (r.path.split('/').some(segment => segment.startsWith(':'))) return false;
+    if (isDynamicRoute(r.path)) return false;
     return r.path === url;
   }); 
   if (!route) {
@@ -104,7 +439,7 @@ export function render(url) {
       imageUrl: route.imageUrl
     };
   } catch (error) {
-    console.error(\`Failed to render route \${route.path}:\`, error.message);
+    console.error(\`[Routerino Forge] Failed to render route \${route.path}:\`, error.message);
     return {
       html: \`<div>Error rendering route: \${error.message}</div>\`,
       title: route.title,
@@ -119,19 +454,20 @@ export function render(url) {
           await fs.writeFile(tempEntryPath, entryContent);
 
           if (config.verbose) {
-            console.log("✨ Using auto-generated entry for SSG");
+            console.log("[Routerino Forge] Using auto-generated entry for SSG");
           }
         }
 
-        console.log("Building SSG bundle...");
+        console.log("[Routerino Forge] Forging SSG bundle...");
         await build({
           root: viteConfig.root,
           build: {
-            ssr: ssrEntryPath,
-            outDir: ssrOutDir,
+            ssr: ssgEntryPath,
+            outDir: ssgOutDir,
             rollupOptions: {
               output: {
                 format: "es",
+                entryFileNames: "entry-server.mjs",
               },
             },
           },
@@ -140,7 +476,7 @@ export function render(url) {
 
         // Step 2: Load the built module
         const ssgModule = await import(
-          pathToFileURL(path.join(ssrOutDir, "entry-server.js")).href
+          pathToFileURL(path.join(ssgOutDir, "entry-server.mjs")).href
         );
         let { render, routes } = ssgModule;
 
@@ -150,18 +486,22 @@ export function render(url) {
         }
 
         if (routes.length === 0) {
-          console.warn("⚠️  No routes found - check your routes export");
+          console.warn(
+            "[Routerino Forge] No routes found - check your routes export"
+          );
         }
 
         // Check for common issues
         const invalidRoutes = routes.filter((route) => {
           if (!route.element) {
-            console.warn(`  ⚠️  Route ${route.path} has no element property`);
+            console.warn(
+              `[Routerino Forge] Route ${route.path} has no element property`
+            );
             return true;
           }
           if (typeof route.element === "function") {
             console.warn(
-              `  ⚠️  Route ${route.path} element is a function - should be JSX element like <Component />`
+              `[Routerino Forge] Route ${route.path} element is a function - should be JSX element like <Component />`
             );
             return true;
           }
@@ -170,18 +510,15 @@ export function render(url) {
 
         if (invalidRoutes.length > 0) {
           console.warn(
-            `⚠️  ${invalidRoutes.length} routes have issues - see warnings above`
+            `[Routerino Forge] ${invalidRoutes.length} routes have issues - see warnings above`
           );
         }
 
         // Count only static routes (excluding dynamic routes with parameters)
         const staticRoutes =
-          routes?.filter(
-            (route) =>
-              !route.path.split("/").some((segment) => segment.startsWith(":"))
-          ) || [];
+          routes?.filter((route) => !isDynamicRoute(route.path)) || [];
         console.log(
-          `Found ${routes?.length || 0} routes (${staticRoutes.length} static, ${(routes?.length || 0) - staticRoutes.length} dynamic)`
+          `[Routerino Forge] Found ${routes?.length || 0} routes (${staticRoutes.length} static, ${(routes?.length || 0) - staticRoutes.length} dynamic)`
         );
 
         // Read the built HTML template
@@ -202,10 +539,10 @@ export function render(url) {
         try {
           template = await fs.readFile(templatePath, "utf-8");
           if (config.verbose) {
-            console.log(`  Using template: ${templatePath}`);
+            console.log(`[Routerino Forge] Using template: ${templatePath}`);
           }
         } catch (e) {
-          console.error(e);
+          console.error("[Routerino Forge] Template read error:", e);
           throw new Error(
             `Failed to read template at ${templatePath}. Make sure the build has completed and created the HTML file.`
           );
@@ -214,12 +551,12 @@ export function render(url) {
         // Check if template has the root div
         if (!template.includes('<div id="root">')) {
           console.warn(
-            `⚠️  Template missing <div id="root">. The plugin needs this to inject rendered HTML.`
+            '[Routerino Forge] Template missing <div id="root">. The plugin needs this to inject rendered HTML.'
           );
         }
 
         // Generate static HTML for each route
-        await generateStaticPages({
+        const imageStats = await generateStaticPages({
           routes,
           template,
           outputDir: path.resolve(viteConfig.root, config.outputDir),
@@ -249,19 +586,54 @@ export function render(url) {
           0
         );
         console.log(
-          `  ✓ Generated ${fileCount} HTML files (${staticRoutes.length} routes) + 404.html`
+          `[Routerino Forge] ✓ Generated ${fileCount} HTML files (${staticRoutes.length} routes) + 404.html`
         );
+
+        // Display image optimization stats
+        if (config.optimizeImages && imageStats && imageStats.processed > 0) {
+          const totalSizeMB = (imageStats.totalSize / 1024 / 1024).toFixed(2);
+          const placeholderSizeKB = (imageStats.placeholderSize / 1024).toFixed(
+            1
+          );
+          const reductionPercent = (
+            (1 - imageStats.placeholderSize / imageStats.totalSize) *
+            100
+          ).toFixed(0);
+          console.log(
+            `[Routerino Forge] ✓ Optimized ${imageStats.processed} images (${totalSizeMB}MB total, ${placeholderSizeKB}KB placeholders, ${reductionPercent}% reduction)`
+          );
+
+          if (config.verbose && imageStats.skipped > 0) {
+            console.log(
+              `[Routerino Forge] Skipped ${imageStats.skipped} images (external URLs, SVGs, or size limits)`
+            );
+          }
+
+          if (imageStats.errors.length > 0) {
+            console.warn(
+              `[Routerino Forge] ${imageStats.errors.length} images had processing errors`
+            );
+            if (config.verbose) {
+              imageStats.errors.forEach(({ src, error }) => {
+                console.warn(`[Routerino Forge]   - ${src}: ${error}`);
+              });
+            }
+          }
+        }
       } catch (error) {
-        console.error("❌ Failed to generate static pages:", error.message);
+        console.error(
+          "[Routerino Forge] Failed to generate static pages:",
+          error.message
+        );
         if (config.verbose) {
-          console.error(error.stack);
+          console.error("[Routerino Forge] Stack trace:", error.stack);
         }
         // Don't throw to allow build to continue
       } finally {
-        // Clean up dist-ssr directory
-        const ssrOutDir = path.resolve(viteConfig.root, "dist-ssr");
+        // Clean up SSG cache directory
+        const ssgOutDir = path.resolve(viteConfig.root, config.ssgCacheDir);
         try {
-          await fs.rm(ssrOutDir, { recursive: true, force: true });
+          await fs.rm(ssgOutDir, { recursive: true, force: true });
         } catch {
           // Ignore if it doesn't exist or can't be removed
         }
@@ -293,11 +665,19 @@ async function generateStaticPages({
   config,
   render,
 }) {
+  const allImageStats = {
+    processed: 0,
+    skipped: 0,
+    totalSize: 0,
+    placeholderSize: 0,
+    errors: [],
+  };
+
   for (const route of routes) {
     // Skip dynamic routes with parameters
-    if (route.path.split("/").some((segment) => segment.startsWith(":"))) {
+    if (isDynamicRoute(route.path)) {
       if (config.verbose) {
-        console.log(`  Skipped dynamic route: ${route.path}`);
+        console.log(`[Routerino Forge] Skipped dynamic route: ${route.path}`);
       }
       continue;
     }
@@ -308,16 +688,16 @@ async function generateStaticPages({
 
       let renderedHTML = "";
       if (renderResult.notFound) {
-        console.log(`  Route not found: ${route.path}`);
+        console.log(`[Routerino Forge] Route not found: ${route.path}`);
         renderedHTML = `<div data-route="${route.path}" data-not-found="true"><!-- Route not found --></div>`;
       } else if (!renderResult.html || renderResult.html.trim() === "") {
         console.warn(
-          `  ⚠️  Empty HTML for ${route.path} - check that route.element is a valid React element`
+          `[Routerino Forge] Empty HTML for ${route.path} - check that route.element is a valid React element`
         );
         renderedHTML = `<div data-route="${route.path}" data-empty="true"><!-- Empty render result --></div>`;
       } else {
         renderedHTML = renderResult.html;
-        console.log(`  ✓ Rendered ${route.path}`);
+        console.log(`[Routerino Forge] ✓ Rendered ${route.path}`);
 
         // Override metadata with render result if available
         if (renderResult.title) route.title = renderResult.title;
@@ -333,7 +713,6 @@ async function generateStaticPages({
         // Root only needs index.html
         filesToGenerate.push({
           path: path.join(outputDir, "index.html"),
-          isCanonical: true,
         });
       } else {
         // For all other routes, generate both formats
@@ -342,24 +721,21 @@ async function generateStaticPages({
         // Determine which version is canonical based on useTrailingSlash
         filesToGenerate.push({
           path: path.join(outputDir, `${cleanPath}.html`),
-          isCanonical: !config.useTrailingSlash,
           urlPath: cleanPath,
         });
 
         filesToGenerate.push({
           path: path.join(outputDir, cleanPath, "index.html"),
-          isCanonical: config.useTrailingSlash,
           urlPath: `${cleanPath}/`,
         });
       }
 
       // Write files with appropriate meta tags
       for (const file of filesToGenerate) {
-        // Generate meta tags (with canonical URL and potential redirect)
+        // Generate meta tags with canonical URL
         const metaTags = generateMetaTags(
           route,
           config,
-          file.isCanonical,
           file.urlPath || route.path
         );
 
@@ -405,8 +781,25 @@ async function generateStaticPages({
           );
         } else {
           console.warn(
-            `  ⚠️  Could not find <div id="root"> for ${route.path}`
+            `[Routerino Forge] Could not find <div id="root"> for ${route.path}`
           );
+        }
+
+        // Process images in HTML
+        const { html: processedHTML, stats } = await processImagesInHTML(
+          html,
+          outputDir,
+          config
+        );
+        html = processedHTML;
+
+        // Accumulate stats
+        if (stats) {
+          allImageStats.processed += stats.processed;
+          allImageStats.skipped += stats.skipped;
+          allImageStats.totalSize += stats.totalSize;
+          allImageStats.placeholderSize += stats.placeholderSize;
+          allImageStats.errors.push(...stats.errors);
         }
 
         // Ensure directory exists
@@ -416,19 +809,22 @@ async function generateStaticPages({
         await fs.writeFile(file.path, html);
 
         if (config.verbose) {
-          console.log(
-            `  Generated: ${file.path}${file.isCanonical ? " (canonical)" : ""}`
-          );
+          console.log(`[Routerino Forge] Generated: ${file.path}`);
         }
       }
     } catch (error) {
-      console.error(`Failed to generate ${route.path}:`, error);
+      console.error(
+        `[Routerino Forge] Failed to generate ${route.path}:`,
+        error
+      );
     }
   }
+
+  return allImageStats;
 }
 
 // Generate meta tags
-function generateMetaTags(route, config, isCanonical, urlPath) {
+function generateMetaTags(route, config, urlPath) {
   const tags = [];
 
   // Determine the canonical URL
@@ -469,23 +865,24 @@ function generateMetaTags(route, config, isCanonical, urlPath) {
       ? config.baseUrl + route.imageUrl
       : route.imageUrl;
     tags.push(`<meta property="og:image" content="${imageUrl}">`);
-    tags.push(`<meta name="twitter:image" content="${imageUrl}">`);
   }
 
   // Twitter card
   tags.push(`<meta name="twitter:card" content="summary_large_image">`);
 
-  if (config.prerenderStatusCode) {
-    if (!isCanonical) {
-      // For non-canonical versions, add redirect to canonical
-      tags.push(`<meta name="prerender-status-code" content="301">`);
-      tags.push(
-        `<meta name="prerender-header" content="Location: ${canonicalUrl}">`
-      );
-    } else {
-      // For canonical version, return 200
-      tags.push(`<meta name="prerender-status-code" content="200">`);
-    }
+  // Add custom tags from route.tags array
+  if (route.tags && Array.isArray(route.tags)) {
+    route.tags.forEach((tag) => {
+      const tagName = tag.tag || "meta";
+      const attrs = Object.entries(tag)
+        .filter(([key]) => key !== "tag" && key !== "soft")
+        .map(([key, value]) => `${key}="${value}"`)
+        .join(" ");
+
+      if (attrs) {
+        tags.push(`<${tagName} ${attrs}>`);
+      }
+    });
   }
 
   return tags.join("\n");
@@ -493,7 +890,7 @@ function generateMetaTags(route, config, isCanonical, urlPath) {
 
 // Generate 404.html page
 async function generate404Page({ template, outputDir, config, render }) {
-  console.log("  ✓ Generating 404.html");
+  console.log("[Routerino Forge] ✓ Generating 404.html");
 
   try {
     // Render a non-existent route to get the notFoundTemplate content
@@ -505,9 +902,6 @@ async function generate404Page({ template, outputDir, config, render }) {
     // Generate meta tags for 404 page
     const metaTags = [];
     metaTags.push(`<meta name="robots" content="noindex">`);
-    if (config.prerenderStatusCode) {
-      metaTags.push(`<meta name="prerender-status-code" content="404">`);
-    }
     metaTags.push(`<meta name="twitter:card" content="summary_large_image">`);
 
     // Inject meta tags and content into template
@@ -546,27 +940,35 @@ async function generate404Page({ template, outputDir, config, render }) {
         `<div id="root">${renderedHTML}</div>`
       );
     } else {
-      console.warn(`  ⚠️  Could not find <div id="root"> for 404.html`);
+      console.warn(
+        '[Routerino Forge] Could not find <div id="root"> for 404.html'
+      );
     }
+
+    // Process images in 404 page
+    const { html: processedHTML } = await processImagesInHTML(
+      html,
+      outputDir,
+      config
+    );
+    html = processedHTML;
 
     // Write 404.html
     const filePath = path.join(outputDir, "404.html");
     await fs.writeFile(filePath, html);
 
     if (config.verbose) {
-      console.log(`  Generated: ${filePath}`);
+      console.log(`[Routerino Forge] Generated: ${filePath}`);
     }
   } catch (error) {
-    console.error("Failed to generate 404.html:", error);
+    console.error("[Routerino Forge] Failed to generate 404.html:", error);
   }
 }
 
 // Generate sitemap and robots.txt
 async function generateSitemap(routes, config) {
   // Filter out dynamic routes
-  const staticRoutes = routes.filter(
-    (route) => !route.path.split("/").some((segment) => segment.startsWith(":"))
-  );
+  const staticRoutes = routes.filter((route) => !isDynamicRoute(route.path));
 
   const urls = staticRoutes
     .map((route) => {
@@ -592,10 +994,12 @@ ${urls}
   const sitemapPath = path.join(config.outputDir, "sitemap.xml");
   await fs.writeFile(sitemapPath, sitemap);
 
-  console.log(`  ✓ Generated sitemap.xml with ${staticRoutes.length} URLs`);
+  console.log(
+    `[Routerino Forge] ✓ Generated sitemap.xml with ${staticRoutes.length} URLs`
+  );
 
   if (config.verbose) {
-    console.log(`    Output: ${sitemapPath}`);
+    console.log(`[Routerino Forge] Output: ${sitemapPath}`);
   }
 
   // Generate robots.txt if it doesn't exist
@@ -603,7 +1007,7 @@ ${urls}
   try {
     await fs.access(robotsPath);
     if (config.verbose) {
-      console.log(`  ✓ robots.txt already exists (skipped)`);
+      console.log("[Routerino Forge] ✓ robots.txt already exists (skipped)");
     }
   } catch {
     // File doesn't exist, create it
@@ -612,10 +1016,10 @@ Allow: /
 Sitemap: ${config.baseUrl}/sitemap.xml`;
 
     await fs.writeFile(robotsPath, robotsContent);
-    console.log(`  ✓ Generated robots.txt`);
+    console.log("[Routerino Forge] ✓ Generated robots.txt");
 
     if (config.verbose) {
-      console.log(`    Output: ${robotsPath}`);
+      console.log(`[Routerino Forge] Output: ${robotsPath}`);
     }
   }
 }

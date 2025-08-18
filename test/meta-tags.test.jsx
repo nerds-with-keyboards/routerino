@@ -130,29 +130,4 @@ describe("Meta Tag Management", () => {
     expect(touchIcon).toBeTruthy();
     expect(touchIcon.getAttribute("href")).toBe("https://example.com/icon.png");
   });
-
-  it("sets prerender status code for 404", () => {
-    window.location = new URL("http://localhost/nonexistent");
-    const routes = [{ path: "/", element: <div>Home</div> }];
-
-    render(<Routerino routes={routes} />);
-
-    const statusTag = document.querySelector(
-      'meta[name="prerender-status-code"]'
-    );
-    expect(statusTag).toBeTruthy();
-    expect(statusTag.getAttribute("content")).toBe("404");
-  });
-
-  it("does not set prerender tags when usePrerenderTags is false", () => {
-    window.location = new URL("http://localhost/nonexistent");
-    const routes = [{ path: "/", element: <div>Home</div> }];
-
-    render(<Routerino routes={routes} usePrerenderTags={false} />);
-
-    const statusTag = document.querySelector(
-      'meta[name="prerender-status-code"]'
-    );
-    expect(statusTag).toBeFalsy();
-  });
 });

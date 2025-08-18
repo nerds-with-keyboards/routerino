@@ -16,6 +16,13 @@ jobs:
         with:
           node-version: "20"
 
+      # Install ffmpeg for image optimization tests in Routerino Forge
+      - name: Setup FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+          github-token: ${{ github.token }}
+
       - name: Install dependencies
         run: npm ci
 

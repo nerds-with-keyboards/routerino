@@ -2,16 +2,20 @@
 
 > A lightweight, SEO-optimized React router for modern websites and applications
 
+For teams who want SPA simplicity with search-friendly static HTML, Open Graph previews, and **no framework lock-in.**
+
+<!-- [**Live Example**](https://www.papoir.com) | [**Starter Template**](https://github.com/nerds-with-keyboards/routerino-starter) -->
+
 Routerino is a zero-dependency router for React designed for optimal SEO performance in client-side rendered applications. Built for modern web architectures like JAMStack applications and Vite-powered React sites, it provides route & meta tag management, sitemap generation, and static site generation or [prerender](https://github.com/prerender/prerender) support to ensure your React applications are fully discoverable by search engines.
 
 ## Why Routerino?
 
-- **SEO-First Design**: Automatic meta tag management, sitemap generation, and prerender support ensure maximum search engine visibility
-- **Zero Dependencies**: Keeps bundle size minimal and reduces supply-chain vulnerabilities
-- **Simple API**: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
-- **Static Site Generation**: Build-tool agnostic static HTML generation for improved performance and SEO
-- **Production Ready**: Includes Docker-based prerender server for easy deployments
-- **Single File Core**: The entire routing logic fits in one file, making it easy to understand and customize
+- SEO-First Design: Automatic meta tag management, sitemap generation, and prerender support ensure maximum search engine visibility
+- Zero Added Dependencies: Keeps bundle size minimal and reduces supply-chain vulnerabilities
+- Simple API: No special `Link` components required - use standard HTML anchors and navigate programmatically with standard browser APIs
+- Static Site Generation: Build-tool agnostic static HTML generation for improved performance and SEO
+- Prerender Ready: Works with prerender servers (such as prerender/prerender) via dedicated meta tags for correct crawler status codes
+- Single File Core: The entire routing logic fits in one file, making it easy to understand and customize
 
 ## Table of Contents
 
@@ -19,13 +23,12 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
 - [Installation](#installation)
 - [Usage](#usage)
   - [Props](#props-arguments)
-  - [Get route parameters](#get-route-parameters-and-the-current-route-and-updating-head-tags)
+  - [useRouterino Hook](#using-the-userouterino-hook)
   - [updateHeadTag](#updateheadtag)
+- [TypeScript Support](#typescript-support)
 - [Best Practices](#routerino-best-practices)
 - [Generating a Sitemap](#generating-a-sitemap-from-routes)
 - [Static Site Generation](#static-site-generation)
-- [Deployment Guides](#deployment-guides)
-- [Prerender Server (Docker)](#prerender-server-docker)
 - [How-to Guides & Examples](#how-to-guides--example-code)
   - [Starting a New Project](#starting-a-new-react-project-with-routerino)
   - [Full React Example](#full-react-example)
@@ -39,29 +42,29 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
 ## Quick Start
 
 ```jsx
-<Routerino
-  title="Example.com"
-  routes={[
-    {
-      path: "/",
-      element: <p>This is the home page!</p>,
-      title: "My Home Page!",
-      description: "Welcome to my home page!",
-    },
-    {
-      path: "/blog/my-first-post/",
-      element: (
-        <article>
-          <h1>My First Post</h1>
-          <p>Lorem ipsum...</p>
-        </article>
-      ),
-      title: "My First Post",
-      description: "The first post on my new home page!",
-      tags: [{ property: "og:type", content="article" }]
-    },
-  ]}
-/>
+// export your routes for SSG, not required for CSR-only
+export const routes = [
+  {
+    path: "/",
+    element: <p>This is the home page!</p>,
+    title: "My Home Page!",
+    description: "Welcome to my home page!",
+  },
+  {
+    path: "/blog/my-first-post/",
+    element: (
+      <article>
+        <h1>My First Post</h1>
+        <p>Lorem ipsum...</p>
+      </article>
+    ),
+    title: "My First Post",
+    description: "The first post on my new home page!",
+    tags: [{ property: "og:type", content: "article" }],
+  },
+];
+
+<Routerino title="Example.com" routes={routes} />;
 ```
 
 This simple configuration automatically handles routing, meta tags, and SEO optimization for your React application.
@@ -81,6 +84,7 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
   - Generate static HTML files for each route with proper meta tags
   - Implement SEO best practices out-of-the-box
   - Optimize for Googlebot with pre-rendering support
+  - Automatic image optimization with blur placeholders
 
 - Enhanced User Experience
   - Support for sharing and social preview metadata
@@ -88,46 +92,115 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
 
 ## Installation
 
-Ensure that you have React and React DOM installed in your project as peer dependencies. To add as a dev dependency:
-
 ```sh
-npm i routerino -D
+npm i routerino
 ```
+
+Note: Routerino requires React, React DOM, and PropTypes as peer dependencies. These are typically already installed in React projects.
 
 ### Compatibility
 
 Routerino supports:
 
-- **React 18 and 19** - Both versions are tested and supported
-- **Preact** - Compatible via `@preact/compat`
-- **Node.js 18+** - Tested on Node.js 18, 20, 22, and 24. Could be used on earlier versions if we skip tests
+- React 18 and 19: Both versions are tested and supported. React 17 works for CSR-only.
+- Node.js 18+: Tested on Node.js 18, 20, 22, and 24. Could be used on earlier versions if we skip tests.
+- Preact: Compatible via `@preact/compat`. See [using Preact](#using-preact) below.
 
 ## Usage
 
 Here's a short example of using Routerino in your React application:
 
 ```jsx
+export const routes = [
+  {
+    path: "/",
+    element: <p>This is the home page!</p>,
+    title: "My Home Page!",
+    description: "Welcome to my home page!",
+  },
+];
 <Routerino
   title="Example.com"
-  routes={[
-    {
-      path: "/",
-      element: <p>This is the home page!</p>,
-      title: "My Home Page!",
-      description: "Welcome to my home page!",
-    },
-  ]}
-  debug={window.location.host.includes("localhost:")}
-/>
+  routes={routes}
+  debug={window.location.hostname === "localhost"}
+/>;
 ```
 
-Links are just regular HTML anchor tags. No need to use special `<Link>` components and you can handle styling however you wish. For example: `<a href="/some-page/">a link</a>`
+Links are just standard HTML anchor tags. No need to use special `<Link>` components—you can use whatever components or design system you like. For example: <a href="/some-page/">a link</a> is perfectly valid. This is very handy for markdown-based content. With standard link support in Routerino, you won't need to [transform your markdown content with custom React components](https://github.com/remarkjs/react-markdown?tab=readme-ov-file#appendix-b-components). Routerino handles same-origin anchor clicks. Cross-origin links and non-HTTP schemes (e.g., mailto:, tel:) are handled by the browser as usual.
+
+### Programmatic Navigation
+
+<details>
+<summary style="cursor:pointer;font-style:italic">Navigate programmatically using standard browser APIs (expand for details)</summary>
+
+```js
+// Using History API
+window.history.pushState({}, "", "/about/");
+window.dispatchEvent(new PopStateEvent("popstate"));
+
+// Working with URL and search params
+const url = new URL(window.location);
+url.searchParams.set("page", "2");
+window.history.pushState({}, "", url.toString());
+window.dispatchEvent(new PopStateEvent("popstate"));
+```
+
+</details>
 
 See [props](#props-arguments) for full explanations and [example code](#how-to-guides--example-code) for more complete code samples.
 
+### Using Preact
+
+Routerino is fully compatible with Preact via the `@preact/compat` compatibility layer. This allows you to use Routerino in Preact projects with the same API.
+
+#### Setup Instructions
+
+1. Install Preact and the compatibility layer:
+
+```sh
+npm i preact @preact/compat
+```
+
+2. Configure your bundler to alias React to @preact/compat:
+
+**Vite Configuration:**
+
+```js
+// vite.config.js
+import { defineConfig } from "vite";
+import preact from "@preact/preset-vite";
+
+export default defineConfig({
+  plugins: [preact()],
+  resolve: {
+    alias: {
+      react: "@preact/compat",
+      "react-dom": "@preact/compat",
+      "react/jsx-runtime": "@preact/compat/jsx-runtime",
+    },
+  },
+});
+```
+
+**Webpack Configuration:**
+
+```js
+// webpack.config.js
+module.exports = {
+  resolve: {
+    alias: {
+      react: "preact/compat",
+      "react-dom": "preact/compat",
+    },
+  },
+};
+```
+
+3. Use Routerino exactly as you would in a React project - the API is identical!
+
 ### Props (arguments)
 
-Please see the [default props](#default-props) and [usage](#usage) sections for more details.
+The table below shows all available props with their default values. See the [usage](#usage) section for examples.
 
 #### Routerino props
 
@@ -143,13 +216,11 @@ All of these are optional, so it's easy to get started with nothing but a bare-b
 | [errorTemplate](#errortemplate-element)        | React.ReactNode | Error page template               | `<DefaultErrorTemplate />`    |
 | [errorTitle](#errortitle-string)               | string          | Error page title                  | `"Page error [500]"`          |
 | [useTrailingSlash](#usetrailingslash-bool)     | boolean         | Use trailing slashes in URLs      | `true`                        |
-| [usePrerenderTags](#useprerendertags-bool)     | boolean         | Use pre-render meta tags          | `true`                        |
+| [usePrerenderTags](#useprerendertags-bool)     | boolean         | Use pre-render meta tags          | `false`                       |
 | [baseUrl](#baseurl-string)                     | string          | Base URL for canonical tags       | `null` (uses window.location) |
 | [imageUrl](#imageurl-string)                   | string          | Default image URL for sharing     | `null`                        |
 | [touchIconUrl](#touchiconurl-string)           | string          | Image URL for PWA homescreen icon | `null`                        |
 | [debug](#debug-boolean)                        | boolean         | Enable debug mode                 | `false`                       |
-| [titlePrefix](#titleprefix-string)             | string          | Deprecated: Title prefix          | `""`                          |
-| [titlePostfix](#titlepostfix-string)           | string          | Deprecated: Title postfix         | `""`                          |
 
 ##### `title`: string;
 
@@ -220,29 +291,17 @@ Default: `true`
 
 ##### `usePrerenderTags`: bool;
 
-Include meta tags to enable proper error codes like 404 when serving pages to a search crawler.
+Include prerender-specific meta tags to enable proper error codes like 404 when serving prerendered pages to a search crawler. This means that Routerino uses <meta name="prerender-status-code" content="..."> and <meta name="prerender-header" content="Location: ..."> to signal status codes and redirects to prerender servers.
 
-Default: `true`
+Default: `false`
 
 ##### `baseUrl`: string;
 
 The base URL to use for canonical tags and og:url meta tags. If not provided, uses `window.location.origin`. This is useful when you want to specify the production URL regardless of the current environment.
 
-Example: `"https://example.com"`
+**Important:** The baseUrl must NOT end with a trailing slash (`/`). Correct example: `"https://example.com"`
 
 Default: `null` (uses window.location.origin)
-
-##### `titlePrefix`: string;
-
-Deprecated: use `title` instead. A string to preprend to every title. Should include the brand name, a separator, and spacing, such as `Example.com | `<- Note the extra end space.
-
-Default: `""` (empty string)
-
-##### `titlePostfix`: string;
-
-Deprecated: use `title` instead. A string to append to every title. Should include the brand name, a separator, and spacing, such as the following example. Note the extra starting space ->` - Example.com`.
-
-Default: `""` (empty string)
 
 ##### `imageUrl`: string;
 
@@ -258,7 +317,21 @@ Default: `null`
 
 ##### `debug`: boolean;
 
-Enable debug mode for additional logging and information.
+Enable debug mode for additional logging and information. When enabled, Routerino logs detailed information to the console including:
+
+- Route changes and pattern matching
+- Meta tag updates
+- Error boundaries and component failures
+- Performance timing information
+
+Example debug output:
+
+```
+[Routerino] Route changed to: /products/laptop/
+[Routerino] Matched pattern: /products/:id/
+[Routerino] Route params: { id: "laptop" }
+[Routerino] Updated meta tag: og:title = "Laptop Pro - $1299"
+```
 
 Default: `false`
 
@@ -268,7 +341,7 @@ There is a default RouteConfig that will be loaded if you don't specify any rout
 
 ##### path: string;
 
-The path of the desired route. **Must start with a forward slash (`/`)**. For example: `"/foo/"`, or `"/about/"`.
+The path of the desired route. **Must start with a forward slash (`/`)**. For example: `"/foo/"`, or `"/about/"`. Supported dynamic segments use the :param syntax (e.g., /products/:id/). Wildcards, optional segments, and splats are not supported. Params are matched by position; decode values in your components if needed.
 
 ##### element: React.ReactNode;
 
@@ -285,14 +358,6 @@ The page's description, which will show up on search results pages.
 ##### tags?: HeadTag[];
 
 Any desired head tags for that route. See [HeadTag props](#headtag-props) for details.
-
-##### titlePrefix?: string;
-
-Deprecated: a title prefix for this route to override the default. Use title and separator instead.
-
-##### titlePostfix?: string;
-
-Deprecated: a title postfix for this route to override the default. Use title and separator instead.
 
 ##### imageUrl?: string;
 
@@ -334,14 +399,39 @@ An array of HeadTag objects that can be added to the route to manage meta tags, 
 
 - `target` (string): The "target" attribute of the tag. Defines where to open the linked resource.
 
-### Get route parameters and the current route, and updating head tags
+### Using the `useRouterino` Hook
 
-Child components can access the current route and its parameters via the `Routerino` or `routerino` props. This prop is an object with the following properties:
+The `useRouterino` hook provides access to router state from any child component. This is the primary way to access route information and update head tags dynamically.
 
-- routePattern: The current route path pattern, such as `/foo/:id/`.
-- currentRoute: The current route path, such as `/foo/bar/`.
-- params: a dictionary of route parameters, such as `{id: "bar"}`. These will match the route pattern provided by the `path` prop.
-- updateHeadTag: a function that takes a [HeadTag object](#headtag-props) and updates the head tags for the current route. This is useful for setting custom `<head>` child tags for each route, such as Open Graph tags for social previews. You may need to set this after doing some data fetches, for example. See the next section for more details.
+```jsx
+import { useRouterino } from "routerino";
+
+function MyComponent() {
+  const { currentRoute, params, routePattern, updateHeadTag } = useRouterino();
+
+  // Access current route information
+  console.log("Current path:", currentRoute); // e.g., "/products/laptop/"
+  console.log("Route pattern:", routePattern); // e.g., "/products/:id/"
+  console.log("Route params:", params); // e.g., { id: "laptop" }
+
+  // Update meta tags dynamically
+  useEffect(() => {
+    updateHeadTag({
+      name: "description",
+      content: `Product page for ${params.id}`,
+    });
+  }, [params.id]);
+
+  return <div>Product: {params.id}</div>;
+}
+```
+
+#### Hook Return Values
+
+- **`currentRoute`**: The current URL path (e.g., `/foo/bar/`)
+- **`routePattern`**: The matched route pattern with parameters (e.g., `/foo/:id/`)
+- **`params`**: Object containing route parameters (e.g., `{id: "bar"}`)
+- **`updateHeadTag`**: Function to dynamically update head tags (see [updateHeadTag](#updateheadtag) section)
 
 ### `updateHeadTag`
 
@@ -349,11 +439,42 @@ The `updateHeadTag` function is responsible for creating or updating the specifi
 
 Please note that the `updateHeadTag` function requires at least one attribute to be provided. If no attributes are specified, an error message will be logged.
 
-### Props
+#### Props
 
 See [HeadTag props](#headtag-props) for arguments and some common tag attributes.
 
-#### Examples
+## TypeScript Support
+
+Routerino includes TypeScript definitions out of the box. The types are automatically available when you import Routerino.
+
+### Basic Usage
+
+```typescript
+// Both import styles are supported
+import Routerino from 'routerino';  // Default import
+// or
+import { Routerino } from 'routerino';  // Named import (recommended)
+
+import type { RouteConfig } from 'routerino';
+
+export const routes: RouteConfig[] = [
+  {
+    path: '/',
+    element: <HomePage />,
+    title: 'Home',
+    description: 'Welcome to our site'
+  }
+];
+
+// TypeScript will validate all props
+<Routerino
+  routes={routes}
+  baseUrl="https://example.com"
+  title="My Site"
+/>
+```
+
+## Examples
 
 Setting a page description:
 
@@ -379,32 +500,144 @@ To optimize your site for SEO and social previews when using Routerino, consider
 
 ### Page Titles
 
-- Keep page titles unique for each route. Avoid including the site title (e.g., "Foo.com") in individual page titles.
+- Keep page titles unique for each route. Avoid including the site name like "Foo.com" in individual page titles, Routerino adds that automatically.
 - Aim for concise, descriptive titles that accurately represent the page content.
-- Ideal title length is typically 50-60 characters.
+- We prefer to keep title length at a max of 50-60 characters, longer text will be ignored or cut off (especially for mobile users).
 
-### URL Structure
+### URL Structure & Canonicalization
 
-- Maintain trailing slash consistency: Search engines treat `example.com/foo` and `example.com/foo/` as different pages.
-- Routerino will render the same content for both versions to avoid user errors.
-- Routerino will use the `useTrailingSlash` prop to automatically set the preferred URL version for search engines.
+#### Canonical URLs (Don't worry, this is handled for you!)
+
+**What is canonicalization?**
+
+When multiple URLs show the same content (like `/about` vs `/about/`), search engines need to know which one is the "official" version to avoid duplicate content penalties. The canonical URL tells search engines which version to index and rank.
+
+**How Routerino handles this automatically**
+
+- Sets `<link rel="canonical">` tags on every page pointing to the preferred URL version
+- Uses the `useTrailingSlash` prop (default: `true`) to determine the canonical format
+- Generates proper `og:url` meta tags for social sharing
+- For SSG: Creates both file versions (`/about.html` and `/about/index.html`) with canonical tags
+- For Prerender: Includes meta tags that instruct the prerender server to return 301 redirects
+- Ensures sitemap.xml only contains canonical URLs
+
+**Best practices that Routerino implements**
+
+- Consistency: Sitemap, canonical, and redirects all agree
+- Dual file generation (SSG): Creates both `/about.html` and `/about/index.html` so both URLs work
+- Prerender support (SPA): Includes meta tags that tell prerender services to serve proper status codes
+- Absolute URLs: When `baseUrl` is provided, canonical tags use the provided base instead of defaulting to the current domain
+
+**Example of what's generated**
+
+With Static Site Generation (SSG):
+
+```html
+<!-- Both /about.html and /about/index.html contain: -->
+<link rel="canonical" href="https://example.com/about/" />
+<meta property="og:url" content="https://example.com/about/" />
+```
+
+With Prerender (SPA):
+
+```html
+<!-- For canonical URL (/about/) -->
+<link rel="canonical" href="https://example.com/about/" />
+<meta property="og:url" content="https://example.com/about/" />
+
+<!-- For non-canonical URL (/about) -->
+<meta name="prerender-status-code" content="301" />
+<meta name="prerender-header" content="Location: https://example.com/about/" />
+```
+
+You can override the default with `useTrailingSlash={false}` if you prefer URLs without trailing slashes. Either way, Routerino ensures search engines see consistent, canonical URLs.
 
 ### Sitemap Generation
 
 - Automate the creation of `sitemap.xml` and `robots.txt` during your build process with Routerino Forge.
 - The Vite plugin automatically generates these files when building static sites (see [Static Site Generation](#static-site-generation)).
 
-### Social Previews
+### Social Previews & Open Graph
 
-- Add an `imageUrl` to each route for page-specific social preview images.
-- Set a default `imageUrl` via the Routerino prop for pages without unique images.
-- Ensure preview images meet platform-specific size requirements (e.g., 1200x630 pixels for Facebook).
-- Include any other Open Graph tags you need for each page with the `updateHeadTag` function.
+Routerino automatically sets the core Open Graph tags (`og:title`, `og:description`, `og:url`, `og:image`) for every page. Here's how to optimize them:
+
+#### Image Best Practices
+
+- Size: Use 1200×630 pixels (1.91:1 ratio) for maximum compatibility
+- Content: Avoid text in images - use metadata for text instead (per Apple's guidelines)
+- Add dimensions for faster first-share rendering:
+  ```js
+  // In your route's component or after data loading
+  updateHeadTag({ property: "og:image:width", content: "1200" });
+  updateHeadTag({ property: "og:image:height", content: "630" });
+  ```
+
+#### Title & Branding
+
+- Don't duplicate branding in `og:title` - Routerino uses your page title directly
+- For site-wide branding, add `og:site_name` instead:
+  ```js
+  updateHeadTag({ property: "og:site_name", content: "Your Brand" });
+  ```
+
+#### Platform-Specific Enhancements
+
+- Apple/iMessage: Set `touchIconUrl` prop for iMessage link previews
+- Video content: Add direct playable assets when possible:
+  ```js
+  updateHeadTag({
+    property: "og:video",
+    content: "https://example.com/video.mp4",
+  });
+  updateHeadTag({ property: "og:video:type", content: "video/mp4" });
+  ```
+
+#### Testing Your Previews
+
+Test how your links appear on different platforms:
+
+- [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) - Use "Scrape Again" after changes
+- [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
+- [Twitter Card Validator](https://cards-dev.twitter.com/validator)
+
+**Tip**: Social platforms cache previews aggressively. After updating tags, use each platform's debugger to force a refresh.
+
+#### Twitter Card Tags (Handled Automatically)
+
+Routerino automatically includes Twitter card meta tags to ensure rich previews when your links are shared on Twitter/X:
+
+```html
+<meta name="twitter:card" content="summary_large_image" />
+```
+
+**What this does:**
+
+- Without Twitter cards: Links appear as plain URLs with no preview
+- With Twitter cards: Links show rich previews with title, description, and image
+
+**How it works:**
+
+- Routerino always sets `summary_large_image` for maximum engagement
+- If you provide an `imageUrl`, Twitter displays a large prominent image
+- If no image is provided, Twitter gracefully falls back to a text-only card
+- This is better than no card at all (which would show just the bare URL)
+
+**The complete picture:**
+
+```html
+<!-- What Routerino generates for social sharing -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="og:title" content="Your Page Title" />
+<meta property="og:description" content="Your page description" />
+<meta property="og:image" content="https://example.com/preview.jpg" />
+```
+
+This creates an engaging Twitter preview with a large image, title, and description - much more clickable than a plain URL.
 
 ### Meta Descriptions
 
 - Provide unique, informative descriptions for each route.
-- Keep descriptions between 100-200 characters. This range is optimal for most search engines.
+- Descriptions may be used for snippets so keep them short and to the point.
 - Descriptions longer than ~150 characters may be truncated in search results.
 
 ### Additional SEO Considerations
@@ -419,10 +652,10 @@ By following these practices, you'll improve your site's SEO performance and soc
 
 When using Routerino Forge for static site generation, `sitemap.xml` and `robots.txt` files are automatically generated during the build process:
 
-- **sitemap.xml**: Contains all static routes (dynamic routes with parameters like `:id` are excluded)
-- **robots.txt**: Created with a reference to the sitemap (if it doesn't already exist)
+- sitemap.xml: Contains all static routes (dynamic routes with parameters like `:id` are excluded)
+- robots.txt: Created with a reference to the sitemap (if it doesn't already exist)
 
-These files are generated automatically when you build with the Routerino Forge Vite plugin - no additional configuration needed!
+These files are generated automatically when you build with the Routerino Forge Vite plugin - no additional configuration needed.
 
 ### Sample Build Output:
 
@@ -450,7 +683,7 @@ export default defineConfig({
   plugins: [
     react(),
     routerinoForge({
-      baseUrl: "https://example.com", // Your production URL
+      baseUrl: "https://example.com", // Your production URL (no trailing slash)
       // Optional settings (these are the defaults):
       // routes: "./src/routes.jsx", // Your routes file
       // outputDir: "dist",
@@ -458,6 +691,8 @@ export default defineConfig({
       // prerenderStatusCode: true,
       // useTrailingSlash: true, // Set to false for /about instead of /about/
       // verbose: false,
+      // ssgCacheDir: "node_modules/.cache/routerino-forge", // SSG cache directory
+      // optimizeImages: true, // Enable image optimization (see below)
     }),
   ],
 });
@@ -466,7 +701,7 @@ export default defineConfig({
 **Requirements:**
 
 - Your `index.html` must have `<div id="root"></div>` (standard for all React apps)
-- Routes must be exported from your routes file (see below)
+- **IMPORTANT**: Routes must be exported (not defined inline) for SSG to work
 
 **Features:**
 
@@ -476,24 +711,139 @@ export default defineConfig({
   - `/about/` → `about/index.html`
   - Canonical URLs and redirects based on `useTrailingSlash` setting
   - Prerender compatible 301 redirects for non-canonical versions
+- **Static host ready**: Output format aligns perfectly with Vercel, Netlify, and Cloudflare Pages conventions
+  - Routes generate `/path/index.html` for clean URLs (and `/path.html` for compatibility with no-slash URLs)
+  - `404.html` at root for custom error pages
+  - No server configuration needed - just deploy!
 - Automatic canonical URL and og:url meta tags
 - Injects rendered HTML into your root div
 - Generates sitemap.xml and robots.txt
 - Creates a 404.html page
 - Skips dynamic routes (with `:param` syntax)
 - SEO optimized: Complete HTML with meta tags
+- Image optimization: Automatic blur placeholders (LQIP)
 - Easy configuration: Works out of the box with Vite and minimal setup
+
+#### Image Optimization
+
+Routerino Forge can automatically optimize images in your static builds for faster loading:
+
+```js
+routerinoForge({
+  optimizeImages: true, // Enable with defaults
+  // Or configure in detail:
+  optimizeImages: {
+    enabled: true,
+    placeholderSize: 20, // Size of blur placeholder (20x20 pixels)
+    blur: 4, // Blur radius for placeholder
+    maxSize: 10485760, // Maximum image size to process (10MB)
+    minSize: 1024, // Minimum image size to process (1KB)
+    cacheDir: "node_modules/.cache/routerino-forge", // Cache directory
+  },
+});
+```
+
+**What it does:**
+
+- Generates tiny blur placeholders for images (base64 encoded)
+- Caches processed images to speed up subsequent builds
+- Preserves original images while enhancing loading performance
+- Skips external images (http/https), data URIs, and SVGs
+
+**Note:** Image optimization requires `ffmpeg` to be installed. Without it, images work normally but without blur placeholders. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Ubuntu), or `choco install ffmpeg` (Windows).
+
+##### CI/CD Setup for Image Optimization
+
+To enable image optimization in your CI/CD pipeline, you need to install ffmpeg. Here are examples for the most common setups:
+
+###### GitHub Actions
+
+Add the `setup-ffmpeg` action to your workflow:
+
+```yaml
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # Install ffmpeg for image optimization
+      - name: Setup FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+
+      - run: npm ci
+      - run: npm run build
+
+      # Deploy to GitHub Pages (optional)
+      - uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+```
+
+###### Docker
+
+For containerized deployments, install ffmpeg in your Dockerfile:
+
+```dockerfile
+FROM node:20-alpine
+
+# Install ffmpeg
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+RUN npm ci
+
+# Copy source and build
+COPY . .
+RUN npm run build
+
+# Production stage with nginx
+FROM nginx:alpine
+COPY --from=0 /app/dist /usr/share/nginx/html
+```
+
+###### Netlify
+
+Netlify builds run on Ubuntu images, so you can install ffmpeg using apt-get in your build command.
+
+In your netlify.toml:
+
+```
+[build]
+  command = "apt-get update && apt-get install -y ffmpeg && npm ci && npm run build"
+  publish = "dist"
+```
 
 #### Routes Configuration
 
-Define routes with `element` property containing JSX elements:
+**Critical for SSG**: Routes MUST be exported for the build plugin to discover them. The plugin needs to import your routes at build time, so inline route definitions won't work.
+
+Define routes with an `element` property containing JSX elements:
 
 ```jsx
-// src/routes.jsx
 export const routes = [
   {
     path: "/",
-    element: <HomePage featured="Latest News" />, // Props preserved!
+    element: <HomePage featured="Latest News" />, // Props preserved
     title: "Home - My Site",
     description: "Welcome to our site",
     imageUrl: "/images/home-og.jpg", // Optional social image
@@ -520,14 +870,97 @@ export const notFoundTemplate = (
 );
 ```
 
+#### Generating Routes from Data (e.g., Product Listings)
+
+You can dynamically generate routes from data sources at build time. This is perfect for creating SEO-friendly static pages for products, blog posts, or any content from APIs or databases:
+
+```jsx
+// src/routes.jsx
+import { ProductPage } from "./components/ProductPage";
+import { BlogPost } from "./components/BlogPost";
+
+// This could be fetched from an API at build time
+const products = [
+  {
+    id: "laptop-pro",
+    name: "Laptop Pro",
+    price: 1299,
+    description: "High-performance laptop",
+  },
+  {
+    id: "wireless-mouse",
+    name: "Wireless Mouse",
+    price: 49,
+    description: "Ergonomic wireless mouse",
+  },
+  { id: "usb-hub", name: "USB Hub", price: 29, description: "7-port USB hub" },
+];
+
+// Generate a route for each product
+const productRoutes = products.map((product) => ({
+  path: `/products/${product.id}/`,
+  element: <ProductPage product={product} />,
+  title: `${product.name} - $${product.price}`,
+  description: product.description,
+  tags: [
+    { property: "og:type", content: "product" },
+    { property: "product:price:amount", content: product.price.toString() },
+    { property: "product:price:currency", content: "USD" },
+  ],
+}));
+
+// You can also fetch data asynchronously at build time
+const blogPosts = await fetch("https://api.example.com/posts")
+  .then((res) => res.json())
+  .catch(() => []); // Fallback to empty array if API fails
+
+const blogRoutes = blogPosts.map((post) => ({
+  path: `/blog/${post.slug}/`,
+  element: <BlogPost post={post} />,
+  title: post.title,
+  description: post.excerpt,
+  imageUrl: post.featuredImage,
+  tags: [
+    { property: "og:type", content: "article" },
+    { property: "article:published_time", content: post.publishedAt },
+    { property: "article:author", content: post.author },
+  ],
+}));
+
+// Combine all routes
+export const routes = [
+  {
+    path: "/",
+    element: <HomePage />,
+    title: "Home",
+    description: "Welcome to our store",
+  },
+  ...productRoutes, // All products get their own static pages
+  ...blogRoutes, // All blog posts get their own static pages
+  {
+    path: "/products/",
+    element: <ProductListing products={products} />,
+    title: "All Products",
+    description: "Browse our product catalog",
+  },
+];
+```
+
+**Benefits of this approach:**
+
+- Each product/post gets its own static HTML page with proper SEO meta tags
+- All generated routes are automatically included in `sitemap.xml`
+- Search engines can discover and index every product/post
+- Fast page loads since HTML is pre-rendered at build time
+- Type-safe if using TypeScript with your data structures
+
 ### What Gets Generated
 
 The static build process will:
 
-- Generate an HTML file for each static route (e.g., `/about/` → `about/index.html`)
+- Generate HTML files for each static route (e.g., `/about/` → `about/index.html` & `about.html`)
 - Skip dynamic routes with parameters (e.g., `/user/:id`)
-- Apply route-specific meta tags (title, description, og:image, keywords)
-- Add proper `data-route` attributes for client-side hydration
+- Apply route-specific meta tags (title, description, og:image)
 - Generate `sitemap.xml` with all static routes (Vite plugin only)
 - Preserve your existing HTML structure and assets
 
@@ -597,15 +1030,15 @@ npm install
 
 This command will read the `package.json` file in your project and install all the necessary dependencies.
 
-5. Now, add Routerino to your project as a development dependency:
+5. Now, add Routerino to your project as a dependency:
 
 ```
 
-npm install routerino --save-dev
+npm install routerino
 
 ```
 
-This command will install the latest version of Routerino and save it to your `package.json` file under the `devDependencies` section.
+This command will install the latest version of Routerino and save it to your `package.json` file under the `dependencies` section.
 
 With these steps, you'll have a new React project set up with Vite as the build tool and Routerino installed as a development dependency. You can now start building your application with React & Routerino.
 
@@ -615,8 +1048,37 @@ This example includes the full React configuration. It might take the place of `
 
 ```jsx
 import React from "react";
-import { render } from "react-dom";
+import { createRoot } from "react-dom/client";
 import Routerino from "routerino";
+
+export const routes = [
+  {
+    path: "/",
+    element: <p>Welcome to Home</p>,
+    title: "Home",
+    description: "Welcome to my website!",
+  },
+  {
+    path: "/about/",
+    element: <p>About us...</p>,
+    title: "About",
+    description: "Learn more about us.",
+  },
+  {
+    path: "/contact/",
+    element: (
+      <div>
+        <h1>Contact Us</h1>
+        <p>
+          Please <a href="mailto:user@example.com">send us an email</a> at
+          user@example.com
+        </p>
+      </div>
+    ),
+    title: "Contact",
+    description: "Get in touch with us.",
+  },
+];
 
 const App = () => (
   <main>
@@ -628,34 +1090,7 @@ const App = () => (
       title="Example.com"
       notFoundTitle="Sorry, but this page does not exist."
       errorTitle="Yikes! Something went wrong."
-      routes={[
-        {
-          path: "/",
-          element: <p>Welcome to Home</p>,
-          title: "Home",
-          description: "Welcome to my website!",
-        },
-        {
-          path: "/about/",
-          element: <p>About us...</p>,
-          title: "About",
-          description: "Learn more about us.",
-        },
-        {
-          path: "/contact/",
-          element: (
-            <div>
-              <h1>Contact Us</h1>
-              <p>
-                Please <a href="mailto:user@example.com">send us an email</a> at
-                user@example.com
-              </p>
-            </div>
-          ),
-          title: "Contact",
-          description: "Get in touch with us.",
-        },
-      ]}
+      routes={routes}
     />
 
     <footer>
@@ -667,7 +1102,7 @@ const App = () => (
   </main>
 );
 
-render(<App />, document.getElementById("root"));
+createRoot(document.getElementById("root")).render(<App />);
 ```
 
 ## ErrorBoundary Component
@@ -686,7 +1121,7 @@ import { ErrorBoundary } from "routerino";
 <ErrorBoundary
   fallback={<div>Something went wrong. Please try again.</div>}
   errorTitleString="Error | My Application"
-  usePrerenderTags={true}
+  debug={window.location.hostname === "localhost"} // Auto-enable on localhost
 >
   <MyComponent />
 </ErrorBoundary>
@@ -694,20 +1129,42 @@ import { ErrorBoundary } from "routerino";
 
 ### Props
 
-| Prop               | Type        | Required | Description                                          |
-| ------------------ | ----------- | -------- | ---------------------------------------------------- |
-| `children`         | `ReactNode` | No       | The child components to render when there's no error |
-| `fallback`         | `ReactNode` | No       | The UI to display when an error is caught            |
-| `errorTitleString` | `string`    | Yes      | The document title to set when an error occurs       |
-| `usePrerenderTags` | `boolean`   | No       | Whether to set prerender meta tag (status code 500)  |
+| Prop               | Type        | Required | Description                                                       |
+| ------------------ | ----------- | -------- | ----------------------------------------------------------------- |
+| `children`         | `ReactNode` | No       | The child components to render when there's no error              |
+| `fallback`         | `ReactNode` | No       | The UI to display when an error is caught                         |
+| `errorTitleString` | `string`    | Yes      | The document title to set when an error occurs                    |
+| `usePrerenderTags` | `boolean`   | No       | Whether to set prerender meta tags (status code 500)              |
+| `routePath`        | `string`    | No       | The current route path for better error context (used internally) |
+| `debug`            | `boolean`   | No       | Enable detailed console logging of errors (default: `false`)      |
+
+### Debug Logging
+
+When `debug` is set to `true`, the ErrorBoundary provides detailed console output:
+
+- Groups error information for better readability
+- Logs the component stack trace showing exactly where the error occurred
+- Shows the failed route path (if available)
+- Includes timestamp of when the error occurred
+
+**Recommended debug pattern:**
+
+```jsx
+// Auto-enable debug mode on localhost
+debug={window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"}
+
+// Or use environment variable
+debug={process.env.NODE_ENV === "development"}
+```
 
 ### Features
 
 - Catches JavaScript errors in child component tree
 - Displays fallback UI instead of white screen
 - Sets document title on error
-- Logs errors to console for debugging
+- Provides detailed debug logging when enabled
 - Optionally sets prerender status code for SEO
+- Used internally by Routerino to protect route components
 
 This is the same error boundary used internally by Routerino to protect your route components from crashing the entire application.
 
@@ -734,10 +1191,10 @@ your-project/
 
 ```jsx
 // Before (importing from the package)
-import { Router } from "routerino";
+import Routerino from "routerino";
 
 // After (importing from the vendored file)
-import { Router } from "./vendor/routerino";
+import Routerino from "./vendor/routerino";
 ```
 
 4. You're all set! Routerino is now vendored in your project, and you can use it as before.

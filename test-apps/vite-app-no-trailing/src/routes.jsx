@@ -74,7 +74,7 @@ export const notFoundTemplate = (
 export const routes = [
   {
     path: "/",
-    element: <HomePage featured="SSR Works with Props!" />,
+    element: <HomePage featured="Works with Props!" />,
     title: "Home - Test App",
     description: "Welcome to our test application",
     imageUrl: "/images/home-og.jpg",

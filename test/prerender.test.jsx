@@ -35,7 +35,7 @@ describe("Prerender Support", () => {
       window.location.pathname = "/does-not-exist";
 
       render(
-        <Routerino routes={routes}>
+        <Routerino routes={routes} usePrerenderTags={true}>
           <div id="routerino-target"></div>
         </Routerino>
       );
@@ -79,7 +79,7 @@ describe("Prerender Support", () => {
       // Start on 404
       window.location.pathname = "/missing";
       const { rerender } = render(
-        <Routerino routes={routes}>
+        <Routerino routes={routes} usePrerenderTags={true}>
           <div id="routerino-target"></div>
         </Routerino>
       );
@@ -99,7 +99,7 @@ describe("Prerender Support", () => {
 
       // Trigger re-render
       rerender(
-        <Routerino routes={routes}>
+        <Routerino routes={routes} usePrerenderTags={true}>
           <div id="routerino-target"></div>
         </Routerino>
       );
@@ -129,7 +129,7 @@ describe("Prerender Support", () => {
 
       // Navigate to valid route
       render(
-        <Routerino routes={routes}>
+        <Routerino routes={routes} usePrerenderTags={true}>
           <div id="routerino-target"></div>
         </Routerino>
       );
@@ -162,7 +162,11 @@ describe("Prerender Support", () => {
         .mockImplementation(() => {});
 
       render(
-        <Routerino routes={routes} errorTemplate={<div>Error occurred</div>}>
+        <Routerino
+          routes={routes}
+          errorTemplate={<div>Error occurred</div>}
+          usePrerenderTags={true}
+        >
           <div id="routerino-target"></div>
         </Routerino>
       );
@@ -176,6 +180,27 @@ describe("Prerender Support", () => {
       consoleSpy.mockRestore();
       consoleGroupSpy.mockRestore();
       consoleGroupEndSpy.mockRestore();
+    });
+
+    it("does not add redirect headers when usePrerenderTags=false", () => {
+      window.location = new URL("http://localhost/about");
+      const routes = [{ path: "/about/", element: <div>About</div> }];
+
+      render(
+        <Routerino
+          routes={routes}
+          useTrailingSlash={true}
+          usePrerenderTags={false}
+        />
+      );
+
+      const statusTag = document.querySelector(
+        'meta[name="prerender-status-code"]'
+      );
+      expect(statusTag).toBeFalsy();
+
+      const headerTag = document.querySelector('meta[name="prerender-header"]');
+      expect(headerTag).toBeFalsy();
     });
   });
 
@@ -286,65 +311,6 @@ describe("Prerender Support", () => {
       expect(author.getAttribute("content")).toBe("John Doe");
       expect(publishTime.getAttribute("content")).toBe("2024-01-01");
       expect(twitterCard.getAttribute("content")).toBe("summary_large_image");
-    });
-  });
-
-  describe("Bot Detection", () => {
-    it("should detect search engine crawlers", () => {
-      const crawlerUserAgents = [
-        "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-        "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
-        "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
-        "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)",
-        "Twitterbot/1.0",
-      ];
-
-      crawlerUserAgents.forEach((ua) => {
-        // This would be detected by the prerender server
-        const isCrawler =
-          /googlebot|bingbot|facebookexternalhit|yandex|twitterbot/i.test(ua);
-        expect(isCrawler).toBe(true);
-      });
-    });
-
-    it("should not detect regular browsers as crawlers", () => {
-      const regularUserAgents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
-      ];
-
-      regularUserAgents.forEach((ua) => {
-        const isCrawler =
-          /googlebot|bingbot|facebookexternalhit|yandex|twitterbot/i.test(ua);
-        expect(isCrawler).toBe(false);
-      });
-    });
-  });
-
-  describe("Dynamic Content Handling", () => {
-    it("should allow marking prerender as ready", () => {
-      // Test window.prerenderReady flag
-      window.prerenderReady = false;
-
-      const routes = [
-        {
-          path: "/",
-          element: <div>Loading...</div>,
-        },
-      ];
-
-      render(
-        <Routerino routes={routes}>
-          <div id="routerino-target"></div>
-        </Routerino>
-      );
-
-      expect(window.prerenderReady).toBe(false);
-
-      // Simulate content loaded
-      window.prerenderReady = true;
-      expect(window.prerenderReady).toBe(true);
     });
   });
 });

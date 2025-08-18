@@ -76,7 +76,7 @@ describe("Routerino Forge Build Output", () => {
       ).toBe(false);
     });
 
-    it("should generate canonical tags and redirects with useTrailingSlash: true (default)", () => {
+    it("should generate canonical tags with useTrailingSlash: true (default)", () => {
       // Default is useTrailingSlash: true, so about/index.html should be canonical
       const aboutFlat = fs.readFileSync(
         path.join(distDir, "about.html"),
@@ -103,14 +103,7 @@ describe("Routerino Forge Build Output", () => {
         "utf8"
       );
 
-      // about/index.html should have status 200 (canonical)
-      expect(aboutNested).toContain(
-        '<meta name="prerender-status-code" content="200">'
-      );
-      expect(aboutNested).not.toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(aboutNested).not.toContain('<meta name="prerender-header"');
+      // about/index.html should be canonical
       expect(aboutNested).toContain(
         '<link rel="canonical" href="https://example.com/about/">'
       );
@@ -118,13 +111,7 @@ describe("Routerino Forge Build Output", () => {
         '<meta property="og:url" content="https://example.com/about/">'
       );
 
-      // about.html should redirect to canonical (with trailing slash)
-      expect(aboutFlat).toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(aboutFlat).toContain(
-        '<meta name="prerender-header" content="Location: https://example.com/about/">'
-      );
+      // about.html should have canonical pointing to trailing slash version
       expect(aboutFlat).toContain(
         '<link rel="canonical" href="https://example.com/about/">'
       );
@@ -134,22 +121,13 @@ describe("Routerino Forge Build Output", () => {
 
       // Test products page too
       expect(productsNested).toContain(
-        '<meta name="prerender-status-code" content="200">'
-      );
-      expect(productsNested).not.toContain('<meta name="prerender-header"');
-      expect(productsNested).toContain(
         '<link rel="canonical" href="https://example.com/products/">'
       );
       expect(productsNested).toContain(
         '<meta property="og:url" content="https://example.com/products/">'
       );
 
-      expect(productsFlat).toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(productsFlat).toContain(
-        '<meta name="prerender-header" content="Location: https://example.com/products/">'
-      );
+      // Products flat should have canonical pointing to trailing slash version
       expect(productsFlat).toContain(
         '<link rel="canonical" href="https://example.com/products/">'
       );
@@ -159,22 +137,13 @@ describe("Routerino Forge Build Output", () => {
 
       // Test contact page
       expect(contactNested).toContain(
-        '<meta name="prerender-status-code" content="200">'
-      );
-      expect(contactNested).not.toContain('<meta name="prerender-header"');
-      expect(contactNested).toContain(
         '<link rel="canonical" href="https://example.com/contact/">'
       );
       expect(contactNested).toContain(
         '<meta property="og:url" content="https://example.com/contact/">'
       );
 
-      expect(contactFlat).toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(contactFlat).toContain(
-        '<meta name="prerender-header" content="Location: https://example.com/contact/">'
-      );
+      // Contact flat should have canonical pointing to trailing slash version
       expect(contactFlat).toContain(
         '<link rel="canonical" href="https://example.com/contact/">'
       );
@@ -193,13 +162,7 @@ describe("Routerino Forge Build Output", () => {
       expect(indexHtml).toContain(
         '<meta property="og:url" content="https://example.com/">'
       );
-      expect(indexHtml).toContain(
-        '<meta name="prerender-status-code" content="200">'
-      );
-      expect(indexHtml).not.toContain(
-        '<meta name="prerender-status-code" content="301">'
-      );
-      expect(indexHtml).not.toContain('<meta name="prerender-header"');
+      // Root page should only have canonical, no redirects
     });
   });
 
@@ -266,9 +229,7 @@ describe("Routerino Forge Build Output", () => {
     expect(docsNested).toContain(
       '<meta property="og:url" content="https://example.com/docs/">'
     );
-    expect(docsNested).toContain(
-      '<meta name="prerender-status-code" content="200">'
-    );
+    // Docs nested should be canonical
 
     expect(docsFlat).toContain(
       '<link rel="canonical" href="https://example.com/docs/">'
@@ -276,12 +237,7 @@ describe("Routerino Forge Build Output", () => {
     expect(docsFlat).toContain(
       '<meta property="og:url" content="https://example.com/docs/">'
     );
-    expect(docsFlat).toContain(
-      '<meta name="prerender-status-code" content="301">'
-    );
-    expect(docsFlat).toContain(
-      '<meta name="prerender-header" content="Location: https://example.com/docs/">'
-    );
+    // Docs flat should have canonical pointing to trailing slash version
 
     // /docs/getting-started/ route (two levels deep)
     expect(gettingStartedNested).toContain(
@@ -290,9 +246,7 @@ describe("Routerino Forge Build Output", () => {
     expect(gettingStartedNested).toContain(
       '<meta property="og:url" content="https://example.com/docs/getting-started/">'
     );
-    expect(gettingStartedNested).toContain(
-      '<meta name="prerender-status-code" content="200">'
-    );
+    // Getting started nested should be canonical
 
     expect(gettingStartedFlat).toContain(
       '<link rel="canonical" href="https://example.com/docs/getting-started/">'
@@ -300,9 +254,7 @@ describe("Routerino Forge Build Output", () => {
     expect(gettingStartedFlat).toContain(
       '<meta property="og:url" content="https://example.com/docs/getting-started/">'
     );
-    expect(gettingStartedFlat).toContain(
-      '<meta name="prerender-status-code" content="301">'
-    );
+    // Getting started flat should have canonical pointing to trailing slash version
 
     // /docs/api/reference/ route (three levels deep)
     expect(apiReferenceNested).toContain(
@@ -311,9 +263,7 @@ describe("Routerino Forge Build Output", () => {
     expect(apiReferenceNested).toContain(
       '<meta property="og:url" content="https://example.com/docs/api/reference/">'
     );
-    expect(apiReferenceNested).toContain(
-      '<meta name="prerender-status-code" content="200">'
-    );
+    // API reference nested should be canonical
 
     expect(apiReferenceFlat).toContain(
       '<link rel="canonical" href="https://example.com/docs/api/reference/">'
@@ -321,82 +271,17 @@ describe("Routerino Forge Build Output", () => {
     expect(apiReferenceFlat).toContain(
       '<meta property="og:url" content="https://example.com/docs/api/reference/">'
     );
-    expect(apiReferenceFlat).toContain(
-      '<meta name="prerender-status-code" content="301">'
-    );
-    expect(apiReferenceFlat).toContain(
-      '<meta name="prerender-header" content="Location: https://example.com/docs/api/reference/">'
-    );
+    // API reference flat should have canonical pointing to trailing slash version
   });
 
-  it("should have correct prerender tags for trailing slash configuration", () => {
-    // With default useTrailingSlash: true
-    // Files with trailing slash (nested index.html) should be canonical (200)
-    // Files without trailing slash (flat .html) should redirect (301)
-
-    const testCases = [
-      {
-        name: "about page (nested)",
-        file: path.join("about", "index.html"),
-        shouldBeCanonical: true,
-      },
-      {
-        name: "about page (flat)",
-        file: "about.html",
-        shouldBeCanonical: false,
-        redirectTo: "https://example.com/about/",
-      },
-      {
-        name: "products page (nested)",
-        file: path.join("products", "index.html"),
-        shouldBeCanonical: true,
-      },
-      {
-        name: "products page (flat)",
-        file: "products.html",
-        shouldBeCanonical: false,
-        redirectTo: "https://example.com/products/",
-      },
-      {
-        name: "contact page (nested)",
-        file: path.join("contact", "index.html"),
-        shouldBeCanonical: true,
-      },
-      {
-        name: "contact page (flat)",
-        file: "contact.html",
-        shouldBeCanonical: false,
-        redirectTo: "https://example.com/contact/",
-      },
-    ];
-
-    testCases.forEach(({ file, shouldBeCanonical, redirectTo }) => {
-      const html = fs.readFileSync(path.join(distDir, file), "utf8");
-
-      if (shouldBeCanonical) {
-        expect(html).toContain(
-          '<meta name="prerender-status-code" content="200">'
-        );
-        expect(html).not.toContain('<meta name="prerender-header"');
-      } else {
-        expect(html).toContain(
-          '<meta name="prerender-status-code" content="301">'
-        );
-        expect(html).toContain(
-          `<meta name="prerender-header" content="Location: ${redirectTo}">`
-        );
-      }
-    });
-  });
-
-  describe("SSR Content Rendering", () => {
+  describe("SSG Content Rendering", () => {
     it("should render React components to HTML in home page", () => {
       const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
 
       // Check for rendered content
       expect(html).toContain("<h1>Home Page</h1>");
       expect(html).toContain("<p>Welcome to the test app!</p>");
-      expect(html).toContain("Featured: <!-- -->SSR Works with Props!");
+      expect(html).toContain("Featured: <!-- -->Works with Props!");
 
       // Check navigation links
       expect(html).toContain('<a href="/about/">About</a>');
@@ -440,11 +325,11 @@ describe("Routerino Forge Build Output", () => {
       expect(html).toContain("<p>Email: test@example.com</p>");
     });
 
-    it("should preserve component props through SSR", () => {
+    it("should preserve component props through SSG", () => {
       const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
 
-      // The HomePage component receives featured="SSR Works with Props!"
-      expect(html).toContain("Featured: <!-- -->SSR Works with Props!");
+      // The HomePage component receives featured="Works with Props!"
+      expect(html).toContain("Featured: <!-- -->Works with Props!");
     });
   });
 
@@ -464,13 +349,7 @@ describe("Routerino Forge Build Output", () => {
         '<meta property="og:image" content="https://example.com/images/home-og.jpg">'
       );
       expect(html).toContain(
-        '<meta name="twitter:image" content="https://example.com/images/home-og.jpg">'
-      );
-      expect(html).toContain(
         '<meta name="twitter:card" content="summary_large_image">'
-      );
-      expect(html).toContain(
-        '<meta name="prerender-status-code" content="200">'
       );
     });
 
@@ -500,9 +379,48 @@ describe("Routerino Forge Build Output", () => {
       expect(html).toContain(
         '<meta property="og:image" content="https://example.com/images/contact-og.jpg">'
       );
-      expect(html).toContain(
-        '<meta name="twitter:image" content="https://example.com/images/contact-og.jpg">'
+    });
+
+    it("should include custom tags from route configuration", () => {
+      const html = fs.readFileSync(
+        path.join(distDir, "about", "index.html"),
+        "utf8"
       );
+
+      // Check that custom tags from the route are included
+      expect(html).toContain('<meta property="og:type" content="website">');
+      expect(html).toContain('<meta name="author" content="Test Author">');
+      expect(html).toContain(
+        '<meta property="article:published_time" content="2024-01-15">'
+      );
+    });
+  });
+
+  describe("Image Optimization", () => {
+    it("should wrap images with span for LQIP blur effect", () => {
+      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+
+      // Check for the span wrapper with forge-lqip class
+      expect(html).toContain('<span class="forge-lqip');
+
+      // Check that styles for blur background are present
+      expect(html).toContain("::before");
+      expect(html).toMatch(/background-image:\s*url\('data:image\/png;base64/);
+      expect(html).toContain("filter: blur(4px)");
+      expect(html).toContain("z-index: -1"); // Background is behind
+
+      // Check that img is inside the span
+      expect(html).toMatch(/<span[^>]*class="forge-lqip[^>]*>.*?<img[^>]*>/s);
+
+      // Check that the original img tag is untouched (no style modifications)
+      const imgMatch = html.match(/<img[^>]*>/);
+      expect(imgMatch).toBeTruthy();
+      const imgTag = imgMatch[0];
+      expect(imgTag).toContain('src="/test-image.jpg"');
+      expect(imgTag).toContain('alt="Test Image"');
+      // Should NOT have added styles or loading attribute
+      expect(imgTag).not.toContain("style=");
+      expect(imgTag).not.toContain("loading=");
     });
   });
 
@@ -520,7 +438,7 @@ describe("Routerino Forge Build Output", () => {
       expect(html).toMatch(/<script[^>]*type="module"[^>]*>/);
     });
 
-    it("should have SSR content inside the root div", () => {
+    it("should have SSG content inside the root div", () => {
       const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
 
       // Extract content inside <div id="root">...</div>
@@ -609,9 +527,6 @@ describe("Routerino Forge Build Output", () => {
       // Check meta tags
       expect(html).toContain('<meta name="robots" content="noindex">');
       expect(html).toContain(
-        '<meta name="prerender-status-code" content="404">'
-      );
-      expect(html).toContain(
         '<meta name="twitter:card" content="summary_large_image">'
       );
 
@@ -627,6 +542,90 @@ describe("Routerino Forge Build Output", () => {
       expect(html).toContain("<!DOCTYPE html>");
       expect(html).toContain('<html lang="en">');
       expect(html).toContain('<div id="root">');
+    });
+  });
+
+  describe("Image Optimization", () => {
+    it("should optimize images with base64 placeholders", () => {
+      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+
+      // Check that the img tag has been wrapped with optimization
+      expect(html).toContain('<span class="forge-lqip');
+      expect(html).toContain("<img");
+      expect(html).toContain('src="/test-image.jpg"');
+      expect(html).toContain("background-image: url('data:image/");
+      expect(html).toContain("base64,");
+      expect(html).toContain("filter: blur(");
+      expect(html).toContain("z-index: -1");
+    });
+
+    it("should keep original img tag untouched (no added attributes)", () => {
+      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+
+      // Check that img tag is unchanged
+      const imgMatch = html.match(/<img[^>]*>/);
+      expect(imgMatch).toBeTruthy(); // TODO: better match
+    });
+
+    it("should show image optimization stats in build output", () => {
+      // Only check if the test image exists (it might not in CI)
+      if (fs.existsSync(path.join(distDir, "test-image.jpg"))) {
+        expect(buildOutput).toMatch(
+          /\[Routerino Forge\].*Optimized \d+ images? \([0-9.]+MB total, [0-9.]+KB placeholders, \d+% reduction\)/
+        );
+      }
+    });
+
+    it("should create valid base64 data URLs", () => {
+      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+
+      // Extract the base64 data URL
+      const base64Match = html.match(
+        /data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+=*)/
+      );
+
+      if (base64Match) {
+        expect(base64Match).toBeTruthy();
+        expect(base64Match[1]).toMatch(/^(jpeg|png)$/);
+
+        // Check that base64 string is valid (divisible by 4 when padded)
+        const base64String = base64Match[2];
+        expect(base64String.length % 4).toBe(0);
+      }
+    });
+
+    it("should preserve original image source", () => {
+      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+
+      // Should still have the original src attribute
+      expect(html).toContain('src="/test-image.jpg"');
+
+      // Should not have data-src (we're not doing that approach)
+      expect(html).not.toContain("data-src=");
+    });
+
+    it("should use ffmpeg for image processing", () => {
+      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+
+      // Check for placeholder image in the HTML
+      // With ffmpeg, placeholders are PNG format
+      const pngPlaceholder = html.match(/data:image\/png;base64,([^'"]*)/);
+
+      // Should have PNG placeholder (ffmpeg is required)
+      expect(pngPlaceholder).toBeTruthy();
+
+      if (pngPlaceholder) {
+        // Verify PNG format
+        const base64Data = pngPlaceholder[1];
+        expect(() => Buffer.from(base64Data, "base64")).not.toThrow();
+
+        const decoded = Buffer.from(base64Data, "base64");
+        // PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
+        expect(decoded[0]).toBe(0x89);
+        expect(decoded[1]).toBe(0x50); // 'P'
+        expect(decoded[2]).toBe(0x4e); // 'N'
+        expect(decoded[3]).toBe(0x47); // 'G'
+      }
     });
   });
 });

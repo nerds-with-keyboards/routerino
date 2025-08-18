@@ -7,12 +7,20 @@ import {
 } from "react";
 import PropTypes from "prop-types";
 
+// ============================================
+// Context & Hooks
+// ============================================
 // Create RouterinoContext for sharing router state
 const RouterinoContext = createContext(null);
 
 /**
  * Hook to access Routerino router state
- * @returns {Object} Router state including currentRoute, params, routePattern, and updateHeadTag
+ * @returns {{
+ *   currentRoute: string,
+ *   params: Object.<string, string>,
+ *   routePattern: string,
+ *   updateHeadTag: function
+ * }} Router state and methods
  */
 export function useRouterino() {
   const context = useContext(RouterinoContext);
@@ -24,8 +32,17 @@ export function useRouterino() {
   return context;
 }
 
+// ============================================
+// Utilities
+// ============================================
+
 /**
  * Update a head tag, creating the tag if necessary
+ *
+ * Soft semantics:
+ * - If no matching tag exists, always create it (even when soft=true)
+ * - If a matching tag exists and soft=true, do NOT overwrite any attributes
+ * - If a matching tag exists and soft=false, overwrite attributes
  *
  * @typedef {Object} HeadTag
  * @property {string} [tag] - The tag name to update (default: meta)
@@ -52,7 +69,7 @@ export function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
   // do a quick input check
   if (attrKeys.length < 1) {
     return console.error(
-      `updateHeadTag() received no attributes to set for ${tag} tag`
+      `[Routerino] updateHeadTag() received no attributes to set for ${tag} tag`
     );
   }
 
@@ -72,9 +89,13 @@ export function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
     if (tagToUpdate) break;
   }
 
-  // 3. if no matching tag is found, create a new one
-  // make sure we don't want a "soft" update (doesn't overwrite the value if set)
-  if (!tagToUpdate && !soft) {
+  // 3. If found and soft=true, respect the existing tag and do not overwrite
+  if (tagToUpdate && soft) {
+    return;
+  }
+
+  // If not found, create the element
+  if (!tagToUpdate) {
     tagToUpdate = document.createElement(tag);
   }
 
@@ -125,11 +146,16 @@ export class ErrorBoundary extends Component {
   }
   componentDidCatch(error, errorInfo) {
     if (this.props.debug) {
-      console.group("Routerino Error Boundary Caught an Error", error);
-      console.error("Component Stack:", errorInfo.componentStack);
+      console.group(
+        "%c[Routerino]%c Error Boundary Caught an Error",
+        "color: #ff6b6b; font-weight: bold",
+        "",
+        error
+      );
+      console.error("[Routerino] Component Stack:", errorInfo.componentStack);
       if (this.props.routePath)
-        console.error("Failed Route:", this.props.routePath);
-      console.error("Error occurred at:", new Date().toISOString());
+        console.error("[Routerino] Failed Route:", this.props.routePath);
+      console.error("[Routerino] Error occurred at:", new Date().toISOString());
       console.groupEnd();
     }
     // Set error title and meta tags
@@ -159,7 +185,7 @@ ErrorBoundary.propTypes = {
 };
 
 // Routerino Component
-export default function Routerino({
+export function Routerino({
   routes = [
     {
       path: "/",
@@ -194,7 +220,7 @@ export default function Routerino({
   ),
   errorTitle = "Page error [500]",
   useTrailingSlash = true,
-  usePrerenderTags = true,
+  usePrerenderTags = false,
   baseUrl = null,
   title = "",
   separator = " | ",
@@ -214,10 +240,17 @@ export default function Routerino({
         (path, index) => paths.indexOf(path) !== index
       );
       if (duplicates.length > 0) {
-        console.warn("⚠️ Routerino: Duplicate route paths detected:", [
-          ...new Set(duplicates),
-        ]);
-        console.warn("The first matching route will be used");
+        console.warn(
+          "%c[Routerino]%c Duplicate route paths detected:",
+          "color: #f59e0b; font-weight: bold",
+          "",
+          [...new Set(duplicates)]
+        );
+        console.warn(
+          "%c[Routerino]%c The first matching route will be used",
+          "color: #f59e0b; font-weight: bold",
+          ""
+        );
       }
     }
 
@@ -229,7 +262,11 @@ export default function Routerino({
     useEffect(() => {
       const handleClick = (event) => {
         if (debug) {
-          console.debug("click occurred");
+          console.debug(
+            "%c[Routerino]%c click occurred",
+            "color: #6b7280; font-weight: bold",
+            ""
+          );
         }
         let target = event.target;
         while (target.tagName !== "A" && target.parentElement) {
@@ -238,7 +275,11 @@ export default function Routerino({
         if (target.tagName !== "A") {
           // no anchor tag, stop checking anything
           if (debug) {
-            console.debug("no achor tag found during click");
+            console.debug(
+              "%c[Routerino]%c no anchor tag found during click",
+              "color: #6b7280; font-weight: bold",
+              ""
+            );
           }
           return;
         }
@@ -247,13 +288,36 @@ export default function Routerino({
         const href = target.getAttribute("href") || target.href;
         if (!href) {
           if (debug) {
-            console.debug("anchor tag has no href");
+            console.debug(
+              "%c[Routerino]%c anchor tag has no href",
+              "color: #6b7280; font-weight: bold",
+              ""
+            );
+          }
+          return;
+        }
+
+        // Only handle http/https and relative URLs (allow-list approach)
+        // Skip everything else (mailto:, tel:, javascript:, ftp:, etc.)
+        if (!/^(https?:\/\/|\/|\.\/|\.\.\/|[^:]+$)/i.test(href)) {
+          if (debug) {
+            console.debug(
+              "%c[Routerino]%c skipping non-http URL:",
+              "color: #6b7280; font-weight: bold",
+              "",
+              href
+            );
           }
           return;
         }
 
         if (debug) {
-          console.debug(`click target href: ${href}`);
+          console.debug(
+            "%c[Routerino]%c click target href:",
+            "color: #6b7280; font-weight: bold",
+            "",
+            href
+          );
         }
 
         let targetUrl;
@@ -261,19 +325,34 @@ export default function Routerino({
           targetUrl = new URL(href, window.location.href);
         } catch (e) {
           if (debug) {
-            console.debug(`Invalid URL: ${href}`, e);
+            console.debug(
+              "%c[Routerino]%c Invalid URL:",
+              "color: #6b7280; font-weight: bold",
+              "",
+              href,
+              e
+            );
           }
           return;
         }
 
         if (debug) {
-          console.debug(`targetUrl: ${targetUrl}, current: ${window.location}`);
+          console.debug(
+            "%c[Routerino]%c targetUrl:",
+            "color: #6b7280; font-weight: bold",
+            "",
+            targetUrl,
+            "current:",
+            window.location
+          );
         }
         // check for links to be updated without reloading (same origin)
         if (targetUrl && window.location.origin === targetUrl.origin) {
           if (debug) {
             console.debug(
-              "target link is same origin, Routerino will use push-state transitioning"
+              "%c[Routerino]%c target link is same origin, will use push-state transitioning",
+              "color: #6b7280; font-weight: bold",
+              ""
             );
           }
           event.preventDefault();
@@ -291,7 +370,9 @@ export default function Routerino({
           });
         } else if (debug) {
           console.debug(
-            "target link does not share an origin, standard browser link handling applies (Routerino does nothing)"
+            "%c[Routerino]%c target link does not share an origin, standard browser link handling applies",
+            "color: #6b7280; font-weight: bold",
+            ""
           );
         }
       };
@@ -299,6 +380,14 @@ export default function Routerino({
 
       // handle browser back button state changes
       const handlePopState = () => {
+        if (debug) {
+          console.debug(
+            "%c[Routerino]%c route change ->",
+            "color: #6b7280; font-weight: bold",
+            "",
+            window.location.pathname
+          );
+        }
         setHref(window.location.href);
       };
       window.addEventListener("popstate", handlePopState);
@@ -361,16 +450,32 @@ export default function Routerino({
     const match = exactMatch ?? addSlashMatch ?? paramsMatch;
     if (debug) {
       // matching debugging helper
-      console.debug({ match, exactMatch, addSlashMatch, paramsMatch });
+      console.debug(
+        "%c[Routerino]%c Route matching:",
+        "color: #6b7280; font-weight: bold",
+        "",
+        { match, exactMatch, addSlashMatch, paramsMatch }
+      );
     }
 
     // START 404 HANDLING
     if (!match) {
       if (debug) {
-        console.group("⚠️ Routerino 404 - No matching route");
-        console.warn(`Requested path: ${currentRoute}`);
+        console.group(
+          "%c[Routerino]%c 404 - No matching route",
+          "color: #f59e0b; font-weight: bold",
+          ""
+        );
         console.warn(
-          "Available routes:",
+          "%c[Routerino]%c Requested path:",
+          "color: #f59e0b; font-weight: bold",
+          "",
+          currentRoute
+        );
+        console.warn(
+          "%c[Routerino]%c Available routes:",
+          "color: #f59e0b; font-weight: bold",
+          "",
           routes.map((r) => r.path)
         );
         console.groupEnd();
@@ -468,6 +573,14 @@ export default function Routerino({
       });
     }
 
+    // set the twitter summary card to ensure rich previews
+    if (!match.tags?.find(({ property }) => property === "twitter:card")) {
+      updateHeadTag({
+        name: "twitter:card",
+        content: "summary_large_image",
+      });
+    }
+
     if (touchIconUrl) {
       updateHeadTag({
         tag: "link",
@@ -526,7 +639,13 @@ export default function Routerino({
     }
 
     // no match
-    if (debug) console.error(`No route found for ${currentRoute}`);
+    if (debug)
+      console.error(
+        "%c[Routerino]%c No route found for",
+        "color: #ff6b6b; font-weight: bold",
+        "",
+        currentRoute
+      );
     document.title = notFoundTitleString;
     if (usePrerenderTags) {
       updateHeadTag({ name: "prerender-status-code", content: "404" });
@@ -535,13 +654,26 @@ export default function Routerino({
   } catch (e) {
     // router code threw
     if (debug) {
-      console.group("💥 Routerino Fatal Error");
-      console.error(
-        "An error occurred in the router itself (not in a route component)"
+      console.group(
+        "%c[Routerino]%c Fatal Error",
+        "color: #ff6b6b; font-weight: bold",
+        ""
       );
-      console.error("Error:", e);
       console.error(
-        "This typically means an issue with route configuration or router setup"
+        "%c[Routerino]%c An error occurred in the router itself (not in a route component)",
+        "color: #ff6b6b; font-weight: bold",
+        ""
+      );
+      console.error(
+        "%c[Routerino]%c Error:",
+        "color: #ff6b6b; font-weight: bold",
+        "",
+        e
+      );
+      console.error(
+        "%c[Routerino]%c This typically means an issue with route configuration or router setup",
+        "color: #ff6b6b; font-weight: bold",
+        ""
       );
       console.groupEnd();
     }
@@ -591,8 +723,26 @@ Routerino.propTypes = {
   errorTitle: PropTypes.string,
   useTrailingSlash: PropTypes.bool,
   usePrerenderTags: PropTypes.bool,
-  baseUrl: PropTypes.string,
+  baseUrl: (props, propName, componentName) => {
+    const value = props[propName];
+    if (value != null) {
+      if (typeof value !== "string") {
+        return new Error(
+          `Invalid prop \`${propName}\` of type \`${typeof value}\` supplied to \`${componentName}\`, expected \`string\`.`
+        );
+      }
+      if (value.endsWith("/")) {
+        return new Error(
+          `Invalid prop \`${propName}\` supplied to \`${componentName}\`. The baseUrl should not end with a slash. Got: "${value}"`
+        );
+      }
+    }
+    return null;
+  },
   imageUrl: PropTypes.string,
   touchIconUrl: PropTypes.string,
   debug: PropTypes.bool,
 };
+
+// Default export for backward compatibility
+export default Routerino;
