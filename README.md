@@ -750,7 +750,88 @@ routerinoForge({
 - Preserves original images while enhancing loading performance
 - Skips external images (http/https), data URIs, and SVGs
 
-**Note:** Image optimization requires `ffmpeg` to be installed. Without it, images work normally but without blur placeholders. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Ubuntu), or `choco install ffmpeg` (Windows). You can use the [`setup-ffmpeg`](https://github.com/marketplace/actions/setup-ffmpeg) action to install in your GitHub action.
+**Note:** Image optimization requires `ffmpeg` to be installed. Without it, images work normally but without blur placeholders. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Ubuntu), or `choco install ffmpeg` (Windows).
+
+##### CI/CD Setup for Image Optimization
+
+To enable image optimization in your CI/CD pipeline, you need to install ffmpeg. Here are examples for the most common setups:
+
+###### GitHub Actions
+
+Add the `setup-ffmpeg` action to your workflow:
+
+```yaml
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # Install ffmpeg for image optimization
+      - name: Setup FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+
+      - run: npm ci
+      - run: npm run build
+
+      # Deploy to GitHub Pages (optional)
+      - uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+```
+
+###### Docker
+
+For containerized deployments, install ffmpeg in your Dockerfile:
+
+```dockerfile
+FROM node:20-alpine
+
+# Install ffmpeg
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+RUN npm ci
+
+# Copy source and build
+COPY . .
+RUN npm run build
+
+# Production stage with nginx
+FROM nginx:alpine
+COPY --from=0 /app/dist /usr/share/nginx/html
+```
+
+###### Netlify
+
+Netlify builds run on Ubuntu images, so you can install ffmpeg using apt-get in your build command.
+
+In your netlify.toml:
+
+```
+[build]
+  command = "apt-get update && apt-get install -y ffmpeg && npm ci && npm run build"
+  publish = "dist"
+```
 
 #### Routes Configuration
 
