@@ -4,7 +4,7 @@
 
 For teams who want SPA simplicity with search-friendly static HTML, Open Graph previews, and **no framework lock-in.**
 
-[**Live Example**](https://www.papoir.com) | [**Starter Template**](https://github.com/nerds-with-keyboards/routerino-starter)
+<!-- [**Live Example**](https://www.papoir.com) | [**Starter Template**](https://github.com/nerds-with-keyboards/routerino-starter) -->
 
 Routerino is a zero-dependency router for React designed for optimal SEO performance in client-side rendered applications. Built for modern web architectures like JAMStack applications and Vite-powered React sites, it provides route & meta tag management, sitemap generation, and static site generation or [prerender](https://github.com/prerender/prerender) support to ensure your React applications are fully discoverable by search engines.
 
@@ -25,6 +25,7 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
   - [Props](#props-arguments)
   - [useRouterino Hook](#using-the-userouterino-hook)
   - [updateHeadTag](#updateheadtag)
+- [TypeScript Support](#typescript-support)
 - [Best Practices](#routerino-best-practices)
 - [Generating a Sitemap](#generating-a-sitemap-from-routes)
 - [Static Site Generation](#static-site-generation)
@@ -298,7 +299,7 @@ Default: `false`
 
 The base URL to use for canonical tags and og:url meta tags. If not provided, uses `window.location.origin`. This is useful when you want to specify the production URL regardless of the current environment.
 
-Example: `"https://example.com"`
+**Important:** The baseUrl must NOT end with a trailing slash (`/`). Correct example: `"https://example.com"`
 
 Default: `null` (uses window.location.origin)
 
@@ -340,7 +341,7 @@ There is a default RouteConfig that will be loaded if you don't specify any rout
 
 ##### path: string;
 
-The path of the desired route. **Must start with a forward slash (`/`)**. For example: `"/foo/"`, or `"/about/"`.
+The path of the desired route. **Must start with a forward slash (`/`)**. For example: `"/foo/"`, or `"/about/"`. Supported dynamic segments use the :param syntax (e.g., /products/:id/). Wildcards, optional segments, and splats are not supported. Params are matched by position; decode values in your components if needed.
 
 ##### element: React.ReactNode;
 
@@ -441,6 +442,37 @@ Please note that the `updateHeadTag` function requires at least one attribute to
 #### Props
 
 See [HeadTag props](#headtag-props) for arguments and some common tag attributes.
+
+## TypeScript Support
+
+Routerino includes TypeScript definitions out of the box. The types are automatically available when you import Routerino.
+
+### Basic Usage
+
+```typescript
+// Both import styles are supported
+import Routerino from 'routerino';  // Default import
+// or
+import { Routerino } from 'routerino';  // Named import (recommended)
+
+import type { RouteConfig } from 'routerino';
+
+export const routes: RouteConfig[] = [
+  {
+    path: '/',
+    element: <HomePage />,
+    title: 'Home',
+    description: 'Welcome to our site'
+  }
+];
+
+// TypeScript will validate all props
+<Routerino
+  routes={routes}
+  baseUrl="https://example.com"
+  title="My Site"
+/>
+```
 
 ## Examples
 
@@ -651,7 +683,7 @@ export default defineConfig({
   plugins: [
     react(),
     routerinoForge({
-      baseUrl: "https://example.com", // Your production URL
+      baseUrl: "https://example.com", // Your production URL (no trailing slash)
       // Optional settings (these are the defaults):
       // routes: "./src/routes.jsx", // Your routes file
       // outputDir: "dist",
@@ -669,7 +701,7 @@ export default defineConfig({
 **Requirements:**
 
 - Your `index.html` must have `<div id="root"></div>` (standard for all React apps)
-- **IMPORTANT**: Routes must be exported from a separate file (not defined inline) for SSG to work
+- **IMPORTANT**: Routes must be exported (not defined inline) for SSG to work
 
 **Features:**
 
@@ -689,7 +721,7 @@ export default defineConfig({
 - Creates a 404.html page
 - Skips dynamic routes (with `:param` syntax)
 - SEO optimized: Complete HTML with meta tags
-- **Image optimization**: Automatic blur placeholders and lazy loading
+- Image optimization: Automatic blur placeholders (LQIP)
 - Easy configuration: Works out of the box with Vite and minimal setup
 
 #### Image Optimization
@@ -714,19 +746,19 @@ routerinoForge({
 **What it does:**
 
 - Generates tiny blur placeholders for images (base64 encoded)
-- Adds lazy loading attributes automatically
 - Caches processed images to speed up subsequent builds
 - Preserves original images while enhancing loading performance
 - Skips external images (http/https), data URIs, and SVGs
 
+**Note:** Image optimization requires `ffmpeg` to be installed. Without it, images work normally but without blur placeholders. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Ubuntu), or `choco install ffmpeg` (Windows). You can use the [`setup-ffmpeg`](https://github.com/marketplace/actions/setup-ffmpeg) action to install in your GitHub action.
+
 #### Routes Configuration
 
-**Critical for SSG**: Routes MUST be exported from a separate file for the build plugin to discover them. The plugin needs to import your routes at build time, so inline route definitions won't work.
+**Critical for SSG**: Routes MUST be exported for the build plugin to discover them. The plugin needs to import your routes at build time, so inline route definitions won't work.
 
-Define routes with `element` property containing JSX elements:
+Define routes with an `element` property containing JSX elements:
 
 ```jsx
-// src/routes.jsx - REQUIRED: Must be a separate file with exports!
 export const routes = [
   {
     path: "/",
@@ -845,10 +877,9 @@ export const routes = [
 
 The static build process will:
 
-- Generate an HTML file for each static route (e.g., `/about/` → `about/index.html`)
+- Generate HTML files for each static route (e.g., `/about/` → `about/index.html` & `about.html`)
 - Skip dynamic routes with parameters (e.g., `/user/:id`)
-- Apply route-specific meta tags (title, description, og:image, keywords)
-- Add proper `data-route` attributes for client-side hydration
+- Apply route-specific meta tags (title, description, og:image)
 - Generate `sitemap.xml` with all static routes (Vite plugin only)
 - Preserve your existing HTML structure and assets
 
@@ -918,15 +949,15 @@ npm install
 
 This command will read the `package.json` file in your project and install all the necessary dependencies.
 
-5. Now, add Routerino to your project as a development dependency:
+5. Now, add Routerino to your project as a dependency:
 
 ```
 
-npm install routerino --save-dev
+npm install routerino
 
 ```
 
-This command will install the latest version of Routerino and save it to your `package.json` file under the `devDependencies` section.
+This command will install the latest version of Routerino and save it to your `package.json` file under the `dependencies` section.
 
 With these steps, you'll have a new React project set up with Vite as the build tool and Routerino installed as a development dependency. You can now start building your application with React & Routerino.
 
@@ -934,12 +965,39 @@ With these steps, you'll have a new React project set up with Vite as the build 
 
 This example includes the full React configuration. It might take the place of `src/main.jsx` or an `index.js` file.
 
-**Note**: This inline route definition works for client-side rendering but NOT for SSG. For SSG, routes must be in a separate file (see [Routes Configuration](#routes-configuration)).
-
 ```jsx
 import React from "react";
 import { createRoot } from "react-dom/client";
 import Routerino from "routerino";
+
+export const routes = [
+  {
+    path: "/",
+    element: <p>Welcome to Home</p>,
+    title: "Home",
+    description: "Welcome to my website!",
+  },
+  {
+    path: "/about/",
+    element: <p>About us...</p>,
+    title: "About",
+    description: "Learn more about us.",
+  },
+  {
+    path: "/contact/",
+    element: (
+      <div>
+        <h1>Contact Us</h1>
+        <p>
+          Please <a href="mailto:user@example.com">send us an email</a> at
+          user@example.com
+        </p>
+      </div>
+    ),
+    title: "Contact",
+    description: "Get in touch with us.",
+  },
+];
 
 const App = () => (
   <main>
@@ -951,34 +1009,7 @@ const App = () => (
       title="Example.com"
       notFoundTitle="Sorry, but this page does not exist."
       errorTitle="Yikes! Something went wrong."
-      routes={[
-        {
-          path: "/",
-          element: <p>Welcome to Home</p>,
-          title: "Home",
-          description: "Welcome to my website!",
-        },
-        {
-          path: "/about/",
-          element: <p>About us...</p>,
-          title: "About",
-          description: "Learn more about us.",
-        },
-        {
-          path: "/contact/",
-          element: (
-            <div>
-              <h1>Contact Us</h1>
-              <p>
-                Please <a href="mailto:user@example.com">send us an email</a> at
-                user@example.com
-              </p>
-            </div>
-          ),
-          title: "Contact",
-          description: "Get in touch with us.",
-        },
-      ]}
+      routes={routes}
     />
 
     <footer>

@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-08-17
+
+### Added
+
+- Image optimization in Routerino Forge: Automatic blur placeholders with ffmpeg, smart caching, LQIP technique
+- Custom meta tags in SSG: Route-specific tags array now included in static builds
+- baseUrl validation: PropTypes enforcement to prevent trailing slashes
+- Improved documentation: TypeScript usage, image optimization requirements, baseUrl validation rules
+- Console statement prefixes: All console output now prefixed with [Routerino] or [Routerino Forge]
+
+### Changed
+
+- usePrerenderTags default: Now `false` by default (SSG is preferred over prerender tags)
+- Image processing: Wraps images in span with blur background, leaving original img untouched for clean hydration
+- React 18+ examples: Updated to use `createRoot` API
+- ErrorBoundary props documentation
+- Better documentation of router state access via `useRouterino` hook
+- URL handling: Now uses allow-list approach for HTTP/HTTPS and relative URLs only
+- Debug logging: Enhanced with better formatting and route matching details
+
+### Fixed
+
+- Custom tags from routes now properly render in static HTML
+- Broken "default props" link in README
+- PropTypes peer dependency requirement documented
+- Soft update semantics: Now correctly creates missing tags even when soft=true
+- Build warning about mixed exports: Added named export for Routerino alongside default export
+
 ## [2.1.0] - 2025-08-14
 
 ### Added

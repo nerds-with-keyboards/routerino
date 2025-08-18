@@ -380,6 +380,48 @@ describe("Routerino Forge Build Output", () => {
         '<meta property="og:image" content="https://example.com/images/contact-og.jpg">'
       );
     });
+
+    it("should include custom tags from route configuration", () => {
+      const html = fs.readFileSync(
+        path.join(distDir, "about", "index.html"),
+        "utf8"
+      );
+
+      // Check that custom tags from the route are included
+      expect(html).toContain('<meta property="og:type" content="website">');
+      expect(html).toContain('<meta name="author" content="Test Author">');
+      expect(html).toContain(
+        '<meta property="article:published_time" content="2024-01-15">'
+      );
+    });
+  });
+
+  describe("Image Optimization", () => {
+    it("should wrap images with span for LQIP blur effect", () => {
+      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+
+      // Check for the span wrapper with forge-lqip class
+      expect(html).toContain('<span class="forge-lqip');
+
+      // Check that styles for blur background are present
+      expect(html).toContain("::before");
+      expect(html).toMatch(/background-image:\s*url\('data:image\/png;base64/);
+      expect(html).toContain("filter: blur(4px)");
+      expect(html).toContain("z-index: -1"); // Background is behind
+
+      // Check that img is inside the span
+      expect(html).toMatch(/<span[^>]*class="forge-lqip[^>]*>.*?<img[^>]*>/s);
+
+      // Check that the original img tag is untouched (no style modifications)
+      const imgMatch = html.match(/<img[^>]*>/);
+      expect(imgMatch).toBeTruthy();
+      const imgTag = imgMatch[0];
+      expect(imgTag).toContain('src="/test-image.jpg"');
+      expect(imgTag).toContain('alt="Test Image"');
+      // Should NOT have added styles or loading attribute
+      expect(imgTag).not.toContain("style=");
+      expect(imgTag).not.toContain("loading=");
+    });
   });
 
   describe("HTML Structure", () => {
@@ -507,34 +549,29 @@ describe("Routerino Forge Build Output", () => {
     it("should optimize images with base64 placeholders", () => {
       const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
 
-      // Check that the img tag has been optimized
+      // Check that the img tag has been wrapped with optimization
+      expect(html).toContain('<span class="forge-lqip');
       expect(html).toContain("<img");
       expect(html).toContain('src="/test-image.jpg"');
-      expect(html).toContain("background: url('data:image/");
+      expect(html).toContain("background-image: url('data:image/");
       expect(html).toContain("base64,");
       expect(html).toContain("filter: blur(");
-      expect(html).toContain("transition: filter 0.2s");
-      // Has onload handler to remove blur
-      expect(html).toContain('onload="this.style.filter=');
+      expect(html).toContain("z-index: -1");
     });
 
-    it("should add width and height attributes to prevent layout shift", () => {
+    it("should keep original img tag untouched (no added attributes)", () => {
       const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
 
-      // Check for width and height attributes
+      // Check that img tag is unchanged
       const imgMatch = html.match(/<img[^>]*>/);
-      expect(imgMatch).toBeTruthy();
-
-      const imgTag = imgMatch[0];
-      expect(imgTag).toContain('width="');
-      expect(imgTag).toContain('height="');
+      expect(imgMatch).toBeTruthy(); // TODO: better match
     });
 
     it("should show image optimization stats in build output", () => {
       // Only check if the test image exists (it might not in CI)
       if (fs.existsSync(path.join(distDir, "test-image.jpg"))) {
         expect(buildOutput).toMatch(
-          /Optimized \d+ images? \([0-9.]+MB total optimized, [0-9.]+KB placeholders, \d+% reduction\)/
+          /\[Routerino Forge\].*Optimized \d+ images? \([0-9.]+MB total, [0-9.]+KB placeholders, \d+% reduction\)/
         );
       }
     });

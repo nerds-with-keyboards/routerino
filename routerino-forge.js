@@ -174,7 +174,7 @@ async function generatePlaceholder(imagePath, config) {
   } catch (error) {
     if (config.verbose) {
       console.warn(
-        `  ⚠️ Could not process image ${imagePath} (requires ffmpeg):`,
+        `[Routerino Forge] Could not process image ${imagePath} (requires ffmpeg):`,
         error.message
       );
     }
@@ -224,6 +224,7 @@ async function processImagesInHTML(html, outputDir, config) {
   let processedHTML = html;
 
   for (const match of matches) {
+    // eslint-disable-next-line no-unused-vars
     const [fullMatch, beforeSrc, src, afterSrc] = match;
 
     // Skip external URLs, data URLs, and SVGs
@@ -278,48 +279,43 @@ async function processImagesInHTML(html, outputDir, config) {
           .catch(() => {});
       }
 
-      // Build new img tag
-      let newImg = `<img ${beforeSrc}src="${src}"${afterSrc}`;
-
-      // Add dimensions to prevent layout shift
-      if (
-        imageData.width &&
-        imageData.height &&
-        !fullMatch.includes("width=")
-      ) {
-        newImg = newImg.replace(
-          "<img ",
-          `<img width="${imageData.width}" height="${imageData.height}" `
-        );
-      }
-
       const dataUri = imageData.placeholder;
 
-      // The inline style for the placeholder effect.
-      const style = `background: url('${dataUri}') center/cover; filter: blur(${imageConfig.blur}px); transition: filter 0.2s ease-out;`;
+      // Create a wrapper span with the blurred background positioned behind
+      // Set explicit dimensions if we have them to show placeholder before image loads
+      let spanStyle = `position: relative; display: inline-block;`;
 
-      // Simple onload handler to remove blur
-      const onload = `this.style.filter='none'`;
-
-      // Inject the style attribute.
-      if (fullMatch.includes("style=")) {
-        newImg = newImg.replace(
-          /style=["']([^"']+)["']/,
-          `style="${style} $1"`
-        );
-      } else {
-        newImg = newImg.replace("<img ", `<img style="${style}" `);
+      if (imageData.width && imageData.height) {
+        spanStyle += ` width: ${imageData.width}px; height: ${imageData.height}px;`;
       }
 
-      // Add the onload handler
-      // The check for ">" handles self-closing tags vs. regular tags.
-      if (!newImg.includes(">")) {
-        newImg = newImg + ` onload="${onload}">`;
-      } else {
-        newImg = newImg.replace(/>$/, ` onload="${onload}">`);
-      }
+      // Create the blur background as a pseudo-element that sits behind (z-index: -1)
+      // Using a unique class to avoid conflicts
+      const uniqueClass = `lqip-${Math.random().toString(36).substr(2, 9)}`;
 
-      processedHTML = processedHTML.replace(fullMatch, newImg);
+      // Style for the ::before pseudo-element that creates the blur background
+      const beforeStyle = `
+        .${uniqueClass}::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-image: url('${dataUri}');
+          background-size: cover;
+          background-position: center;
+          filter: blur(${imageConfig.blur}px);
+          z-index: -1;
+        }
+      `;
+
+      const styleTag = `<style>${beforeStyle}</style>`;
+
+      // Wrap img in span with blur background, leaving img completely untouched
+      const wrappedImg = `${styleTag}<span class="forge-lqip ${uniqueClass}" style="${spanStyle}">${fullMatch}</span>`;
+
+      processedHTML = processedHTML.replace(fullMatch, wrappedImg);
 
       stats.processed++;
       stats.placeholderSize += imageData.placeholder.length;
@@ -346,6 +342,20 @@ export function routerinoForge(options = {}) {
     ssgCacheDir:
       options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
   };
+
+  // Normalize baseUrl: strip trailing slashes to ensure correct canonical composition
+  if (typeof config.baseUrl === "string" && config.baseUrl.length > 0) {
+    const normalized = config.baseUrl.replace(/\/+$/, "");
+    if (normalized !== config.baseUrl) {
+      console.warn(
+        "[Routerino Forge] Normalized baseUrl by removing trailing slash:",
+        config.baseUrl,
+        "->",
+        normalized
+      );
+      config.baseUrl = normalized;
+    }
+  }
 
   let viteConfig;
   let hasRun = false;
@@ -429,7 +439,7 @@ export function render(url) {
       imageUrl: route.imageUrl
     };
   } catch (error) {
-    console.error(\`Failed to render route \${route.path}:\`, error.message);
+    console.error(\`[Routerino Forge] Failed to render route \${route.path}:\`, error.message);
     return {
       html: \`<div>Error rendering route: \${error.message}</div>\`,
       title: route.title,
@@ -444,11 +454,11 @@ export function render(url) {
           await fs.writeFile(tempEntryPath, entryContent);
 
           if (config.verbose) {
-            console.log("✨ Using auto-generated entry for SSG");
+            console.log("[Routerino Forge] Using auto-generated entry for SSG");
           }
         }
 
-        console.log("Routerino: Forging SSG bundle...");
+        console.log("[Routerino Forge] Forging SSG bundle...");
         await build({
           root: viteConfig.root,
           build: {
@@ -475,18 +485,22 @@ export function render(url) {
         }
 
         if (routes.length === 0) {
-          console.warn("⚠️  No routes found - check your routes export");
+          console.warn(
+            "[Routerino Forge] No routes found - check your routes export"
+          );
         }
 
         // Check for common issues
         const invalidRoutes = routes.filter((route) => {
           if (!route.element) {
-            console.warn(`  ⚠️  Route ${route.path} has no element property`);
+            console.warn(
+              `[Routerino Forge] Route ${route.path} has no element property`
+            );
             return true;
           }
           if (typeof route.element === "function") {
             console.warn(
-              `  ⚠️  Route ${route.path} element is a function - should be JSX element like <Component />`
+              `[Routerino Forge] Route ${route.path} element is a function - should be JSX element like <Component />`
             );
             return true;
           }
@@ -495,7 +509,7 @@ export function render(url) {
 
         if (invalidRoutes.length > 0) {
           console.warn(
-            `⚠️  ${invalidRoutes.length} routes have issues - see warnings above`
+            `[Routerino Forge] ${invalidRoutes.length} routes have issues - see warnings above`
           );
         }
 
@@ -503,7 +517,7 @@ export function render(url) {
         const staticRoutes =
           routes?.filter((route) => !isDynamicRoute(route.path)) || [];
         console.log(
-          `Found ${routes?.length || 0} routes (${staticRoutes.length} static, ${(routes?.length || 0) - staticRoutes.length} dynamic)`
+          `[Routerino Forge] Found ${routes?.length || 0} routes (${staticRoutes.length} static, ${(routes?.length || 0) - staticRoutes.length} dynamic)`
         );
 
         // Read the built HTML template
@@ -524,10 +538,10 @@ export function render(url) {
         try {
           template = await fs.readFile(templatePath, "utf-8");
           if (config.verbose) {
-            console.log(`  Using template: ${templatePath}`);
+            console.log(`[Routerino Forge] Using template: ${templatePath}`);
           }
         } catch (e) {
-          console.error(e);
+          console.error("[Routerino Forge] Template read error:", e);
           throw new Error(
             `Failed to read template at ${templatePath}. Make sure the build has completed and created the HTML file.`
           );
@@ -536,7 +550,7 @@ export function render(url) {
         // Check if template has the root div
         if (!template.includes('<div id="root">')) {
           console.warn(
-            `⚠️  Template missing <div id="root">. The plugin needs this to inject rendered HTML.`
+            '[Routerino Forge] Template missing <div id="root">. The plugin needs this to inject rendered HTML.'
           );
         }
 
@@ -571,7 +585,7 @@ export function render(url) {
           0
         );
         console.log(
-          `  ✓ Generated ${fileCount} HTML files (${staticRoutes.length} routes) + 404.html`
+          `[Routerino Forge] ✓ Generated ${fileCount} HTML files (${staticRoutes.length} routes) + 404.html`
         );
 
         // Display image optimization stats
@@ -585,30 +599,33 @@ export function render(url) {
             100
           ).toFixed(0);
           console.log(
-            `  ✓ Optimized ${imageStats.processed} images (${totalSizeMB}MB total optimized, ${placeholderSizeKB}KB placeholders, ${reductionPercent}% reduction)`
+            `[Routerino Forge] ✓ Optimized ${imageStats.processed} images (${totalSizeMB}MB total, ${placeholderSizeKB}KB placeholders, ${reductionPercent}% reduction)`
           );
 
           if (config.verbose && imageStats.skipped > 0) {
             console.log(
-              `    ⚠️ Skipped ${imageStats.skipped} images (external URLs, SVGs, or size limits)`
+              `[Routerino Forge] Skipped ${imageStats.skipped} images (external URLs, SVGs, or size limits)`
             );
           }
 
           if (imageStats.errors.length > 0) {
             console.warn(
-              `    ⚠️ ${imageStats.errors.length} images had processing errors`
+              `[Routerino Forge] ${imageStats.errors.length} images had processing errors`
             );
             if (config.verbose) {
               imageStats.errors.forEach(({ src, error }) => {
-                console.warn(`      - ${src}: ${error}`);
+                console.warn(`[Routerino Forge]   - ${src}: ${error}`);
               });
             }
           }
         }
       } catch (error) {
-        console.error("❌ Failed to generate static pages:", error.message);
+        console.error(
+          "[Routerino Forge] Failed to generate static pages:",
+          error.message
+        );
         if (config.verbose) {
-          console.error(error.stack);
+          console.error("[Routerino Forge] Stack trace:", error.stack);
         }
         // Don't throw to allow build to continue
       } finally {
@@ -659,7 +676,7 @@ async function generateStaticPages({
     // Skip dynamic routes with parameters
     if (isDynamicRoute(route.path)) {
       if (config.verbose) {
-        console.log(`  Skipped dynamic route: ${route.path}`);
+        console.log(`[Routerino Forge] Skipped dynamic route: ${route.path}`);
       }
       continue;
     }
@@ -670,16 +687,16 @@ async function generateStaticPages({
 
       let renderedHTML = "";
       if (renderResult.notFound) {
-        console.log(`  Route not found: ${route.path}`);
+        console.log(`[Routerino Forge] Route not found: ${route.path}`);
         renderedHTML = `<div data-route="${route.path}" data-not-found="true"><!-- Route not found --></div>`;
       } else if (!renderResult.html || renderResult.html.trim() === "") {
         console.warn(
-          `  ⚠️  Empty HTML for ${route.path} - check that route.element is a valid React element`
+          `[Routerino Forge] Empty HTML for ${route.path} - check that route.element is a valid React element`
         );
         renderedHTML = `<div data-route="${route.path}" data-empty="true"><!-- Empty render result --></div>`;
       } else {
         renderedHTML = renderResult.html;
-        console.log(`  ✓ Rendered ${route.path}`);
+        console.log(`[Routerino Forge] ✓ Rendered ${route.path}`);
 
         // Override metadata with render result if available
         if (renderResult.title) route.title = renderResult.title;
@@ -763,7 +780,7 @@ async function generateStaticPages({
           );
         } else {
           console.warn(
-            `  ⚠️  Could not find <div id="root"> for ${route.path}`
+            `[Routerino Forge] Could not find <div id="root"> for ${route.path}`
           );
         }
 
@@ -791,11 +808,14 @@ async function generateStaticPages({
         await fs.writeFile(file.path, html);
 
         if (config.verbose) {
-          console.log(`  Generated: ${file.path}`);
+          console.log(`[Routerino Forge] Generated: ${file.path}`);
         }
       }
     } catch (error) {
-      console.error(`Failed to generate ${route.path}:`, error);
+      console.error(
+        `[Routerino Forge] Failed to generate ${route.path}:`,
+        error
+      );
     }
   }
 
@@ -849,12 +869,27 @@ function generateMetaTags(route, config, urlPath) {
   // Twitter card
   tags.push(`<meta name="twitter:card" content="summary_large_image">`);
 
+  // Add custom tags from route.tags array
+  if (route.tags && Array.isArray(route.tags)) {
+    route.tags.forEach((tag) => {
+      const tagName = tag.tag || "meta";
+      const attrs = Object.entries(tag)
+        .filter(([key]) => key !== "tag" && key !== "soft")
+        .map(([key, value]) => `${key}="${value}"`)
+        .join(" ");
+
+      if (attrs) {
+        tags.push(`<${tagName} ${attrs}>`);
+      }
+    });
+  }
+
   return tags.join("\n");
 }
 
 // Generate 404.html page
 async function generate404Page({ template, outputDir, config, render }) {
-  console.log("  ✓ Generating 404.html");
+  console.log("[Routerino Forge] ✓ Generating 404.html");
 
   try {
     // Render a non-existent route to get the notFoundTemplate content
@@ -904,7 +939,9 @@ async function generate404Page({ template, outputDir, config, render }) {
         `<div id="root">${renderedHTML}</div>`
       );
     } else {
-      console.warn(`  ⚠️  Could not find <div id="root"> for 404.html`);
+      console.warn(
+        '[Routerino Forge] Could not find <div id="root"> for 404.html'
+      );
     }
 
     // Process images in 404 page
@@ -920,10 +957,10 @@ async function generate404Page({ template, outputDir, config, render }) {
     await fs.writeFile(filePath, html);
 
     if (config.verbose) {
-      console.log(`  Generated: ${filePath}`);
+      console.log(`[Routerino Forge] Generated: ${filePath}`);
     }
   } catch (error) {
-    console.error("Failed to generate 404.html:", error);
+    console.error("[Routerino Forge] Failed to generate 404.html:", error);
   }
 }
 
@@ -956,10 +993,12 @@ ${urls}
   const sitemapPath = path.join(config.outputDir, "sitemap.xml");
   await fs.writeFile(sitemapPath, sitemap);
 
-  console.log(`  ✓ Generated sitemap.xml with ${staticRoutes.length} URLs`);
+  console.log(
+    `[Routerino Forge] ✓ Generated sitemap.xml with ${staticRoutes.length} URLs`
+  );
 
   if (config.verbose) {
-    console.log(`    Output: ${sitemapPath}`);
+    console.log(`[Routerino Forge] Output: ${sitemapPath}`);
   }
 
   // Generate robots.txt if it doesn't exist
@@ -967,7 +1006,7 @@ ${urls}
   try {
     await fs.access(robotsPath);
     if (config.verbose) {
-      console.log(`  ✓ robots.txt already exists (skipped)`);
+      console.log("[Routerino Forge] ✓ robots.txt already exists (skipped)");
     }
   } catch {
     // File doesn't exist, create it
@@ -976,10 +1015,10 @@ Allow: /
 Sitemap: ${config.baseUrl}/sitemap.xml`;
 
     await fs.writeFile(robotsPath, robotsContent);
-    console.log(`  ✓ Generated robots.txt`);
+    console.log("[Routerino Forge] ✓ Generated robots.txt");
 
     if (config.verbose) {
-      console.log(`    Output: ${robotsPath}`);
+      console.log(`[Routerino Forge] Output: ${robotsPath}`);
     }
   }
 }

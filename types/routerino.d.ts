@@ -21,7 +21,7 @@ export interface HeadTag {
 }
 
 export interface RouteConfig {
-  path: `/${string}/`;
+  path: `/${string}`;
   element: React.ReactNode;
   title?: string;
   description?: string;
@@ -38,6 +38,12 @@ export interface RouterinoProps {
   errorTitle?: string;
   useTrailingSlash?: boolean;
   usePrerenderTags?: boolean;
+  /**
+   * Base URL for canonical tags. Must NOT end with a slash.
+   * Validated at runtime by PropTypes.
+   * @example baseUrl="https://example.com" ✅ Correct
+   * @example baseUrl="https://example.com/" ❌ Wrong - will cause PropTypes warning
+   */
   baseUrl?: string;
   separator?: string;
   imageUrl?: string;
@@ -83,6 +89,8 @@ export class ErrorBoundary extends React.Component<
   render(): React.ReactNode;
 }
 
-declare function Routerino(props: RouterinoProps): JSX.Element;
+// Named export (recommended)
+export function Routerino(props: RouterinoProps): JSX.Element;
 
+// Default export for backward compatibility
 export default Routerino;

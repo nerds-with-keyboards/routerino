@@ -114,6 +114,11 @@ export const routes = [
     element: <AboutPage />,
     title: "About Us",
     description: "Learn more about our company",
+    tags: [
+      { property: "og:type", content: "website" },
+      { name: "author", content: "Test Author" },
+      { property: "article:published_time", content: "2024-01-15" },
+    ],
   },
   {
     path: "/products/",
