@@ -467,6 +467,7 @@ export function render(url) {
             rollupOptions: {
               output: {
                 format: "es",
+                entryFileNames: "entry-server.mjs",
               },
             },
           },
@@ -475,7 +476,7 @@ export function render(url) {
 
         // Step 2: Load the built module
         const ssgModule = await import(
-          pathToFileURL(path.join(ssgOutDir, "entry-server.js")).href
+          pathToFileURL(path.join(ssgOutDir, "entry-server.mjs")).href
         );
         let { render, routes } = ssgModule;
 
