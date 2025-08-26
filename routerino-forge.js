@@ -368,6 +368,9 @@ export function routerinoForge(options = {}) {
     },
 
     async closeBundle() {
+      // Only run during build, not during dev server
+      if (viteConfig.command !== "build") return;
+
       if (hasRun || viteConfig.build.ssr) return; // Skip if already run or if this IS the SSG build
       hasRun = true;
 
@@ -549,7 +552,7 @@ export function render(url) {
         }
 
         // Check if template has the root div
-        if (!template.includes('<div id="root">')) {
+        if (!/<div[^>]*\sid=["']root["'][^>]*>/i.test(template)) {
           console.warn(
             '[Routerino Forge] Template missing <div id="root">. The plugin needs this to inject rendered HTML.'
           );
@@ -774,11 +777,10 @@ async function generateStaticPages({
         html = html.replace("</head>", `  ${metaTags}\n  </head>`);
 
         // Replace root div content with rendered HTML
-        if (html.includes('<div id="root">')) {
-          html = html.replace(
-            /<div id="root">.*?<\/div>/s,
-            `<div id="root">${renderedHTML}</div>`
-          );
+        const rootDivRegex =
+          /(<div[^>]*\sid=["']root["'][^>]*>)(.*?)(<\/div>)/is;
+        if (rootDivRegex.test(html)) {
+          html = html.replace(rootDivRegex, `$1${renderedHTML}$3`);
         } else {
           console.warn(
             `[Routerino Forge] Could not find <div id="root"> for ${route.path}`
@@ -934,11 +936,9 @@ async function generate404Page({ template, outputDir, config, render }) {
     html = html.replace("</head>", `  ${metaTags.join("\n")}\n  </head>`);
 
     // Replace root div content with rendered HTML
-    if (html.includes('<div id="root">')) {
-      html = html.replace(
-        /<div id="root">.*?<\/div>/s,
-        `<div id="root">${renderedHTML}</div>`
-      );
+    const rootDivRegex = /(<div[^>]*\sid=["']root["'][^>]*>)(.*?)(<\/div>)/is;
+    if (rootDivRegex.test(html)) {
+      html = html.replace(rootDivRegex, `$1${renderedHTML}$3`);
     } else {
       console.warn(
         '[Routerino Forge] Could not find <div id="root"> for 404.html'
