@@ -4,8 +4,6 @@
 
 For teams who want SPA simplicity with search-friendly static HTML, Open Graph previews, and **no framework lock-in.**
 
-<!-- [**Live Example**](https://www.papoir.com) | [**Starter Template**](https://github.com/nerds-with-keyboards/routerino-starter) -->
-
 Routerino is a zero-dependency router for React designed for optimal SEO performance in client-side rendered applications. Built for modern web architectures like JAMStack applications and Vite-powered React sites, it provides route & meta tag management, sitemap generation, and static site generation or [prerender](https://github.com/prerender/prerender) support to ensure your React applications are fully discoverable by search engines.
 
 ## Why Routerino?
@@ -204,7 +202,7 @@ The table below shows all available props with their default values. See the [us
 
 #### Routerino props
 
-All of these are optional, so it's easy to get started with nothing but a bare-bones `<Routerino />` element, to get started with a working sample page. The main props you'll need are `routes` and `title`. See [Route props](#routes-prop) for the route format.
+All of these are optional, so it's easy to get started with nothing but a bare-bones `<Routerino />` element, to get started with a working sample page. The main props you'll need are `routes` and `title`. See [RouteConfig props](#routeconfig-props) for the route format.
 
 | Prop                                           | Type            | Description                       | Default                       |
 | ---------------------------------------------- | --------------- | --------------------------------- | ----------------------------- |
@@ -688,7 +686,6 @@ export default defineConfig({
       // routes: "./src/routes.jsx", // Your routes file
       // outputDir: "dist",
       // generateSitemap: true,
-      // prerenderStatusCode: true,
       // useTrailingSlash: true, // Set to false for /about instead of /about/
       // verbose: false,
       // ssgCacheDir: "node_modules/.cache/routerino-forge", // SSG cache directory
@@ -749,6 +746,8 @@ routerinoForge({
 - Caches processed images to speed up subsequent builds
 - Preserves original images while enhancing loading performance
 - Skips external images (http/https), data URIs, and SVGs
+- Smart sizing: Uses aspect-ratio only to prevent layout shift without forcing dimensions
+- Hides images initially with `opacity: 0` to prevent broken image icons during load
 
 **Note:** Image optimization requires `ffmpeg` to be installed. Without it, images work normally but without blur placeholders. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Ubuntu), or `choco install ffmpeg` (Windows).
 
@@ -1005,9 +1004,7 @@ If you're starting from scratch and wondering "How do I create a React project w
 2. We recommend using [Vite](https://vitejs.dev/) for a fast and lean development experience. Vite is a modern build tool that focuses on speed and simplicity. To create a new React project with Vite, run the following command in your terminal:
 
 ```
-
 npm create vite@latest my-react-app -- --template react
-
 ```
 
 This command will create a new directory called `my-react-app` with a basic React project structure.
@@ -1015,17 +1012,13 @@ This command will create a new directory called `my-react-app` with a basic Reac
 3. Navigate to your new project directory:
 
 ```
-
 cd my-react-app
-
 ```
 
 4. Install the project dependencies using npm:
 
 ```
-
 npm install
-
 ```
 
 This command will read the `package.json` file in your project and install all the necessary dependencies.
@@ -1033,14 +1026,12 @@ This command will read the `package.json` file in your project and install all t
 5. Now, add Routerino to your project as a dependency:
 
 ```
-
 npm install routerino
-
 ```
 
 This command will install the latest version of Routerino and save it to your `package.json` file under the `dependencies` section.
 
-With these steps, you'll have a new React project set up with Vite as the build tool and Routerino installed as a development dependency. You can now start building your application with React & Routerino.
+With these steps, you'll have a new React project set up with Vite as the build tool and Routerino installed as a dependency. You can now start building your application with React & Routerino.
 
 ### Full React Example
 
@@ -1207,6 +1198,7 @@ By vendoring Routerino, you have full control over the code and can make any nec
 
 Here are some sources for further reading on SEO best-practices.
 
+- [Optimize Largest Contentful Paint (LCP)](https://web.dev/articles/optimize-lcp) - Improve loading performance
 - [Apple's best practices for link previews](https://developer.apple.com/library/archive/technotes/tn2444/_index.html)
 - [Use Open Graph tags](https://ahrefs.com/blog/open-graph-meta-tags/)
 - [Use descriptive link text](https://developers.google.com/search/docs/fundamentals/seo-starter-guide?hl=en&ref_topic=9460495)

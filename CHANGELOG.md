@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2025-08-26
+
+### Fixed
+
+- SSG no longer runs during development mode
+
+### Changed
+
+- Escape meta tags using auto quotation-mark-selection or smart quotes (instead of HTML entities) if needed for better SERP display
+- Added LCP optimization resource to Additional Resources section
+- Routerino Forge
+  - Improved root div detection to support divs with attributes (style, class, etc.)
+  - Added security check to prevent accessing files outside output directory
+  - Images now start with `opacity: 0` to hide broken icon during load
+  - Images now processed in batches of 10 to optimize memory for large HTML files
+
 ## [2.2.0] - 2025-08-18
 
 ### Added

@@ -412,14 +412,15 @@ describe("Routerino Forge Build Output", () => {
       // Check that img is inside the span
       expect(html).toMatch(/<span[^>]*class="forge-lqip[^>]*>.*?<img[^>]*>/s);
 
-      // Check that the original img tag is untouched (no style modifications)
+      // Check that the img has opacity: 0 to hide during load
       const imgMatch = html.match(/<img[^>]*>/);
       expect(imgMatch).toBeTruthy();
       const imgTag = imgMatch[0];
       expect(imgTag).toContain('src="/test-image.jpg"');
       expect(imgTag).toContain('alt="Test Image"');
-      // Should NOT have added styles or loading attribute
-      expect(imgTag).not.toContain("style=");
+      // Should have opacity: 0 to prevent broken image icon flash
+      expect(imgTag).toContain('style="opacity: 0"');
+      // Should NOT have loading attribute (no inline JS)
       expect(imgTag).not.toContain("loading=");
     });
   });
