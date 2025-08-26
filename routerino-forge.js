@@ -217,84 +217,118 @@ async function processImagesInHTML(html, outputDir, config) {
   const cacheDir = path.resolve(imageConfig.cacheDir);
   await fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
 
-  // Find all img tags
+  // Find all img tags - process in chunks to optimize memory
   const imgRegex = /<img\s+([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
-  const matches = [...html.matchAll(imgRegex)];
-
   let processedHTML = html;
 
-  for (const match of matches) {
-    // eslint-disable-next-line no-unused-vars
-    const [fullMatch, beforeSrc, src, afterSrc] = match;
+  // Process images in batches to avoid loading all matches at once
+  const BATCH_SIZE = 10; // Process 10 images at a time
+  let match;
+  let batchCount = 0;
+  let currentBatch = [];
 
-    // Skip external URLs, data URLs, and SVGs
-    if (shouldSkipImage(src)) {
-      stats.skipped++;
-      continue;
+  while ((match = imgRegex.exec(html)) !== null) {
+    currentBatch.push(match);
+    batchCount++;
+
+    // Process batch when it reaches the size limit
+    if (batchCount >= BATCH_SIZE) {
+      processedHTML = await processBatch(currentBatch, processedHTML);
+      currentBatch = [];
+      batchCount = 0;
     }
+  }
 
-    // Resolve image path
-    const imagePath = path.join(outputDir, src);
+  // Process remaining images in the last batch
+  if (currentBatch.length > 0) {
+    processedHTML = await processBatch(currentBatch, processedHTML);
+  }
 
-    // Check if file exists and size
-    try {
-      const fileStats = await fs.stat(imagePath);
+  // Helper function to process a batch of images
+  async function processBatch(batch, html) {
+    let result = html;
 
-      if (
-        fileStats.size < imageConfig.minSize ||
-        fileStats.size > imageConfig.maxSize
-      ) {
+    for (const match of batch) {
+      // eslint-disable-next-line no-unused-vars
+      const [fullMatch, beforeSrc, src, afterSrc] = match;
+
+      // Skip external URLs, data URLs, and SVGs
+      if (shouldSkipImage(src)) {
         stats.skipped++;
         continue;
       }
 
-      stats.totalSize += fileStats.size;
+      // Resolve image path with safety check
+      const imagePath = path.join(outputDir, src);
 
-      // Check cache
-      const cacheKey = await getImageCacheKey(imagePath, imageConfig);
-      if (!cacheKey) {
+      // Path traversal protection: ensure resolved path is within outputDir
+      const resolvedPath = path.resolve(imagePath);
+      const resolvedOutputDir = path.resolve(outputDir);
+      if (!resolvedPath.startsWith(resolvedOutputDir)) {
+        // Skip potentially malicious paths
         stats.skipped++;
         continue;
       }
 
-      const cacheFile = path.join(cacheDir, `${cacheKey}.json`);
-      let imageData;
-
+      // Check if file exists and size
       try {
-        // Try to read from cache
-        const cached = JSON.parse(await fs.readFile(cacheFile, "utf-8"));
-        imageData = cached;
-      } catch {
-        // Generate placeholder
-        imageData = await generatePlaceholder(imagePath, imageConfig);
+        const fileStats = await fs.stat(resolvedPath);
 
-        if (!imageData) {
+        if (
+          fileStats.size < imageConfig.minSize ||
+          fileStats.size > imageConfig.maxSize
+        ) {
           stats.skipped++;
           continue;
         }
 
-        // Save to cache
-        await fs
-          .writeFile(cacheFile, JSON.stringify(imageData))
-          .catch(() => {});
-      }
+        stats.totalSize += fileStats.size;
 
-      const dataUri = imageData.placeholder;
+        // Check cache
+        const cacheKey = await getImageCacheKey(resolvedPath, imageConfig);
+        if (!cacheKey) {
+          stats.skipped++;
+          continue;
+        }
 
-      // Create a wrapper span with the blurred background positioned behind
-      // Set explicit dimensions if we have them to show placeholder before image loads
-      let spanStyle = `position: relative; display: inline-block;`;
+        const cacheFile = path.join(cacheDir, `${cacheKey}.json`);
+        let imageData;
 
-      if (imageData.width && imageData.height) {
-        spanStyle += ` width: ${imageData.width}px; height: ${imageData.height}px;`;
-      }
+        try {
+          // Try to read from cache
+          const cached = JSON.parse(await fs.readFile(cacheFile, "utf-8"));
+          imageData = cached;
+        } catch {
+          // Generate placeholder
+          imageData = await generatePlaceholder(resolvedPath, imageConfig);
 
-      // Create the blur background as a pseudo-element that sits behind (z-index: -1)
-      // Using a unique class to avoid conflicts
-      const uniqueClass = `lqip-${Math.random().toString(36).substr(2, 9)}`;
+          if (!imageData) {
+            stats.skipped++;
+            continue;
+          }
 
-      // Style for the ::before pseudo-element that creates the blur background
-      const beforeStyle = `
+          // Save to cache
+          await fs
+            .writeFile(cacheFile, JSON.stringify(imageData))
+            .catch(() => {});
+        }
+
+        const dataUri = imageData.placeholder;
+
+        // Create a wrapper span with the blurred background positioned behind
+        let spanStyle = `position: relative; display: inline-block;`;
+
+        if (imageData.width && imageData.height) {
+          // Set aspect-ratio for proper proportions
+          const aspectRatio = imageData.width / imageData.height;
+          spanStyle += ` aspect-ratio: ${aspectRatio};`;
+        }
+
+        // Create the blur background as a pseudo-element that sits behind (z-index: -1)
+        // Using a unique class to avoid conflicts
+        const uniqueClass = `lqip-${Math.random().toString(36).substring(2, 11)}`;
+        // Style for the ::before pseudo-element that creates the blur background
+        const beforeStyle = `
         .${uniqueClass}::before {
           content: '';
           position: absolute;
@@ -310,20 +344,44 @@ async function processImagesInHTML(html, outputDir, config) {
         }
       `;
 
-      const styleTag = `<style>${beforeStyle}</style>`;
+        const styleTag = `<style>${beforeStyle}</style>`;
 
-      // Wrap img in span with blur background, leaving img completely untouched
-      const wrappedImg = `${styleTag}<span class="forge-lqip ${uniqueClass}" style="${spanStyle}">${fullMatch}</span>`;
+        // Add opacity: 0 inline style to hide image initially
+        const imgWithOpacity = fullMatch.replace(
+          /(<img\s+[^>]*?)(\s*\/?>)/i,
+          (_, p1, p2) => {
+            let result = p1;
 
-      processedHTML = processedHTML.replace(fullMatch, wrappedImg);
+            // Add opacity to style
+            if (/style\s*=/i.test(result)) {
+              // Add to existing style
+              result = result.replace(
+                /style\s*=\s*["']([^"']*)/i,
+                'style="opacity: 0; $1'
+              );
+            } else {
+              // Add new style attribute
+              result += ' style="opacity: 0"';
+            }
 
-      stats.processed++;
-      stats.placeholderSize += imageData.placeholder.length;
-    } catch (error) {
-      stats.errors.push({ src, error: error.message });
-      stats.skipped++;
-    }
-  }
+            return result + p2;
+          }
+        );
+
+        // Wrap img in span with blur background
+        const wrappedImg = `${styleTag}<span class="forge-lqip ${uniqueClass}" style="${spanStyle}">${imgWithOpacity}</span>`;
+
+        result = result.replace(fullMatch, wrappedImg);
+
+        stats.processed++;
+        stats.placeholderSize += imageData.placeholder.length;
+      } catch (error) {
+        stats.errors.push({ src, error: error.message });
+        stats.skipped++;
+      }
+    } // End of for loop in processBatch
+    return result;
+  } // End of processBatch function
 
   return { html: processedHTML, stats };
 }
@@ -825,6 +883,29 @@ async function generateStaticPages({
   return allImageStats;
 }
 
+// Helper to safely handle meta tag content
+// If content has double quotes, use single quotes for the attribute
+// If content has single quotes, use double quotes for the attribute
+// If it has both, replace double quotes with smart quotes
+function formatMetaAttribute(attrName, content) {
+  if (!content) return "";
+
+  const hasDoubleQuotes = content.includes('"');
+  const hasSingleQuotes = content.includes("'");
+
+  if (hasDoubleQuotes && hasSingleQuotes) {
+    // Replace straight quotes with smart quotes which look better and don't break HTML
+    const safeContent = content.replace(/"/g, '"'); // Replace " with smart quote
+    return `${attrName}="${safeContent}"`;
+  } else if (hasDoubleQuotes) {
+    // Use single quotes for attribute
+    return `${attrName}='${content}'`;
+  } else {
+    // Use double quotes (default)
+    return `${attrName}="${content}"`;
+  }
+}
+
 // Generate meta tags
 function generateMetaTags(route, config, urlPath) {
   const tags = [];
@@ -845,17 +926,21 @@ function generateMetaTags(route, config, urlPath) {
   tags.push(`<link rel="canonical" href="${canonicalUrl}">`);
 
   if (route.description) {
-    tags.push(`<meta name="description" content="${route.description}">`);
+    tags.push(
+      `<meta name="description" ${formatMetaAttribute("content", route.description)}>`
+    );
   }
 
   // Open Graph tags
   if (route.title) {
-    tags.push(`<meta property="og:title" content="${route.title}">`);
+    tags.push(
+      `<meta property="og:title" ${formatMetaAttribute("content", route.title)}>`
+    );
   }
 
   if (route.description) {
     tags.push(
-      `<meta property="og:description" content="${route.description}">`
+      `<meta property="og:description" ${formatMetaAttribute("content", route.description)}>`
     );
   }
 
@@ -878,7 +963,7 @@ function generateMetaTags(route, config, urlPath) {
       const tagName = tag.tag || "meta";
       const attrs = Object.entries(tag)
         .filter(([key]) => key !== "tag" && key !== "soft")
-        .map(([key, value]) => `${key}="${value}"`)
+        .map(([key, value]) => formatMetaAttribute(key, value))
         .join(" ");
 
       if (attrs) {

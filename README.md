@@ -688,7 +688,6 @@ export default defineConfig({
       // routes: "./src/routes.jsx", // Your routes file
       // outputDir: "dist",
       // generateSitemap: true,
-      // prerenderStatusCode: true,
       // useTrailingSlash: true, // Set to false for /about instead of /about/
       // verbose: false,
       // ssgCacheDir: "node_modules/.cache/routerino-forge", // SSG cache directory
@@ -1207,6 +1206,7 @@ By vendoring Routerino, you have full control over the code and can make any nec
 
 Here are some sources for further reading on SEO best-practices.
 
+- [Optimize Largest Contentful Paint (LCP)](https://web.dev/articles/optimize-lcp) - Improve loading performance
 - [Apple's best practices for link previews](https://developer.apple.com/library/archive/technotes/tn2444/_index.html)
 - [Use Open Graph tags](https://ahrefs.com/blog/open-graph-meta-tags/)
 - [Use descriptive link text](https://developers.google.com/search/docs/fundamentals/seo-starter-guide?hl=en&ref_topic=9460495)
