@@ -32,24 +32,10 @@ jobs:
           cache: "npm"
 
       # Install ffmpeg for image optimization tests in Routerino Forge
-      - name: Cache FFmpeg
-        id: cache-ffmpeg
-        uses: actions/cache@v3
-        with:
-          path: |
-            /usr/local/bin/ffmpeg
-            /usr/local/bin/ffprobe
-          key: ffmpeg-static-${{ runner.os }}
-
       - name: Install FFmpeg
-        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         run: |
-          wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
-          tar -xf ffmpeg-release-amd64-static.tar.xz
-          sudo mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
-          sudo mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/
-          sudo chmod +x /usr/local/bin/ffmpeg
-          sudo chmod +x /usr/local/bin/ffprobe
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
       - name: Verify FFmpeg installation
         run: |
