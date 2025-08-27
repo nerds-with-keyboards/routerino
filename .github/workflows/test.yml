@@ -3,15 +3,11 @@ name: Test
 on:
   push:
     branches: [main]
-  workflow_run:
-    workflows: ["PR Check"]
-    types:
-      - completed
+  pull_request:
+    branches: [main]
 
 jobs:
   test:
-    # Only run if this is a push to main OR if the PR Check succeeded
-    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
