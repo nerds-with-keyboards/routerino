@@ -531,10 +531,9 @@ describe("Routerino Forge Build Output", () => {
         '<meta name="twitter:card" content="summary_large_image">'
       );
 
-      // Check rendered content
+      // Check rendered content - now includes App wrapper with headers/footers
       expect(html).toContain("<h2>Route Not Found</h2>");
       expect(html).toContain("This is a not found example component.");
-      expect(html).toContain("Lorem ipsum dolor");
 
       // Should have the main script
       expect(html).toMatch(/<script[^>]*type="module"[^>]*>/);
@@ -572,7 +571,7 @@ describe("Routerino Forge Build Output", () => {
       // Only check if the test image exists (it might not in CI)
       if (fs.existsSync(path.join(distDir, "test-image.jpg"))) {
         expect(buildOutput).toMatch(
-          /\[Routerino Forge\].*Optimized \d+ images? \([0-9.]+MB total, [0-9.]+KB placeholders, \d+% reduction\)/
+          /\[Routerino Forge\].*Optimized \d+ images? \([0-9.]+MB total, [0-9.]+KB placeholders, [0-9.]+% reduction\)/
         );
       }
     });

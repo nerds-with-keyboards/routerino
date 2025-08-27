@@ -63,7 +63,10 @@ function App() {
           }
           errorTitle="Error"
           prerenderStatusCode={true}
-          debug={window.location?.host?.includes("localhost:")}
+          debug={
+            typeof window !== "undefined" &&
+            window.location?.host?.includes("localhost:")
+          }
         />
       </main>
 

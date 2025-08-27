@@ -474,7 +474,9 @@ const routes = routesModule.routes || routesModule.default;
 const notFoundTemplate = routesModule.notFoundTemplate;
 
 // Check if App component is exported from routes file
-const App = routesModule.App || routesModule.default?.App;
+// App can be: named export, default export, or App property on default export
+const App = routesModule.App || 
+            (typeof routesModule.default === 'function' ? routesModule.default : routesModule.default?.App);
 
 if (!routes) {
   throw new Error('Could not find routes export. Expected "export const routes" or "export default" from ${relativePath}');
@@ -482,7 +484,7 @@ if (!routes) {
 
 // Helper to check if a route is dynamic (contains :param)
 const isDynamicRoute = (path) => path.split("/").some(segment => segment.startsWith(":"));
-export { routes };
+export { routes, App };
 
 // Mock minimal window object for SSG
 function mockWindow(url, baseUrl) {
@@ -508,37 +510,65 @@ function mockWindow(url, baseUrl) {
     removeEventListener: () => {},
     dispatchEvent: () => {}
   };
+  // Mock for document with more complete implementation
+  const mockElements = [];
   global.document = {
+    title: '', // Mock title property for SSG
     addEventListener: () => {},
     removeEventListener: () => {},
-    querySelector: () => null,
-    createElement: () => ({ 
-      setAttribute: () => {},
-      appendChild: () => {}
-    }),
+    querySelector: (selector) => {
+      // Return mock head for head selector
+      if (selector === 'head') {
+        return {
+          appendChild: (elem) => {
+            mockElements.push(elem);
+            return elem;
+          }
+        };
+      }
+      // For meta tag queries, return null (tag not found)
+      return null;
+    },
+    createElement: (tagName) => {
+      const elem = {
+        tagName,
+        attributes: {},
+        setAttribute: function(name, value) {
+          this.attributes[name] = value;
+        },
+        appendChild: () => {}
+      };
+      return elem;
+    },
     head: {
-      appendChild: () => {}
+      appendChild: (elem) => {
+        mockElements.push(elem);
+        return elem;
+      },
+      querySelector: () => null,
+      querySelectorAll: () => []
     }
   };
 }
 
 export function render(url, baseUrl) {
-  // Check if we should render the full App or just the route element
+  // Check if we should render the full App or just the route element  
   if (App) {
+    // Find the route to render
+    const route = routes.find(r => {
+      if (r.path === url) return true;
+      if (r.path === '/' && url === '/') return true;
+      if (isDynamicRoute(r.path)) return false;
+      return r.path === url;
+    });
+    
     // Mock window for the current route
     mockWindow(url, baseUrl);
     
     try {
-      // Render the full App component (which includes Routerino)
-      const html = ReactDOMServer.renderToString(React.createElement(App));
       
-      // Find the rendered route to get its metadata
-      const route = routes.find(r => {
-        if (r.path === url) return true;
-        if (r.path === '/' && url === '/') return true;
-        if (isDynamicRoute(r.path)) return false;
-        return r.path === url;
-      });
+      // Render the App with Routerino SSG-aware
+      const html = ReactDOMServer.renderToString(React.createElement(App));
       
       return {
         html,
@@ -549,6 +579,7 @@ export function render(url, baseUrl) {
       };
     } catch (error) {
       console.error(\`[Routerino Forge] Failed to render App for route \${url}:\`, error.message);
+      console.error(\`[Routerino Forge] Stack trace:\`, error.stack);
       // Fall back to route-only rendering
     } finally {
       // Clean up global mocks
@@ -558,12 +589,17 @@ export function render(url, baseUrl) {
   }
   
   // Original behavior: render just the route element
-  const route = routes.find(r => {
+  // Need to find the route again if App path wasn't taken
+  const route = App ? null : routes.find(r => {
     if (r.path === url) return true;
     if (r.path === '/' && url === '/') return true;
     if (isDynamicRoute(r.path)) return false;
     return r.path === url;
-  }); 
+  });
+  
+  // If we get here and App was defined, it means the App render failed
+  // Return early to avoid duplicate rendering
+  if (App) return;
   
   if (!route) {
     if (notFoundTemplate) {
@@ -741,7 +777,7 @@ export function render(url, baseUrl) {
           const reductionPercent = (
             (1 - imageStats.placeholderSize / imageStats.totalSize) *
             100
-          ).toFixed(0);
+          ).toFixed(2);
           console.log(
             `[Routerino Forge] ✓ Optimized ${imageStats.processed} images (${totalSizeMB}MB total, ${placeholderSizeKB}KB placeholders, ${reductionPercent}% reduction)`
           );
@@ -1068,7 +1104,7 @@ async function generate404Page({ template, outputDir, config, render }) {
       config.baseUrl
     );
 
-    // The render function will return the notFoundTemplate HTML
+    // The render function will return the notFoundTemplate HTML (already includes App wrapper if App exists)
     const renderedHTML = renderResult.html || "404 - Page Not Found";
 
     // Generate meta tags for 404 page
