@@ -468,22 +468,103 @@ export function routerinoForge(options = {}) {
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import * as routesModule from '${relativePath.startsWith(".") ? relativePath : "./" + relativePath}';
+
 // Support different export patterns  
 const routes = routesModule.routes || routesModule.default;
 const notFoundTemplate = routesModule.notFoundTemplate;
+
+// Check if App component is exported from routes file
+const App = routesModule.App || routesModule.default?.App;
+
 if (!routes) {
   throw new Error('Could not find routes export. Expected "export const routes" or "export default" from ${relativePath}');
 }
+
 // Helper to check if a route is dynamic (contains :param)
 const isDynamicRoute = (path) => path.split("/").some(segment => segment.startsWith(":"));
 export { routes };
-export function render(url) {
+
+// Mock minimal window object for SSG
+function mockWindow(url, baseUrl) {
+  const urlObj = new URL(url, baseUrl || 'http://localhost');
+  global.window = {
+    location: {
+      href: urlObj.href,
+      pathname: urlObj.pathname,
+      search: urlObj.search,
+      hash: urlObj.hash,
+      origin: urlObj.origin,
+      protocol: urlObj.protocol,
+      host: urlObj.host,
+      hostname: urlObj.hostname,
+      port: urlObj.port
+    },
+    history: {
+      pushState: () => {},
+      replaceState: () => {}
+    },
+    scrollTo: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => {}
+  };
+  global.document = {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    querySelector: () => null,
+    createElement: () => ({ 
+      setAttribute: () => {},
+      appendChild: () => {}
+    }),
+    head: {
+      appendChild: () => {}
+    }
+  };
+}
+
+export function render(url, baseUrl) {
+  // Check if we should render the full App or just the route element
+  if (App) {
+    // Mock window for the current route
+    mockWindow(url, baseUrl);
+    
+    try {
+      // Render the full App component (which includes Routerino)
+      const html = ReactDOMServer.renderToString(React.createElement(App));
+      
+      // Find the rendered route to get its metadata
+      const route = routes.find(r => {
+        if (r.path === url) return true;
+        if (r.path === '/' && url === '/') return true;
+        if (isDynamicRoute(r.path)) return false;
+        return r.path === url;
+      });
+      
+      return {
+        html,
+        title: route?.title,
+        description: route?.description,
+        imageUrl: route?.imageUrl,
+        notFound: !route
+      };
+    } catch (error) {
+      console.error(\`[Routerino Forge] Failed to render App for route \${url}:\`, error.message);
+      // Fall back to route-only rendering
+    } finally {
+      // Clean up global mocks
+      delete global.window;
+      delete global.document;
+    }
+  }
+  
+  // Original behavior: render just the route element
   const route = routes.find(r => {
     if (r.path === url) return true;
     if (r.path === '/' && url === '/') return true;
     if (isDynamicRoute(r.path)) return false;
     return r.path === url;
   }); 
+  
   if (!route) {
     if (notFoundTemplate) {
       const notFoundHTML = ReactDOMServer.renderToString(notFoundTemplate);
@@ -491,6 +572,7 @@ export function render(url) {
     }
     return { html: '<div><h1>404 - Page Not Found</h1><p>The page you are looking for does not exist.</p></div>', notFound: true };
   }
+  
   try {
     const html = ReactDOMServer.renderToString(route.element);
     return {
@@ -744,8 +826,8 @@ async function generateStaticPages({
     }
 
     try {
-      // Use the render function to generate HTML
-      const renderResult = render(route.path);
+      // Use the render function to generate HTML (pass baseUrl for window mocking)
+      const renderResult = render(route.path, config.baseUrl);
 
       let renderedHTML = "";
       if (renderResult.notFound) {
@@ -981,7 +1063,10 @@ async function generate404Page({ template, outputDir, config, render }) {
 
   try {
     // Render a non-existent route to get the notFoundTemplate content
-    const renderResult = render("/this-route-does-not-exist-404");
+    const renderResult = render(
+      "/this-route-does-not-exist-404",
+      config.baseUrl
+    );
 
     // The render function will return the notFoundTemplate HTML
     const renderedHTML = renderResult.html || "404 - Page Not Found";
@@ -1109,5 +1194,4 @@ Sitemap: ${config.baseUrl}/sitemap.xml`;
   }
 }
 
-// Default export
 export default routerinoForge;

@@ -683,7 +683,7 @@ export default defineConfig({
     routerinoForge({
       baseUrl: "https://example.com", // Your production URL (no trailing slash)
       // Optional settings (these are the defaults):
-      // routes: "./src/routes.jsx", // Your routes file
+      // routes: "./src/routes.jsx", // Your routes file (and App.jsx for full layout)
       // outputDir: "dist",
       // generateSitemap: true,
       // useTrailingSlash: true, // Set to false for /about instead of /about/
@@ -835,6 +835,28 @@ In your netlify.toml:
 #### Routes Configuration
 
 **Critical for SSG**: Routes MUST be exported for the build plugin to discover them. The plugin needs to import your routes at build time, so inline route definitions won't work.
+
+To include your full layout (headers, footers, etc.) in static generated HTML, export routes from the same file as your App component:
+
+```jsx
+// App.jsx - export routes from here for full layout SSG
+export const routes = [
+  { path: "/", element: <HomePage />, title: "Home" },
+  { path: "/about/", element: <AboutPage />, title: "About" },
+];
+
+export default function App() {
+  return (
+    <main>
+      <Header />
+      <Routerino routes={routes} />
+      <Footer />
+    </main>
+  );
+}
+```
+
+This ensures your entire App layout is rendered during static site generation. Without this, SSG renders only the individual route elements.
 
 Define routes with an `element` property containing JSX elements:
 

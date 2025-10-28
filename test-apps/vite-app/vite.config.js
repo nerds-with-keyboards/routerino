@@ -8,13 +8,7 @@ export default defineConfig({
     react(),
     routerinoForge({
       baseUrl: "https://example.com",
-      // All other options use sensible defaults:
-      // routes: './src/routes.jsx',
-      // outputDir: 'dist',
-      // generateSitemap: true,
-      // prerenderStatusCode: true,
-      // verbose: false
-      // useTrailingSlash: true (default)
+      routes: "./src/App.jsx",
     }),
   ],
   resolve: {
