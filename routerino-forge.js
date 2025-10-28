@@ -1194,5 +1194,4 @@ Sitemap: ${config.baseUrl}/sitemap.xml`;
   }
 }
 
-// Default export
 export default routerinoForge;
