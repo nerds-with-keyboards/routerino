@@ -708,7 +708,7 @@ export default defineConfig({
   - `/about/` → `about/index.html`
   - Canonical URLs and redirects based on `useTrailingSlash` setting
   - Prerender compatible 301 redirects for non-canonical versions
-- **Static host ready**: Output format aligns perfectly with Vercel, Netlify, and Cloudflare Pages conventions
+- **Static host ready**: Output format aligns perfectly with any static host such as Netlify and Cloudflare Pages
   - Routes generate `/path/index.html` for clean URLs (and `/path.html` for compatibility with no-slash URLs)
   - `404.html` at root for custom error pages
   - No server configuration needed - just deploy!

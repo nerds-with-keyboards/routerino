@@ -5,13 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.2] - 2025-08-27
+## [2.2.4] - 2025-11-24
 
 ### Changed
 
 - Support multiple export patterns (default export, named export, nested default.App)
 - Enhanced document/window mocking for better SSG
-- Image optimization now shows decimal percentages (e.g., 96.65%) instead of rounding to integers
+- Build time image placeholder compression now shows decimal percentages (e.g., 96.65%) instead of rounding to integers
+
+## [2.2.3] - 2025-10-28
+
+### Added
+
+- Routerino Forge now supports full App component layouts during static site generation, allowing headers, footers, navigation, and other shared UI components to be included in SSG builds instead of rendering only individual route components. This helps ensure consistency in SEO scans
+
+## [2.2.2] - 2025-10-23
+
+### Changed
+
+- Updated development dependencies (ESLint, Vite, Vitest, React, etc.)
+- Updated Volta Node.js version to 22.21.0 and npm to 10.9.4
+- Improved test infrastructure with userEvent for async handling
 
 ## [2.2.1] - 2025-08-26
 

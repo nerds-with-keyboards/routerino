@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import React from "react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import Routerino, { useRouterino } from "../routerino.jsx";
 
 describe("Routerino", () => {
@@ -104,7 +104,8 @@ describe("Routerino", () => {
   });
 
   describe("Navigation", () => {
-    it("navigates without page reload on click", () => {
+    it("navigates without page reload on click", async () => {
+      const user = userEvent.setup();
       const pushStateSpy = vi.spyOn(window.history, "pushState");
       const routes = [
         {
@@ -121,7 +122,7 @@ describe("Routerino", () => {
       const { rerender } = render(<Routerino routes={routes} />);
       const link = screen.getByText("Go to About");
 
-      fireEvent.click(link);
+      await user.click(link);
 
       expect(pushStateSpy).toHaveBeenCalledWith(
         {},
@@ -129,13 +130,17 @@ describe("Routerino", () => {
         expect.stringMatching(/^http:\/\/localhost(:\d+)?\/about$/)
       );
 
+      // Manually restore the spy to ensure test isolation
+      pushStateSpy.mockRestore();
+
       // Simulate the state change
       window.location = new URL("http://localhost/about");
       rerender(<Routerino routes={routes} />);
       expect(screen.getByText("About Page")).toBeTruthy();
     });
 
-    it("does not intercept external links", () => {
+    it("does not intercept external links", async () => {
+      const user = userEvent.setup();
       const pushStateSpy = vi.spyOn(window.history, "pushState");
       const routes = [
         {
@@ -152,9 +157,12 @@ describe("Routerino", () => {
       const link = screen.getByText("External");
 
       // Clicking an external link should not call pushState
-      fireEvent.click(link);
+      await user.click(link);
 
       expect(pushStateSpy).not.toHaveBeenCalled();
+
+      // Manually restore the spy to ensure test isolation
+      pushStateSpy.mockRestore();
     });
   });
 
