@@ -22,9 +22,9 @@ jobs:
          run: sudo apt-get install -y ffmpeg
          continue-on-error: true
 
-       - name: Setup FFmpeg (fallback)
-         if: steps.install-ffmpeg.outcome != 'success'
-         uses: FedericoCarboni/setup-ffmpeg@v3
+        - name: Setup FFmpeg (fallback)
+          if: ${{ steps.install-ffmpeg.outcome != 'success' }}
+          uses: FedericoCarboni/setup-ffmpeg@v3
          with:
            ffmpeg-version: release
            github-token: ${{ github.token }}

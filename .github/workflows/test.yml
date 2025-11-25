@@ -34,7 +34,7 @@ jobs:
          continue-on-error: true
 
        - name: Setup FFmpeg (fallback)
-         if: steps.install-ffmpeg.outcome != 'success'
+         if: ${{ steps.install-ffmpeg.outcome != 'success' }}
          uses: FedericoCarboni/setup-ffmpeg@v3
          with:
            ffmpeg-version: release
@@ -57,7 +57,7 @@ jobs:
       - name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.react-config.name }})
         run: npm test -- --run
 
-      - name: Run linter
-        run: npm run lint
-        # Only run linter once to save time
-        if: matrix.node-version == 20 && matrix.react-config.name == 'React 19'
+       - name: Run linter
+         run: npm run lint
+         # Only run linter once to save time
+         if: ${{ matrix.node-version == 20 && matrix.react-config.name == 'React 19' }}
