@@ -28,8 +28,17 @@ jobs:
           cache: "npm"
 
       # Install ffmpeg for image optimization tests in Routerino Forge
-      - name: Install FFmpeg
-        run: which ffmpeg || sudo apt-get install -y ffmpeg
+       - name: Install FFmpeg (apt-get)
+         id: install-ffmpeg
+         run: sudo apt-get install -y ffmpeg
+         continue-on-error: true
+
+       - name: Setup FFmpeg (fallback)
+         if: steps.install-ffmpeg.outcome != 'success'
+         uses: FedericoCarboni/setup-ffmpeg@v3
+         with:
+           ffmpeg-version: release
+           github-token: ${{ github.token }}
 
       - name: Verify FFmpeg installation
         run: |
