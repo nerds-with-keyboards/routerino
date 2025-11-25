@@ -6,7 +6,6 @@ function App() {
     <Routerino
       routes={routes}
       title="Test App"
-      titleSeparator=" | "
       notFoundTitle="404 Not Found"
       notFoundTemplate={
         <div>

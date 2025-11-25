@@ -1,30 +1,36 @@
 import Routerino from "routerino";
 import routes from "./routes";
 
+export function notFoundTemplate() {
+  return (
+    <div>
+      <h2>Route Not Found</h2>
+      <p>This is a not found example component.</p>
+      <p>
+        Lorem ipsum dolor, sit amet consectetur adipisicing elit. Voluptate
+        quisquam necessitatibus reprehenderit velit assumenda quidem nihil
+        temporibus praesentium esse? Eum a recusandae enim magni placeat aliquam
+        ullam facilis at iste.
+      </p>
+    </div>
+  );
+}
 function App() {
   return (
     <Routerino
       routes={routes}
-      globalTitle="Test App"
-      titleSeparator=" | "
+      title="Test App"
       notFoundTitle="404 Not Found"
-      notFoundTemplate={
-        <div>
-          <h2>Route Not Found</h2>
-          <p>This is a not found example component.</p>
-          <p>
-            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Voluptate
-            quisquam necessitatibus reprehenderit velit assumenda quidem nihil
-            temporibus praesentium esse? Eum a recusandae enim magni placeat
-            aliquam ullam facilis at iste.
-          </p>
-        </div>
-      }
+      notFoundTemplate={notFoundTemplate}
       errorTitle="Error"
       prerenderStatusCode={true}
-      debug={window.location.host.includes("localhost:")}
+      debug={
+        typeof window !== "undefined" &&
+        window.location?.host?.includes("localhost:")
+      }
     />
   );
 }
 
 export default App;
+export { routes };
