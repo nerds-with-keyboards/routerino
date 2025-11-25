@@ -1240,30 +1240,27 @@ export default [
       "jsx-a11y": jsxA11y,
     },
     rules: {
-      // Images must have alt text
-      "jsx-a11y/alt-text": "error",
-
-      // Headings must be in order (h1 → h2 → h3, not h1 → h3)
-      "jsx-a11y/heading-has-content": "error",
-
-      // Links must have descriptive text
-      "jsx-a11y/anchor-has-content": "error",
-      "jsx-a11y/anchor-is-valid": "error",
-
-      // Form controls must have labels
-      "jsx-a11y/label-has-associated-control": "error",
-
-      // Interactive elements must be keyboard accessible
-      "jsx-a11y/click-events-have-key-events": "error",
-      "jsx-a11y/interactive-supports-focus": "error",
+      ...jsxA11y.configs.recommended.rules,
     },
   },
 ];
 ```
 
-### Key Rules for PageSpeed Insights
+3. Add a lint run script
 
-1. **Images**: Always include descriptive `alt` text
+```json
+{
+  "scripts": {
+    "lint:": "eslint --ext .jsx,.js src/"
+  }
+}
+```
+
+See https://github.com/jsx-eslint/eslint-plugin-jsx-a11y for more info.
+
+### Key Rules for Accessibility
+
+1. **Images**: Include descriptive `alt` text
 
 ```jsx
 // ❌ Bad - Missing alt text
@@ -1308,19 +1305,7 @@ export default [
 </button>
 ```
 
-### Running Accessibility Audits
-
-Add a script to check accessibility during development:
-
-```json
-{
-  "scripts": {
-    "lint:a11y": "eslint --ext .jsx,.js src/"
-  }
-}
-```
-
-These practices will help you achieve better PageSpeed Insights scores and ensure your site is accessible to all users.
+These practices will help you achieve better accessibility scores and ensure your site is accessible to all users.
 
 ## Additional Resources
 
