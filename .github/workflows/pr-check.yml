@@ -9,36 +9,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: Use Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: "20"
+    - name: Use Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: "20"
 
-       # Install ffmpeg for image optimization tests in Routerino Forge
-       - name: Install FFmpeg (apt-get)
-         id: install-ffmpeg
-         run: sudo apt-get install -y ffmpeg
-         continue-on-error: true
+    # Install ffmpeg for image optimization tests in Routerino Forge
+    - name: Install FFmpeg (apt-get)
+      id: install-ffmpeg
+      run: sudo apt-get install -y ffmpeg
+      continue-on-error: true
 
-        - name: Setup FFmpeg (fallback)
-          if: ${{ steps.install-ffmpeg.outcome != 'success' }}
-          uses: FedericoCarboni/setup-ffmpeg@v3
-         with:
-           ffmpeg-version: release
-           github-token: ${{ github.token }}
+    - name: Setup FFmpeg (fallback)
+      if: ${{ steps.install-ffmpeg.outcome != 'success' }}
+      uses: FedericoCarboni/setup-ffmpeg@v3
+      with:
+        ffmpeg-version: release
+        github-token: ${{ github.token }}
 
-      - name: Verify FFmpeg installation
-        run: |
-          ffmpeg -version
-          ffprobe -version
+    - name: Verify FFmpeg installation
+      run: |
+        ffmpeg -version
+        ffprobe -version
 
-      - name: Install dependencies
-        run: npm ci
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Lint
-        run: npm run lint
+    - name: Lint
+      run: npm run lint
 
-      - name: Build
-        run: npm run build
+    - name: Build
+      run: npm run build

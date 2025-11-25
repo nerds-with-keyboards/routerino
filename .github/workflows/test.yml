@@ -19,45 +19,45 @@ jobs:
             packages: "react@^19.0.0 react-dom@^19.0.0"
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: "npm"
 
-      # Install ffmpeg for image optimization tests in Routerino Forge
-       - name: Install FFmpeg (apt-get)
-         id: install-ffmpeg
-         run: sudo apt-get install -y ffmpeg
-         continue-on-error: true
+    # Install ffmpeg for image optimization tests in Routerino Forge
+    - name: Install FFmpeg (apt-get)
+      id: install-ffmpeg
+      run: sudo apt-get install -y ffmpeg
+      continue-on-error: true
 
-       - name: Setup FFmpeg (fallback)
-         if: ${{ steps.install-ffmpeg.outcome != 'success' }}
-         uses: FedericoCarboni/setup-ffmpeg@v3
-         with:
-           ffmpeg-version: release
-           github-token: ${{ github.token }}
+    - name: Setup FFmpeg (fallback)
+      if: ${{ steps.install-ffmpeg.outcome != 'success' }}
+      uses: FedericoCarboni/setup-ffmpeg@v3
+      with:
+        ffmpeg-version: release
+        github-token: ${{ github.token }}
 
-      - name: Verify FFmpeg installation
-        run: |
-          ffmpeg -version
-          ffprobe -version
+    - name: Verify FFmpeg installation
+      run: |
+        ffmpeg -version
+        ffprobe -version
 
-      - name: Install dependencies
-        run: npm ci
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Install ${{ matrix.react-config.name }}
-        run: npm install --no-save ${{ matrix.react-config.packages }}
+    - name: Install ${{ matrix.react-config.name }}
+      run: npm install --no-save ${{ matrix.react-config.packages }}
 
-      - name: Build library
-        run: npm run build
+    - name: Build library
+      run: npm run build
 
-      - name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.react-config.name }})
-        run: npm test -- --run
+    - name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.react-config.name }})
+      run: npm test -- --run
 
-       - name: Run linter
-         run: npm run lint
-         # Only run linter once to save time
-         if: ${{ matrix.node-version == 20 && matrix.react-config.name == 'React 19' }}
+    - name: Run linter
+      run: npm run lint
+      # Only run linter once to save time
+      if: ${{ matrix.node-version == 20 && matrix.react-config.name == 'React 19' }}
