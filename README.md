@@ -1216,6 +1216,97 @@ import Routerino from "./vendor/routerino";
 
 By vendoring Routerino, you have full control over the code and can make any necessary modifications directly to the `routerino.jsx` file. However, keep in mind that you'll need to manually update the vendored file if you want to incorporate any future updates or bug fixes from the main Routerino repository.
 
+## Accessibility & SEO Best Practices
+
+To maximize your PageSpeed Insights and Lighthouse scores, we recommend setting up ESLint with accessibility rules. This helps catch common issues that hurt SEO and user experience.
+
+### Setting up eslint-plugin-jsx-a11y
+
+1. Install the plugin:
+
+```bash
+npm install --save-dev eslint-plugin-jsx-a11y
+```
+
+2. Add to your ESLint config:
+
+```javascript
+// eslint.config.js (ESLint 9+ flat config)
+import jsxA11y from "eslint-plugin-jsx-a11y";
+
+export default [
+  {
+    plugins: {
+      "jsx-a11y": jsxA11y,
+    },
+    rules: {
+      ...jsxA11y.configs.recommended.rules,
+    },
+  },
+];
+```
+
+3. Add a lint run script
+
+```json
+{
+  "scripts": {
+    "lint:": "eslint --ext .jsx,.js src/"
+  }
+}
+```
+
+See https://github.com/jsx-eslint/eslint-plugin-jsx-a11y for more info.
+
+### Key Rules for Accessibility
+
+1. **Images**: Include descriptive `alt` text
+
+```jsx
+// ❌ Bad - Missing alt text
+<img src="/logo.png" />
+
+// ✅ Good - Descriptive alt text
+<img src="/logo.png" alt="Company logo" />
+
+// ✅ Good - Decorative images
+<img src="/decoration.png" alt="" role="presentation" />
+```
+
+2. **Heading Hierarchy**: Use proper heading order
+
+```jsx
+// ❌ Bad - Skipping heading levels
+<h1>Page Title</h1>
+<h3>Subsection</h3>  // Should be h2
+
+// ✅ Good - Proper hierarchy
+<h1>Page Title</h1>
+<h2>Main Section</h2>
+<h3>Subsection</h3>
+```
+
+3. **Link Text**: Avoid generic link text
+
+```jsx
+// ❌ Bad - Generic text
+<a href="/products">Click here</a>
+
+// ✅ Good - Descriptive text
+<a href="/products">View our products</a>
+```
+
+4. **ARIA Labels**: Use for icon-only buttons
+
+```jsx
+// ✅ Good - Icon button with label
+<button aria-label="Close dialog">
+  <svg>...</svg>
+</button>
+```
+
+These practices will help you achieve better accessibility scores and ensure your site is accessible to all users.
+
 ## Additional Resources
 
 Here are some sources for further reading on SEO best-practices.

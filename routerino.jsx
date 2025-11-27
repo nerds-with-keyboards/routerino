@@ -255,11 +255,14 @@ export function Routerino({
     }
 
     // we use this state to track the URL internally and control React updates
-    const [href, setHref] = useState(window.location.href);
+    const [href, setHref] = useState(window?.location?.href ?? "/");
 
     // this useEffect manages reload-free page transitions via
     // the browser's history.pushState and window.scrollTo APIs
     useEffect(() => {
+      // skip in non-browser contexts
+      if (typeof window === "undefined" || typeof document === "undefined")
+        return;
       const handleClick = (event) => {
         if (debug) {
           console.debug(
@@ -400,7 +403,7 @@ export function Routerino({
     }, [href]);
 
     // START LOCATING MATCH
-    let currentRoute = window.location?.pathname ?? "/";
+    let currentRoute = window?.location?.pathname ?? "/";
     // use the root route for index.html requests
     if (currentRoute === "/index.html" || currentRoute === "")
       currentRoute = "/";
@@ -517,7 +520,7 @@ export function Routerino({
         ? currentRoute.slice(0, -1)
         : currentRoute;
 
-    const canonicalUrl = `${baseUrl || window.location.origin}${canonicalPath}`;
+    const canonicalUrl = `${baseUrl ?? window?.location?.origin ?? ""}${canonicalPath}`;
 
     // set the title, og:title
     if (match.title) {

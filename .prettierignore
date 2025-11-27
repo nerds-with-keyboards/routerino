@@ -6,3 +6,5 @@ coverage
 *.min.css
 package-lock.json
 *.html
+.github/**/*.yml
+.github/**/*.yaml
