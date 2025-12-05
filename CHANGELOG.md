@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-12-04
+
+### Added
+
+- Image Component (`routerino/image`): Optimized images with zero configuration
+  - Automatic responsive image generation (480, 800, 1200, 1920px widths)
+  - WebP format with fallbacks for maximum compatibility
+  - Low Quality Image Placeholders (LQIP) to prevent layout shift
+  - Smart priority detection for hero/LCP images (auto-sets `loading="eager"` and `fetchpriority="high"`)
+  - As always, included TypeScript definitions and test coverage
+  - Image processing requires FFmpeg available in path
+
+### Changed
+
+- Routerino Forge: Removed old LQIP processing, now only processes `<Image>` components opt-in
+- Updated package.json exports to include the new Image component
+
 ## [2.2.4] - 2025-11-27
 
 ### Changed

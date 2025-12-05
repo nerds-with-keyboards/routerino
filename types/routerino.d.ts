@@ -1,5 +1,20 @@
 import React from "react";
 
+// Image component types
+export interface ImageProps
+  extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src" | "alt"> {
+  /** Image source URL (required) */
+  src: string;
+  /** Alt text for accessibility (required) */
+  alt: string;
+  /** Override lazy loading for hero/LCP images */
+  priority?: boolean;
+  /** Responsive widths to generate (defaults to [480, 800, 1200, 1920]) */
+  widths?: number[];
+  /** Responsive sizes attribute (has smart default) */
+  sizes?: string;
+}
+
 export interface HeadTag {
   tag?: string;
   soft?: boolean;
@@ -91,6 +106,10 @@ export class ErrorBoundary extends React.Component<
 
 // Named export (recommended)
 export function Routerino(props: RouterinoProps): JSX.Element;
+
+// Image component exports
+export function Image(props: ImageProps): JSX.Element;
+export { Image as default as ImageComponent };
 
 // Default export for backward compatibility
 export default Routerino;

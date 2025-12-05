@@ -17,32 +17,20 @@ import { spawn } from "child_process";
 const isDynamicRoute = (path) =>
   path.split("/").some((segment) => segment.startsWith(":"));
 
-// Helper to check if an image should be skipped
-const shouldSkipImage = (src) =>
-  src.startsWith("http") || src.startsWith("data:") || src.endsWith(".svg");
+// Helper to check if an image should be processed
+const shouldProcessImage = (src) =>
+  !src.startsWith("http") && !src.startsWith("data:") && !src.endsWith(".svg");
 
-// Normalize image optimization config
-function normalizeImageConfig(config) {
-  if (config === false) return null;
-  if (config === true) {
-    return {
-      enabled: true,
-      placeholderSize: 20,
-      blur: 4,
-      maxSize: 10485760, // 10MB
-      minSize: 1024, // 1KB
-      cacheDir: "node_modules/.cache/routerino-forge",
-    };
-  }
-  return {
-    enabled: true,
-    placeholderSize: config.placeholderSize ?? 20,
-    blur: config.blur ?? 4,
-    maxSize: config.maxSize ?? 10485760,
-    minSize: config.minSize ?? 1024,
-    cacheDir: config.cacheDir ?? "node_modules/.cache/routerino-forge",
-  };
-}
+// Default configuration for Image component processing
+const DEFAULT_IMAGE_CONFIG = {
+  widths: [480, 800, 1200, 1920],
+  formats: ["webp"], // WebP is sufficient for Lighthouse 100/100
+  placeholderSize: 20,
+  blur: 4,
+  maxSize: 10485760, // 10MB
+  minSize: 1024, // 1KB
+  cacheDir: "node_modules/.cache/routerino-forge",
+};
 
 // Get image dimensions using ffprobe
 function getImageDimensionsWithFfprobe(inputPath) {
@@ -99,14 +87,118 @@ function getImageDimensionsWithFfprobe(inputPath) {
 }
 
 /**
- * Resize an image to a given height (keeping aspect ratio)
- * and return a base64 data URI (data:image/png;base64,...).
- *
- * @param {string} inputPath - Path to input image file
- * @param {number} targetHeight - Desired output height (default 16px)
- * @returns {Promise<string>} - Base64 Data URI for PNG
+ * Generate responsive image variants using ffmpeg
+ * Creates WebP versions at multiple widths + LQIP placeholder
  */
-function resizeImageToBase64(inputPath, targetHeight = 16) {
+async function generateResponsiveImages(
+  inputPath,
+  outputDir,
+  config = DEFAULT_IMAGE_CONFIG
+) {
+  try {
+    // Get base name for generating variants
+    const inputFileName = path.basename(inputPath);
+    const base = inputFileName.replace(/\.(jpe?g|png)$/i, "");
+    const originalExtension =
+      inputFileName.match(/\.(jpe?g|png)$/i)?.[0] || ".jpg";
+
+    // Get dimensions using ffprobe
+    const dimensions = await getImageDimensionsWithFfprobe(inputPath).catch(
+      () => null
+    );
+
+    // Generate placeholder (LQIP)
+    const placeholder = await generatePlaceholder(
+      inputPath,
+      config.placeholderSize
+    );
+
+    const results = {
+      placeholder,
+      width: dimensions?.width || 0,
+      height: dimensions?.height || 0,
+      variants: {},
+    };
+
+    // Generate responsive variants for each width
+    for (const width of config.widths) {
+      // Skip if image is smaller than target width
+      if (dimensions && dimensions.width < width) continue;
+
+      // Generate WebP version in output directory
+      const webpPath = path.join(outputDir, `${base}-${width}w.webp`);
+      await generateImageVariant(inputPath, webpPath, width, "webp");
+
+      // Generate original format version in output directory
+      const originalPath = path.join(
+        outputDir,
+        `${base}-${width}w${originalExtension}`
+      );
+      await generateImageVariant(
+        inputPath,
+        originalPath,
+        width,
+        originalExtension.slice(1)
+      );
+
+      results.variants[width] = {
+        webp: `/${base}-${width}w.webp`, // Web-relative paths
+        original: `/${base}-${width}w${originalExtension}`,
+      };
+    }
+
+    return results;
+  } catch (error) {
+    console.warn(
+      `[Routerino Image] Could not process ${inputPath}:`,
+      error.message
+    );
+    return null;
+  }
+}
+
+/**
+ * Generate a single image variant at specified width
+ */
+async function generateImageVariant(inputPath, outputPath, width, format) {
+  return new Promise((resolve, reject) => {
+    // Build ffmpeg command based on format
+    const args = ["-i", inputPath, "-vf", `scale=${width}:-2`];
+
+    if (format === "webp") {
+      args.push("-c:v", "libwebp", "-q:v", "80");
+    } else {
+      args.push("-q:v", "2"); // High quality JPEG
+    }
+
+    args.push("-y", outputPath); // Overwrite existing files
+
+    const ffmpeg = spawn("ffmpeg", args);
+    let errorOutput = "";
+
+    ffmpeg.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffmpeg.on("error", (err) => {
+      reject(new Error(`Failed to spawn ffmpeg: ${err.message}`));
+    });
+
+    ffmpeg.on("close", (code) => {
+      if (code !== 0) {
+        return reject(
+          new Error(`ffmpeg exited with code ${code}. Error: ${errorOutput}`)
+        );
+      }
+      resolve(outputPath);
+    });
+  });
+}
+
+/**
+ * Generate LQIP placeholder using ffmpeg
+ */
+async function generatePlaceholder(inputPath, targetHeight = 20) {
   return new Promise((resolve, reject) => {
     const args = [
       "-i",
@@ -123,17 +215,11 @@ function resizeImageToBase64(inputPath, targetHeight = 16) {
     ];
 
     const ffmpeg = spawn("ffmpeg", args);
-
     let chunks = [];
     let errorOutput = "";
 
-    ffmpeg.stdout.on("data", (chunk) => {
-      chunks.push(chunk);
-    });
-
-    ffmpeg.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-    });
+    ffmpeg.stdout.on("data", (chunk) => chunks.push(chunk));
+    ffmpeg.stderr.on("data", (data) => (errorOutput += data.toString()));
 
     ffmpeg.on("error", (err) => {
       reject(new Error(`Failed to spawn ffmpeg: ${err.message}`));
@@ -147,247 +233,212 @@ function resizeImageToBase64(inputPath, targetHeight = 16) {
       }
       const buffer = Buffer.concat(chunks);
       const base64 = buffer.toString("base64");
-      const dataUri = `data:image/png;base64,${base64}`;
-      resolve(dataUri);
+      resolve(`data:image/png;base64,${base64}`);
     });
   });
 }
 
-// Generate a tiny placeholder image using ffmpeg
-async function generatePlaceholder(imagePath, config) {
-  try {
-    // Use ffmpeg to create a small placeholder (16px height by default)
-    const targetHeight = config.placeholderSize || 16;
-
-    // Get dimensions using ffprobe (part of ffmpeg)
-    const dimensions = await getImageDimensionsWithFfprobe(imagePath).catch(
-      () => null
-    );
-
-    const placeholder = await resizeImageToBase64(imagePath, targetHeight);
-
-    return {
-      placeholder,
-      width: dimensions?.width || 0,
-      height: dimensions?.height || 0,
-    };
-  } catch (error) {
-    if (config.verbose) {
-      console.warn(
-        `[Routerino Forge] Could not process image ${imagePath} (requires ffmpeg):`,
-        error.message
-      );
-    }
-    return null;
-  }
-}
-
-// Get cache key for an image
-async function getImageCacheKey(imagePath, config) {
+// Get cache key for responsive image processing
+async function getImageCacheKey(imagePath, config = DEFAULT_IMAGE_CONFIG) {
   try {
     const stats = await fs.stat(imagePath);
     const hash = crypto.createHash("md5");
     hash.update(imagePath);
     hash.update(stats.mtime.toISOString());
     hash.update(stats.size.toString());
-    hash.update(config.placeholderSize.toString());
-    hash.update("v2-grid8x8"); // Version the cache format
+    hash.update(JSON.stringify(config.widths));
+    hash.update("routerino-image-v1"); // Version the cache format
     return hash.digest("hex");
   } catch {
     return null;
   }
 }
 
-// Process images in HTML
-async function processImagesInHTML(html, outputDir, config) {
-  if (!config.optimizeImages || !config.optimizeImages.enabled) {
-    return { html, stats: null };
-  }
-
-  const imageConfig = config.optimizeImages;
+/**
+ * Process <Image> components in HTML to add responsive images + LQIP
+ * Only processes elements with data-routerino-image="true"
+ */
+async function processRouterInoImages(html, outputDir) {
   const stats = {
     processed: 0,
     skipped: 0,
     totalSize: 0,
-    placeholderSize: 0,
+    generated: 0,
     errors: [],
   };
 
   // Ensure cache directory exists
-  const cacheDir = path.resolve(imageConfig.cacheDir);
+  const cacheDir = path.resolve(DEFAULT_IMAGE_CONFIG.cacheDir);
   await fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
 
-  // Find all img tags - process in chunks to optimize memory
-  const imgRegex = /<img\s+([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
+  // Find all <picture> elements with data-routerino-image attribute
+  const pictureRegex =
+    /<picture[^>]*data-routerino-image="true"[^>]*data-original-src="([^"]+)"[^>]*>(.*?)<\/picture>/gis;
   let processedHTML = html;
-
-  // Process images in batches to avoid loading all matches at once
-  const BATCH_SIZE = 10; // Process 10 images at a time
   let match;
-  let batchCount = 0;
-  let currentBatch = [];
 
-  while ((match = imgRegex.exec(html)) !== null) {
-    currentBatch.push(match);
-    batchCount++;
+  while ((match = pictureRegex.exec(html)) !== null) {
+    const [fullMatch, originalSrc] = match;
 
-    // Process batch when it reaches the size limit
-    if (batchCount >= BATCH_SIZE) {
-      processedHTML = await processBatch(currentBatch, processedHTML);
-      currentBatch = [];
-      batchCount = 0;
+    // Skip external URLs, data URLs, and SVGs
+    if (!shouldProcessImage(originalSrc)) {
+      stats.skipped++;
+      continue;
     }
-  }
 
-  // Process remaining images in the last batch
-  if (currentBatch.length > 0) {
-    processedHTML = await processBatch(currentBatch, processedHTML);
-  }
-
-  // Helper function to process a batch of images
-  async function processBatch(batch, html) {
-    let result = html;
-
-    for (const match of batch) {
-      // eslint-disable-next-line no-unused-vars
-      const [fullMatch, beforeSrc, src, afterSrc] = match;
-
-      // Skip external URLs, data URLs, and SVGs
-      if (shouldSkipImage(src)) {
-        stats.skipped++;
-        continue;
-      }
-
-      // Resolve image path with safety check
-      const imagePath = path.join(outputDir, src);
-
-      // Path traversal protection: ensure resolved path is within outputDir
-      const resolvedPath = path.resolve(imagePath);
+    try {
+      // Resolve image path with security check
+      const imagePath = path.resolve(outputDir, originalSrc.replace(/^\//, ""));
       const resolvedOutputDir = path.resolve(outputDir);
-      if (!resolvedPath.startsWith(resolvedOutputDir)) {
-        // Skip potentially malicious paths
+
+      if (!imagePath.startsWith(resolvedOutputDir)) {
         stats.skipped++;
         continue;
       }
 
       // Check if file exists and size
-      try {
-        const fileStats = await fs.stat(resolvedPath);
-
-        if (
-          fileStats.size < imageConfig.minSize ||
-          fileStats.size > imageConfig.maxSize
-        ) {
-          stats.skipped++;
-          continue;
-        }
-
-        stats.totalSize += fileStats.size;
-
-        // Check cache
-        const cacheKey = await getImageCacheKey(resolvedPath, imageConfig);
-        if (!cacheKey) {
-          stats.skipped++;
-          continue;
-        }
-
-        const cacheFile = path.join(cacheDir, `${cacheKey}.json`);
-        let imageData;
-
-        try {
-          // Try to read from cache
-          const cached = JSON.parse(await fs.readFile(cacheFile, "utf-8"));
-          imageData = cached;
-        } catch {
-          // Generate placeholder
-          imageData = await generatePlaceholder(resolvedPath, imageConfig);
-
-          if (!imageData) {
-            stats.skipped++;
-            continue;
-          }
-
-          // Save to cache
-          await fs
-            .writeFile(cacheFile, JSON.stringify(imageData))
-            .catch(() => {});
-        }
-
-        const dataUri = imageData.placeholder;
-
-        // Create a wrapper span with the blurred background positioned behind
-        let spanStyle = `position: relative; display: inline-block;`;
-
-        if (imageData.width && imageData.height) {
-          // Set aspect-ratio for proper proportions
-          const aspectRatio = imageData.width / imageData.height;
-          spanStyle += ` aspect-ratio: ${aspectRatio};`;
-        }
-
-        // Create the blur background as a pseudo-element that sits behind (z-index: -1)
-        // Using a unique class to avoid conflicts
-        const uniqueClass = `lqip-${Math.random().toString(36).substring(2, 11)}`;
-        // Style for the ::before pseudo-element that creates the blur background
-        const beforeStyle = `
-        .${uniqueClass}::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-image: url('${dataUri}');
-          background-size: cover;
-          background-position: center;
-          filter: blur(${imageConfig.blur}px);
-          z-index: -1;
-        }
-      `;
-
-        const styleTag = `<style>${beforeStyle}</style>`;
-
-        // Add opacity: 0 inline style to hide image initially
-        const imgWithOpacity = fullMatch.replace(
-          /(<img\s+[^>]*?)(\s*\/?>)/i,
-          (_, p1, p2) => {
-            let result = p1;
-
-            // Add opacity to style
-            if (/style\s*=/i.test(result)) {
-              // Add to existing style
-              result = result.replace(
-                /style\s*=\s*["']([^"']*)/i,
-                'style="opacity: 0; $1'
-              );
-            } else {
-              // Add new style attribute
-              result += ' style="opacity: 0"';
-            }
-
-            return result + p2;
-          }
-        );
-
-        // Wrap img in span with blur background
-        const wrappedImg = `${styleTag}<span class="forge-lqip ${uniqueClass}" style="${spanStyle}">${imgWithOpacity}</span>`;
-
-        result = result.replace(fullMatch, wrappedImg);
-
-        stats.processed++;
-        stats.placeholderSize += imageData.placeholder.length;
-      } catch (error) {
-        stats.errors.push({ src, error: error.message });
+      const fileStats = await fs.stat(imagePath);
+      if (
+        fileStats.size < DEFAULT_IMAGE_CONFIG.minSize ||
+        fileStats.size > DEFAULT_IMAGE_CONFIG.maxSize
+      ) {
         stats.skipped++;
+        continue;
       }
-    } // End of for loop in processBatch
-    return result;
-  } // End of processBatch function
+
+      stats.totalSize += fileStats.size;
+
+      // Check cache
+      const cacheKey = await getImageCacheKey(imagePath);
+      if (!cacheKey) {
+        stats.skipped++;
+        continue;
+      }
+
+      const cacheFile = path.join(cacheDir, `${cacheKey}.json`);
+      let imageData;
+
+      try {
+        // Try to read from cache
+        const cached = JSON.parse(await fs.readFile(cacheFile, "utf-8"));
+        imageData = cached;
+      } catch {
+        // Generate responsive images + placeholder
+        imageData = await generateResponsiveImages(imagePath, outputDir);
+
+        if (!imageData) {
+          stats.skipped++;
+          continue;
+        }
+
+        // Save to cache
+        await fs
+          .writeFile(cacheFile, JSON.stringify(imageData))
+          .catch(() => {});
+        stats.generated++;
+      }
+
+      // Transform the picture element with LQIP
+      const transformedPicture = await transformPictureWithLQIP(
+        fullMatch,
+        originalSrc,
+        imageData,
+        DEFAULT_IMAGE_CONFIG
+      );
+
+      processedHTML = processedHTML.replace(fullMatch, transformedPicture);
+      stats.processed++;
+    } catch (error) {
+      stats.errors.push({ src: originalSrc, error: error.message });
+      stats.skipped++;
+    }
+  }
 
   return { html: processedHTML, stats };
 }
 
+/**
+ * Transform a picture element to include LQIP background and update srcsets
+ */
+async function transformPictureWithLQIP(
+  pictureHTML,
+  originalSrc,
+  imageData,
+  config
+) {
+  // Create unique class for LQIP styling
+  const uniqueClass = `routerino-img-${Math.random().toString(36).substring(2, 11)}`;
+
+  // LQIP background styles
+  const lqipStyle = `
+    .${uniqueClass} {
+      position: relative;
+      display: inline-block;
+      ${imageData.width && imageData.height ? `aspect-ratio: ${imageData.width / imageData.height};` : ""}
+    }
+    .${uniqueClass}::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url('${imageData.placeholder}');
+      background-size: cover;
+      background-position: center;
+      filter: blur(${config.blur}px);
+      z-index: -1;
+    }
+  `;
+
+  // Update srcsets to point to generated responsive images
+  let updatedPicture = pictureHTML;
+
+  // Update WebP source srcset using actual generated paths
+  const webpSrcSet = Object.entries(imageData.variants)
+    .map(([width, paths]) => `${paths.webp} ${width}w`)
+    .join(", ");
+
+  if (webpSrcSet) {
+    updatedPicture = updatedPicture.replace(
+      /(<source[^>]*srcSet=")([^"]*)"([^>]*type="image\/webp"[^>]*)/i,
+      `$1${webpSrcSet}"$3`
+    );
+  }
+
+  // Update original format srcset using actual generated paths
+  const originalSrcSet = Object.entries(imageData.variants)
+    .map(([width, paths]) => `${paths.original} ${width}w`)
+    .join(", ");
+
+  if (originalSrcSet) {
+    updatedPicture = updatedPicture.replace(
+      /(<img[^>]*srcSet=")([^"]*)/i,
+      `$1${originalSrcSet}`
+    );
+    // Also update any other source elements that aren't WebP
+    updatedPicture = updatedPicture.replace(
+      /(<source(?![^>]*type="image\/webp")[^>]*srcSet=")([^"]*)/i,
+      `$1${originalSrcSet}`
+    );
+  }
+
+  // Add opacity: 0 to img tag
+  updatedPicture = updatedPicture.replace(
+    /<img([^>]*?)\/?>/i,
+    (match, attributes) => {
+      // Add opacity: 0 to existing style or create new style attribute
+      if (attributes.includes("style=")) {
+        return match.replace(/style=["']([^"']*)/i, 'style="opacity: 0; $1');
+      } else {
+        return `<img${attributes} style="opacity: 0"/>`;
+      }
+    }
+  );
+
+  // Wrap the picture in a div with LQIP styling
+  return `<style>${lqipStyle}</style><div class="${uniqueClass}">${updatedPicture}</div>`;
+}
+
 export function routerinoForge(options = {}) {
-  // Configuration with defaults
+  // Configuration with defaults - simplified, no image optimization config needed
   const config = {
     routes: options.routes || "./src/routes.jsx",
     template: options.template || "index.html", // Default to source index.html
@@ -396,7 +447,6 @@ export function routerinoForge(options = {}) {
     generateSitemap: options.generateSitemap ?? true,
     verbose: options.verbose ?? false,
     useTrailingSlash: options.useTrailingSlash ?? true, // Default to trailing slashes
-    optimizeImages: normalizeImageConfig(options.optimizeImages ?? true),
     ssgCacheDir:
       options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
   };
@@ -768,33 +818,32 @@ export function render(url, baseUrl) {
           `[Routerino Forge] ✓ Generated ${fileCount} HTML files (${staticRoutes.length} routes) + 404.html`
         );
 
-        // Display image optimization stats
-        if (config.optimizeImages && imageStats && imageStats.processed > 0) {
+        // Display Image component processing stats
+        if (imageStats && imageStats.processed > 0) {
           const totalSizeMB = (imageStats.totalSize / 1024 / 1024).toFixed(2);
-          const placeholderSizeKB = (imageStats.placeholderSize / 1024).toFixed(
-            1
-          );
-          const reductionPercent = (
-            (1 - imageStats.placeholderSize / imageStats.totalSize) *
-            100
-          ).toFixed(2);
           console.log(
-            `[Routerino Forge] ✓ Optimized ${imageStats.processed} images (${totalSizeMB}MB total, ${placeholderSizeKB}KB placeholders, ${reductionPercent}% reduction)`
+            `[Routerino Image] ✓ Processed ${imageStats.processed} <Image> components (${totalSizeMB}MB total)`
           );
+
+          if (imageStats.generated > 0) {
+            console.log(
+              `[Routerino Image] ✓ Generated ${imageStats.generated} responsive image sets`
+            );
+          }
 
           if (config.verbose && imageStats.skipped > 0) {
             console.log(
-              `[Routerino Forge] Skipped ${imageStats.skipped} images (external URLs, SVGs, or size limits)`
+              `[Routerino Image] Skipped ${imageStats.skipped} images (external URLs, SVGs, or size limits)`
             );
           }
 
           if (imageStats.errors.length > 0) {
             console.warn(
-              `[Routerino Forge] ${imageStats.errors.length} images had processing errors`
+              `[Routerino Image] ${imageStats.errors.length} images had processing errors`
             );
             if (config.verbose) {
               imageStats.errors.forEach(({ src, error }) => {
-                console.warn(`[Routerino Forge]   - ${src}: ${error}`);
+                console.warn(`[Routerino Image]   - ${src}: ${error}`);
               });
             }
           }
@@ -963,8 +1012,8 @@ async function generateStaticPages({
           );
         }
 
-        // Process images in HTML
-        const { html: processedHTML, stats } = await processImagesInHTML(
+        // Process <Image> components in HTML
+        const { html: processedHTML, stats } = await processRouterInoImages(
           html,
           outputDir,
           config
@@ -1151,8 +1200,8 @@ async function generate404Page({ template, outputDir, config, render }) {
       );
     }
 
-    // Process images in 404 page
-    const { html: processedHTML } = await processImagesInHTML(
+    // Process <Image> components in 404 page
+    const { html: processedHTML } = await processRouterInoImages(
       html,
       outputDir,
       config

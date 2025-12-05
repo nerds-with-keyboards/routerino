@@ -1,11 +1,13 @@
 /* eslint-disable react/prop-types */
+import { Image } from "../../../routerino-image.jsx";
+
 // Test components
 const HomePage = ({ featured = "Latest News" }) => (
   <div>
     <h1>Home Page</h1>
     <p>Welcome to the test app!</p>
     <p>Featured: {featured}</p>
-    <img src="/test-image.jpg" alt="Test Image" />
+    <Image src="/test-image.jpg" alt="Test Image" className="hero-image" />
     <nav>
       <a href="/about/">About</a> | <a href="/products/">Products</a> |{" "}
       <a href="/contact/">Contact</a>
@@ -17,6 +19,11 @@ const AboutPage = () => (
   <div>
     <h1>About Us</h1>
     <p>This is the about page of our test application.</p>
+    <Image
+      src="/test-image.jpg"
+      alt="About us image"
+      className="w-full max-w-md mx-auto rounded-lg shadow-lg"
+    />
     <p>
       <a href="https://example.com">External Link</a>
     </p>

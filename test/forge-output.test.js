@@ -396,32 +396,48 @@ describe("Routerino Forge Build Output", () => {
     });
   });
 
-  describe("Image Optimization", () => {
-    it("should wrap images with span for LQIP blur effect", () => {
+  describe("Image Component Processing", () => {
+    it("should process <Image> components with LQIP and responsive images", () => {
       const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
 
-      // Check for the span wrapper with forge-lqip class
-      expect(html).toContain('<span class="forge-lqip');
+      // Check for the Image component wrapper
+      expect(html).toContain('<div class="routerino-img-');
 
-      // Check that styles for blur background are present
+      // Check that LQIP styles are present
       expect(html).toContain("::before");
       expect(html).toMatch(/background-image:\s*url\('data:image\/png;base64/);
       expect(html).toContain("filter: blur(4px)");
       expect(html).toContain("z-index: -1"); // Background is behind
+      expect(html).toContain("aspect-ratio:"); // Prevent layout shift
 
-      // Check that img is inside the span
-      expect(html).toMatch(/<span[^>]*class="forge-lqip[^>]*>.*?<img[^>]*>/s);
+      // Check that picture element is present with data attributes
+      expect(html).toContain('<picture data-routerino-image="true"');
+      expect(html).toContain('data-original-src="/test-image.jpg"');
 
-      // Check that the img has opacity: 0 to hide during load
+      // Check for WebP source
+      expect(html).toContain('type="image/webp"');
+      expect(html).toMatch(/srcSet="[^"]*\.webp/);
+
+      // Check that img has priority loading (hero-image class triggers this)
       const imgMatch = html.match(/<img[^>]*>/);
       expect(imgMatch).toBeTruthy();
       const imgTag = imgMatch[0];
       expect(imgTag).toContain('src="/test-image.jpg"');
       expect(imgTag).toContain('alt="Test Image"');
-      // Should have opacity: 0 to prevent broken image icon flash
-      expect(imgTag).toContain('style="opacity: 0"');
-      // Should NOT have loading attribute (no inline JS)
-      expect(imgTag).not.toContain("loading=");
+      expect(imgTag).toContain('loading="eager"'); // Priority detected
+      expect(imgTag).toContain('fetchpriority="high"');
+      expect(imgTag).toContain('style="opacity: 0"'); // Prevent flash
+    });
+
+    it("should generate responsive image files", () => {
+      // Check that responsive images were actually generated
+      expect(fs.existsSync(path.join(distDir, "test-image-480w.jpg"))).toBe(
+        true
+      );
+      expect(fs.existsSync(path.join(distDir, "test-image-480w.webp"))).toBe(
+        true
+      );
+      // Note: Other widths may not be generated if original image is smaller
     });
   });
 
@@ -545,87 +561,11 @@ describe("Routerino Forge Build Output", () => {
     });
   });
 
-  describe("Image Optimization", () => {
-    it("should optimize images with base64 placeholders", () => {
-      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
-
-      // Check that the img tag has been wrapped with optimization
-      expect(html).toContain('<span class="forge-lqip');
-      expect(html).toContain("<img");
-      expect(html).toContain('src="/test-image.jpg"');
-      expect(html).toContain("background-image: url('data:image/");
-      expect(html).toContain("base64,");
-      expect(html).toContain("filter: blur(");
-      expect(html).toContain("z-index: -1");
-    });
-
-    it("should keep original img tag untouched (no added attributes)", () => {
-      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
-
-      // Check that img tag is unchanged
-      const imgMatch = html.match(/<img[^>]*>/);
-      expect(imgMatch).toBeTruthy(); // TODO: better match
-    });
-
-    it("should show image optimization stats in build output", () => {
-      // Only check if the test image exists (it might not in CI)
-      if (fs.existsSync(path.join(distDir, "test-image.jpg"))) {
-        expect(buildOutput).toMatch(
-          /\[Routerino Forge\].*Optimized \d+ images? \([0-9.]+MB total, [0-9.]+KB placeholders, [0-9.]+% reduction\)/
-        );
-      }
-    });
-
-    it("should create valid base64 data URLs", () => {
-      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
-
-      // Extract the base64 data URL
-      const base64Match = html.match(
-        /data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+=*)/
+  describe("Build Output Messages", () => {
+    it("should show Image component processing stats in build output", () => {
+      expect(buildOutput).toMatch(
+        /\[Routerino Image\].*Processed \d+ <Image> components/
       );
-
-      if (base64Match) {
-        expect(base64Match).toBeTruthy();
-        expect(base64Match[1]).toMatch(/^(jpeg|png)$/);
-
-        // Check that base64 string is valid (divisible by 4 when padded)
-        const base64String = base64Match[2];
-        expect(base64String.length % 4).toBe(0);
-      }
-    });
-
-    it("should preserve original image source", () => {
-      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
-
-      // Should still have the original src attribute
-      expect(html).toContain('src="/test-image.jpg"');
-
-      // Should not have data-src (we're not doing that approach)
-      expect(html).not.toContain("data-src=");
-    });
-
-    it("should use ffmpeg for image processing", () => {
-      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
-
-      // Check for placeholder image in the HTML
-      // With ffmpeg, placeholders are PNG format
-      const pngPlaceholder = html.match(/data:image\/png;base64,([^'"]*)/);
-
-      // Should have PNG placeholder (ffmpeg is required)
-      expect(pngPlaceholder).toBeTruthy();
-
-      if (pngPlaceholder) {
-        // Verify PNG format
-        const base64Data = pngPlaceholder[1];
-        expect(() => Buffer.from(base64Data, "base64")).not.toThrow();
-
-        const decoded = Buffer.from(base64Data, "base64");
-        // PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
-        expect(decoded[0]).toBe(0x89);
-        expect(decoded[1]).toBe(0x50); // 'P'
-        expect(decoded[2]).toBe(0x4e); // 'N'
-        expect(decoded[3]).toBe(0x47); // 'G'
-      }
     });
   });
 });
