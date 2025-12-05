@@ -24,9 +24,9 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
   - [useRouterino Hook](#using-the-userouterino-hook)
   - [updateHeadTag](#updateheadtag)
 - [Image Component](#image-component)
-  - [Lighthouse 100/100 Optimization](#lighthouse-100100-optimization)
+  - [Optimization](#optimization)
   - [Image Props](#image-props)
-  - [Usage Examples](#image-usage-examples)
+  - [Image Usage Examples](#image-usage-examples)
 - [TypeScript Support](#typescript-support)
 - [Best Practices](#routerino-best-practices)
 - [Generating a Sitemap](#generating-a-sitemap-from-routes)
@@ -447,11 +447,11 @@ See [HeadTag props](#headtag-props) for arguments and some common tag attributes
 
 ## Image Component
 
-Routerino includes a an optimized Image component that automatically generates responsive images with WebP format, Low Quality Image Placeholders (LQIP), and perfect loading attributes. No configuration required - it works out of the box!
+Routerino includes an optimized Image component that automatically generates responsive images with WebP format, Low Quality Image Placeholders (LQIP), and smart loading attributes. No configuration required - it works out of the box!
 
 ### Optimization
 
-The Image component is designed to get perfect Lighthouse scores with no configuration:
+The Image component provides powerful performance optimizations with no configuration:
 
 - Responsive Images: Automatic generation of multiple sizes (480, 800, 1200, 1920px), configurable if needed
 - Modern Formats: WebP with fallback for maximum compatibility
