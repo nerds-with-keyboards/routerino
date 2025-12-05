@@ -425,7 +425,7 @@ describe("Routerino Forge Build Output", () => {
       expect(imgTag).toContain('src="/test-image.jpg"');
       expect(imgTag).toContain('alt="Test Image"');
       expect(imgTag).toContain('loading="eager"'); // Priority detected
-      expect(imgTag).toContain('fetchpriority="high"');
+      expect(imgTag).toContain('fetchPriority="high"');
       expect(imgTag).toContain('style="opacity: 0"'); // Prevent flash
     });
 
