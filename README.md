@@ -23,6 +23,10 @@ Routerino is a zero-dependency router for React designed for optimal SEO perform
   - [Props](#props-arguments)
   - [useRouterino Hook](#using-the-userouterino-hook)
   - [updateHeadTag](#updateheadtag)
+- [Image Component](#image-component)
+  - [Optimization](#optimization)
+  - [Image Props](#image-props)
+  - [Image Usage Examples](#image-usage-examples)
 - [TypeScript Support](#typescript-support)
 - [Best Practices](#routerino-best-practices)
 - [Generating a Sitemap](#generating-a-sitemap-from-routes)
@@ -82,7 +86,7 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
   - Generate static HTML files for each route with proper meta tags
   - Implement SEO best practices out-of-the-box
   - Optimize for Googlebot with pre-rendering support
-  - Automatic image optimization with blur placeholders
+  - Image Component: Optimized images with automatic responsive generation, WebP format, and LQIP (Low Quality Image Placeholders)
 
 - Enhanced User Experience
   - Support for sharing and social preview metadata
@@ -440,6 +444,168 @@ Please note that the `updateHeadTag` function requires at least one attribute to
 #### Props
 
 See [HeadTag props](#headtag-props) for arguments and some common tag attributes.
+
+## Image Component
+
+Routerino includes an optimized Image component that automatically generates responsive images with WebP format, Low Quality Image Placeholders (LQIP), and smart loading attributes. No configuration required - it works out of the box!
+
+### Optimization
+
+The Image component provides powerful performance optimizations with no configuration:
+
+- Responsive Images: Automatic generation of multiple sizes (480, 800, 1200, 1920px), configurable if needed
+- Modern Formats: WebP with fallback for maximum compatibility
+- LQIP: Low Quality Image Placeholders prevent layout shift during loading
+- Smart Loading: `lazy` by default, `eager` for hero/LCP images (auto-detected)
+- Performance: `fetchpriority="high"` for above-the-fold images
+- Accessibility: Required `alt` attributes enforced
+
+### Usage
+
+Import the Image component:
+
+```jsx
+import { Image } from "routerino/image";
+```
+
+### Image Props
+
+| Prop            | Type                        | Required | Description                                                |
+| --------------- | --------------------------- | -------- | ---------------------------------------------------------- |
+| `src`           | string                      | ✅       | Image source URL                                           |
+| `alt`           | string                      | ✅       | Alt text for accessibility                                 |
+| `priority`      | boolean                     | ❌       | Override lazy loading for hero/LCP images                  |
+| `widths`        | number[]                    | ❌       | Custom responsive widths (default: [480, 800, 1200, 1920]) |
+| `sizes`         | string                      | ❌       | Responsive sizes attribute (has smart default)             |
+| `className`     | string                      | ❌       | CSS classes (Tailwind/DaisyUI ready)                       |
+| `style`         | object                      | ❌       | Inline styles                                              |
+| `loading`       | "lazy" \| "eager"           | ❌       | Loading behavior (auto-set based on priority)              |
+| `decoding`      | "sync" \| "async" \| "auto" | ❌       | Decode timing (default: "async")                           |
+| `fetchpriority` | "high" \| "low" \| "auto"   | ❌       | Fetch priority (auto-set based on priority)                |
+
+### Image Usage Examples
+
+#### Basic Usage
+
+```jsx
+import { Image } from 'routerino/image';
+
+// Hero image - automatically gets priority
+<Image src="/hero.jpg" alt="Hero banner" className="w-full h-screen object-cover" />
+
+// Regular image - lazy loaded by default
+<Image src="/product.jpg" alt="Amazing product" className="rounded-xl shadow-lg" />
+
+// Explicit priority control
+<Image src="/above-fold.jpg" alt="Important image" priority={true} />
+
+// Custom responsive breakpoints
+<Image
+  src="/gallery.jpg"
+  alt="Gallery image"
+  widths={[320, 640, 1280]}
+  className="w-full"
+/>
+```
+
+#### Generated HTML Output
+
+The Image component generates optimized HTML during static site generation:
+
+```html
+<style>
+  .routerino-img-abc123 {
+    position: relative;
+    display: inline-block;
+    aspect-ratio: 1.5; /* Prevents layout shift */
+  }
+  .routerino-img-abc123::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/png;base64,..."); /* LQIP */
+    background-size: cover;
+    background-position: center;
+    filter: blur(4px);
+    z-index: -1;
+  }
+</style>
+<div class="routerino-img-abc123">
+  <picture>
+    <source
+      srcset="
+        /hero-480w.webp   480w,
+        /hero-800w.webp   800w,
+        /hero-1200w.webp 1200w,
+        /hero-1920w.webp 1920w
+      "
+      type="image/webp"
+      sizes="(max-width: 480px) 100vw, (max-width: 800px) 800px, (max-width: 1200px) 1200px, 1920px"
+    />
+    <img
+      src="/hero.jpg"
+      alt="Hero banner"
+      srcset="
+        /hero-480w.jpg   480w,
+        /hero-800w.jpg   800w,
+        /hero-1200w.jpg 1200w,
+        /hero-1920w.jpg 1920w
+      "
+      sizes="(max-width: 480px) 100vw, (max-width: 800px) 800px, (max-width: 1200px) 1200px, 1920px"
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
+      class="w-full h-screen object-cover"
+      style="opacity: 0"
+    />
+  </picture>
+</div>
+```
+
+#### Smart Priority Detection
+
+The Image component automatically detects hero/LCP images:
+
+```jsx
+// These automatically get priority={true}
+<Image src="/hero.jpg" className="hero" />
+<Image src="/banner.jpg" className="w-full h-screen" />
+<Image src="/hero-background.jpg" />  // Detected by filename
+```
+
+#### Tailwind/DaisyUI Integration
+
+Works perfectly with your favorite CSS frameworks:
+
+```jsx
+<Image
+  src="/photo.jpg"
+  alt="Beautiful photo"
+  className="w-full max-w-md mx-auto rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300"
+/>
+```
+
+### Requirements
+
+- **FFmpeg**: Required for image processing during build
+- **Static Site Generation**: Only works with Routerino Forge SSG
+- **Local Images**: External URLs are not processed
+
+Install FFmpeg:
+
+```sh
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# Windows (via Chocolatey)
+choco install ffmpeg
+```
 
 ## TypeScript Support
 

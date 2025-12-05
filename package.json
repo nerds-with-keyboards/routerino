@@ -1,6 +1,6 @@
 {
   "name": "routerino",
-  "version": "2.2.4",
+  "version": "2.3.0",
   "description": "A lightweight, SEO-optimized React router for modern web applications",
   "repository": {
     "type": "git",
@@ -22,6 +22,7 @@
     "dist",
     "types",
     "routerino-forge.js",
+    "routerino-image.jsx",
     "prerender",
     "docs"
   ],
@@ -36,6 +37,10 @@
     },
     "./forge": {
       "import": "./routerino-forge.js"
+    },
+    "./image": {
+      "types": "./types/routerino.d.ts",
+      "import": "./routerino-image.jsx"
     }
   },
   "scripts": {
