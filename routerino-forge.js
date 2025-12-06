@@ -120,11 +120,13 @@ async function generateResponsiveImages(
       variants: {},
     };
 
-    // Generate responsive variants for each width
-    for (const width of config.widths) {
-      // Skip if image is smaller than target width
-      if (dimensions && dimensions.width < width) continue;
+    // Filter widths to only include those applicable to this image
+    const applicableWidths = config.widths.filter(
+      (width) => !dimensions || dimensions.width >= width
+    );
 
+    // Generate responsive variants for applicable widths only
+    for (const width of applicableWidths) {
       // Generate WebP version in output directory
       const webpPath = path.join(outputDir, `${base}-${width}w.webp`);
       await generateImageVariant(inputPath, webpPath, width, "webp");
