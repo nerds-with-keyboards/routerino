@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2025-12-17
+
+### Fixed
+
+- Image Component: Fixed issue where browser would attempt to load non-existent responsive image variants when using the component outside of SSG or when forge processing failed. The component now only generates srcsets during SSG processing, preventing 404 errors for inapplicable image sizes.
+
 ## [2.3.1] - 2025-12-05
 
 ### Changed
