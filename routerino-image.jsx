@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
 /**
@@ -54,19 +55,45 @@ function generateSrcSet(src, widths, format = null) {
     .join(", ");
 }
 
-export function Image({
-  src,
-  alt,
-  priority,
-  widths = DEFAULT_WIDTHS,
-  sizes = DEFAULT_SIZES,
-  className = "",
-  style = {},
-  loading: explicitLoading,
-  decoding = "async",
-  fetchpriority: explicitFetchPriority,
-  ...rest
-}) {
+export function Image(props) {
+  const {
+    src = "",
+    alt = "",
+    priority,
+    widths = DEFAULT_WIDTHS,
+    sizes = DEFAULT_SIZES,
+    className = "",
+    style = {},
+    loading: explicitLoading,
+    decoding = "async",
+    fetchpriority: explicitFetchPriority,
+    ...rest
+  } = props || {};
+
+  // Detect image dimensions to filter applicable widths
+  const [imageDimensions, setImageDimensions] = useState(null);
+
+  // Skip dimension detection when not needed
+  const shouldDetectDimensions = src && typeof window !== "undefined";
+
+  useEffect(() => {
+    if (!shouldDetectDimensions) return;
+
+    const img = new Image();
+    img.onload = () => {
+      setImageDimensions({
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      });
+    };
+    img.src = src;
+  }, [src, shouldDetectDimensions]);
+
+  // Filter widths to only include applicable ones (image width >= target width)
+  const applicableWidths = imageDimensions
+    ? widths.filter((width) => imageDimensions.width >= width)
+    : widths; // Fallback to all widths during loading
+
   // Smart priority detection if not explicitly set
   const autoPriority = priority ?? shouldUsePriority(src, className);
 
@@ -75,9 +102,9 @@ export function Image({
   const fetchPriority =
     explicitFetchPriority || (autoPriority ? "high" : undefined);
 
-  // Generate srcsets for different formats
-  const srcSetWebP = generateSrcSet(src, widths, "webp");
-  const srcSetOriginal = generateSrcSet(src, widths);
+  // Generate srcsets for different formats using applicable widths only
+  const srcSetWebP = generateSrcSet(src, applicableWidths, "webp");
+  const srcSetOriginal = generateSrcSet(src, applicableWidths);
 
   // For SSG: This will be processed by routerino-forge.js to include LQIP
   // The data-routerino-image attribute signals to the forge to process this
