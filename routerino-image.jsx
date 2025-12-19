@@ -70,6 +70,28 @@ export function Image(props) {
     ...rest
   } = props || {};
 
+  // In development, skip responsive images entirely to avoid 404s
+  const isDevelopment =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
+  if (isDevelopment) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        loading={explicitLoading || "lazy"}
+        decoding={decoding}
+        fetchPriority={explicitFetchPriority}
+        className={className}
+        style={style}
+        {...rest}
+      />
+    );
+  }
+
+  // Production mode: full responsive image functionality
   // Detect image dimensions to filter applicable widths
   const [imageDimensions, setImageDimensions] = useState(null);
 
@@ -94,6 +116,43 @@ export function Image(props) {
     ? widths.filter((width) => imageDimensions.width >= width)
     : widths; // Fallback to all widths during loading
 
+  // Check which responsive variants actually exist at runtime
+  const [availableWidths, setAvailableWidths] = useState(applicableWidths);
+
+  useEffect(() => {
+    const checkAvailableVariants = async () => {
+      if (typeof window === "undefined") {
+        setAvailableWidths(applicableWidths);
+        return;
+      }
+
+      const base = src.replace(/\.(jpe?g|png|webp)$/i, "");
+      const ext = src.match(/\.(jpe?g|png|webp)$/i)?.[0] || ".jpg";
+
+      const existingWidths = [];
+      for (const width of applicableWidths) {
+        const variantUrl = `${base}-${width}w${ext}`;
+        try {
+          const response = await fetch(variantUrl, { method: "HEAD" });
+          if (response.ok) {
+            existingWidths.push(width);
+          }
+        } catch {
+          // Variant doesn't exist, skip it
+        }
+      }
+
+      // Always include at least the smallest width if no variants exist
+      if (existingWidths.length === 0 && applicableWidths.length > 0) {
+        existingWidths.push(Math.min(...applicableWidths));
+      }
+
+      setAvailableWidths(existingWidths);
+    };
+
+    checkAvailableVariants();
+  }, [src, applicableWidths]);
+
   // Smart priority detection if not explicitly set
   const autoPriority = priority ?? shouldUsePriority(src, className);
 
@@ -102,9 +161,9 @@ export function Image(props) {
   const fetchPriority =
     explicitFetchPriority || (autoPriority ? "high" : undefined);
 
-  // Generate srcsets for different formats using applicable widths only
-  const srcSetWebP = generateSrcSet(src, applicableWidths, "webp");
-  const srcSetOriginal = generateSrcSet(src, applicableWidths);
+  // Generate srcsets for different formats using available widths only
+  const srcSetWebP = generateSrcSet(src, availableWidths, "webp");
+  const srcSetOriginal = generateSrcSet(src, availableWidths);
 
   // For SSG: This will be processed by routerino-forge.js to include LQIP
   // The data-routerino-image attribute signals to the forge to process this
