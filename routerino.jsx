@@ -747,5 +747,6 @@ Routerino.propTypes = {
   debug: PropTypes.bool,
 };
 
-// Default export for backward compatibility
+// Convenience exports
+export { Image } from "./routerino-image.jsx";
 export default Routerino;
