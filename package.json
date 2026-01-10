@@ -24,7 +24,8 @@
     "routerino-forge.js",
     "routerino-image.jsx",
     "prerender",
-    "docs"
+    "docs",
+    "bin"
   ],
   "type": "module",
   "types": "types/routerino.d.ts",

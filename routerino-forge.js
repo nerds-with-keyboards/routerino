@@ -24,7 +24,7 @@ const shouldProcessImage = (src) =>
 // Default configuration for Image component processing
 const DEFAULT_IMAGE_CONFIG = {
   widths: [480, 800, 1200, 1920],
-  formats: ["webp"], // WebP is sufficient for Lighthouse 100/100
+  formats: ["webp"],
   placeholderSize: 20,
   blur: 4,
   maxSize: 10485760, // 10MB
@@ -33,7 +33,7 @@ const DEFAULT_IMAGE_CONFIG = {
 };
 
 // Get image dimensions using ffprobe
-function getImageDimensionsWithFfprobe(inputPath) {
+function getImageDimensionsWithFfprobe(inputPath, config) {
   return new Promise((resolve, reject) => {
     const args = [
       "-v",
@@ -47,7 +47,7 @@ function getImageDimensionsWithFfprobe(inputPath) {
       inputPath,
     ];
 
-    const ffprobe = spawn("ffprobe", args);
+    const ffprobe = spawn(config.binaryPaths.ffprobe, args);
 
     let output = "";
     let errorOutput = "";
@@ -103,14 +103,16 @@ async function generateResponsiveImages(
       inputFileName.match(/\.(jpe?g|png)$/i)?.[0] || ".jpg";
 
     // Get dimensions using ffprobe
-    const dimensions = await getImageDimensionsWithFfprobe(inputPath).catch(
-      () => null
-    );
+    const dimensions = await getImageDimensionsWithFfprobe(
+      inputPath,
+      config
+    ).catch(() => null);
 
     // Generate placeholder (LQIP)
     const placeholder = await generatePlaceholder(
       inputPath,
-      config.placeholderSize
+      config.placeholderSize,
+      config
     );
 
     const results = {
@@ -129,7 +131,7 @@ async function generateResponsiveImages(
     for (const width of applicableWidths) {
       // Generate WebP version in output directory
       const webpPath = path.join(outputDir, `${base}-${width}w.webp`);
-      await generateImageVariant(inputPath, webpPath, width, "webp");
+      await generateImageVariant(inputPath, webpPath, width, "webp", config);
 
       // Generate original format version in output directory
       const originalPath = path.join(
@@ -140,7 +142,8 @@ async function generateResponsiveImages(
         inputPath,
         originalPath,
         width,
-        originalExtension.slice(1)
+        originalExtension.slice(1),
+        config
       );
 
       results.variants[width] = {
@@ -162,7 +165,13 @@ async function generateResponsiveImages(
 /**
  * Generate a single image variant at specified width
  */
-async function generateImageVariant(inputPath, outputPath, width, format) {
+async function generateImageVariant(
+  inputPath,
+  outputPath,
+  width,
+  format,
+  config
+) {
   return new Promise((resolve, reject) => {
     // Build ffmpeg command based on format
     const args = ["-i", inputPath, "-vf", `scale=${width}:-2`];
@@ -175,7 +184,7 @@ async function generateImageVariant(inputPath, outputPath, width, format) {
 
     args.push("-y", outputPath); // Overwrite existing files
 
-    const ffmpeg = spawn("ffmpeg", args);
+    const ffmpeg = spawn(config.binaryPaths.ffmpeg, args);
     let errorOutput = "";
 
     ffmpeg.stderr.on("data", (data) => {
@@ -200,7 +209,7 @@ async function generateImageVariant(inputPath, outputPath, width, format) {
 /**
  * Generate LQIP placeholder using ffmpeg
  */
-async function generatePlaceholder(inputPath, targetHeight = 20) {
+async function generatePlaceholder(inputPath, targetHeight = 20, config) {
   return new Promise((resolve, reject) => {
     const args = [
       "-i",
@@ -216,7 +225,7 @@ async function generatePlaceholder(inputPath, targetHeight = 20) {
       "pipe:1",
     ];
 
-    const ffmpeg = spawn("ffmpeg", args);
+    const ffmpeg = spawn(config.binaryPaths.ffmpeg, args);
     let chunks = [];
     let errorOutput = "";
 
@@ -260,7 +269,7 @@ async function getImageCacheKey(imagePath, config = DEFAULT_IMAGE_CONFIG) {
  * Process <Image> components in HTML to add responsive images + LQIP
  * Only processes elements with data-routerino-image="true"
  */
-async function processRouterInoImages(html, outputDir) {
+async function processRouterInoImages(html, outputDir, config) {
   const stats = {
     processed: 0,
     skipped: 0,
@@ -268,6 +277,27 @@ async function processRouterInoImages(html, outputDir) {
     generated: 0,
     errors: [],
   };
+
+  // Lazy binary setup: check if HTML contains Image components and setup binaries if needed
+  const hasImagesInHtml = html.includes('data-routerino-image="true"');
+  if (hasImagesInHtml && !config.binaryPaths) {
+    try {
+      console.log(
+        "[Routerino Forge] Image components found in HTML, setting up binaries..."
+      );
+      const binaryInfo = await ensureBinariesAvailable(config);
+      config.binaryPaths = {
+        ffmpeg: binaryInfo.ffmpegPath,
+        ffprobe: binaryInfo.ffprobePath,
+      };
+      console.log(
+        `[Routerino Forge] Binary setup complete: ${binaryInfo.type}${binaryInfo.type === "bundled" ? ` (${binaryInfo.platformKey})` : ""}`
+      );
+    } catch (error) {
+      console.error("[Routerino Forge] Binary setup failed:", error.message);
+      throw new Error(`Cannot process images: ${error.message}`);
+    }
+  }
 
   // Ensure cache directory exists
   const cacheDir = path.resolve(DEFAULT_IMAGE_CONFIG.cacheDir);
@@ -326,7 +356,10 @@ async function processRouterInoImages(html, outputDir) {
         imageData = cached;
       } catch {
         // Generate responsive images + placeholder
-        imageData = await generateResponsiveImages(imagePath, outputDir);
+        imageData = await generateResponsiveImages(imagePath, outputDir, {
+          ...DEFAULT_IMAGE_CONFIG,
+          ...config,
+        });
 
         if (!imageData) {
           stats.skipped++;
@@ -451,6 +484,7 @@ export function routerinoForge(options = {}) {
     useTrailingSlash: options.useTrailingSlash ?? true, // Default to trailing slashes
     ssgCacheDir:
       options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
+    preferBundledBinaries: options.preferBundledBinaries ?? false, // Prefer bundled ffmpeg/ffprobe over system
   };
 
   // Normalize baseUrl: strip trailing slashes to ensure correct canonical composition
@@ -1279,6 +1313,131 @@ Sitemap: ${config.baseUrl}/sitemap.xml`;
       console.log(`[Routerino Forge] Output: ${robotsPath}`);
     }
   }
+}
+
+// Binary fallback system for ffmpeg/ffprobe
+function getPlatformKey() {
+  const platform = process.platform; // linux, darwin, win32
+  const arch = process.arch; // x64, arm64, arm
+
+  const mappings = {
+    "linux-x64": "linux-64",
+    "linux-arm64": "linux-arm-64",
+    "darwin-x64": "macos-64",
+    "win32-x64": "win-64",
+  };
+
+  const key = `${platform}-${arch}`;
+  return mappings[key] || key;
+}
+
+async function testBinary(binaryPath) {
+  return new Promise((resolve) => {
+    const test = spawn(binaryPath, ["-version"], { stdio: "ignore" });
+    test.on("close", (code) => resolve(code === 0));
+    test.on("error", () => resolve(false));
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      test.kill();
+      resolve(false);
+    }, 5000);
+  });
+}
+
+async function extractZip(zipPath, destDir) {
+  const { execSync } = await import("child_process");
+  await fs.mkdir(destDir, { recursive: true });
+
+  try {
+    // Use unzip command (available on most systems)
+    execSync(`unzip -q -o "${zipPath}" -d "${destDir}"`, { stdio: "ignore" });
+  } catch (error) {
+    throw new Error(`Failed to extract ${zipPath}: ${error.message}`);
+  }
+}
+
+async function extractBinariesForPlatform(platformKey) {
+  const binDir = path.join(__dirname, "..", "bin");
+
+  // Check if already extracted
+  const ffmpegPath = path.join(binDir, "ffmpeg", platformKey, "ffmpeg");
+  if (
+    await fs
+      .access(ffmpegPath)
+      .then(() => true)
+      .catch(() => false)
+  ) {
+    return; // Already extracted
+  }
+
+  // Extract ffmpeg
+  const ffmpegZipPath = path.join(
+    __dirname,
+    "..",
+    "bin",
+    `ffmpeg-6.1-${platformKey}.zip`
+  );
+  const ffmpegDir = path.join(binDir, "ffmpeg", platformKey);
+  await extractZip(ffmpegZipPath, ffmpegDir);
+
+  // Extract ffprobe
+  const ffprobeZipPath = path.join(
+    __dirname,
+    "..",
+    "bin",
+    `ffprobe-6.1-${platformKey}.zip`
+  );
+  const ffprobeDir = path.join(binDir, "ffprobe", platformKey);
+  await extractZip(ffprobeZipPath, ffprobeDir);
+
+  // Set executable permissions on Unix systems
+  if (process.platform !== "win32") {
+    const ffprobePath = path.join(ffprobeDir, "ffprobe");
+    await fs.chmod(ffmpegPath, "755");
+    await fs.chmod(ffprobePath, "755");
+  }
+}
+
+async function ensureBinariesAvailable(config) {
+  const platformKey = getPlatformKey();
+
+  // Try system binaries first (unless preferBundledBinaries is true)
+  if (!config.preferBundledBinaries) {
+    if ((await testBinary("ffmpeg")) && (await testBinary("ffprobe"))) {
+      return {
+        type: "system",
+        ffmpegPath: "ffmpeg",
+        ffprobePath: "ffprobe",
+      };
+    }
+  }
+
+  // Extract and test bundled binaries
+  try {
+    await extractBinariesForPlatform(platformKey);
+  } catch (error) {
+    throw new Error(
+      `Failed to extract binaries for ${platformKey}: ${error.message}`
+    );
+  }
+
+  const binDir = path.join(__dirname, "..", "bin");
+  const ffmpegPath = path.join(binDir, "ffmpeg", platformKey, "ffmpeg");
+  const ffprobePath = path.join(binDir, "ffprobe", platformKey, "ffprobe");
+
+  if ((await testBinary(ffmpegPath)) && (await testBinary(ffprobePath))) {
+    return {
+      type: "bundled",
+      platformKey,
+      ffmpegPath,
+      ffprobePath,
+    };
+  }
+
+  throw new Error(
+    `No working ffmpeg/ffprobe binaries found for platform ${platformKey}`
+  );
 }
 
 export default routerinoForge;
