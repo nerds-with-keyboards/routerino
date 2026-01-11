@@ -1317,14 +1317,12 @@ Sitemap: ${config.baseUrl}/sitemap.xml`;
 
 // Binary fallback system for ffmpeg/ffprobe
 function getPlatformKey() {
-  const platform = process.platform; // linux, darwin, win32
-  const arch = process.arch; // x64, arm64, arm
+  const platform = process.platform; // linux
+  const arch = process.arch; // x64, arm64
 
   const mappings = {
     "linux-x64": "linux-64",
     "linux-arm64": "linux-arm-64",
-    "darwin-x64": "macos-64",
-    "win32-x64": "win-64",
   };
 
   const key = `${platform}-${arch}`;
@@ -1391,12 +1389,10 @@ async function extractBinariesForPlatform(platformKey) {
   const ffprobeDir = path.join(binDir, "ffprobe", platformKey);
   await extractZip(ffprobeZipPath, ffprobeDir);
 
-  // Set executable permissions on Unix systems
-  if (process.platform !== "win32") {
-    const ffprobePath = path.join(ffprobeDir, "ffprobe");
-    await fs.chmod(ffmpegPath, "755");
-    await fs.chmod(ffprobePath, "755");
-  }
+  // Set executable permissions
+  const ffprobePath = path.join(ffprobeDir, "ffprobe");
+  await fs.chmod(ffmpegPath, "755");
+  await fs.chmod(ffprobePath, "755");
 }
 
 async function ensureBinariesAvailable(config) {
