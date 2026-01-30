@@ -726,6 +726,7 @@ export function render(url, baseUrl) {
         console.log("[Routerino Forge] Forging SSG bundle...");
         await build({
           root: viteConfig.root,
+          configFile: viteConfig.configFile,
           build: {
             ssr: ssgEntryPath,
             outDir: ssgOutDir,
