@@ -1,6 +1,6 @@
 {
   "name": "routerino",
-  "version": "2.3.4",
+  "version": "2.3.4-rc0",
   "description": "A lightweight, SEO-optimized React router for modern web applications",
   "repository": {
     "type": "git",
