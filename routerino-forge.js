@@ -734,6 +734,7 @@ export function render(url, baseUrl) {
               output: {
                 format: "es",
                 entryFileNames: "entry-server.mjs",
+                manualChunks: () => null,
               },
             },
           },
