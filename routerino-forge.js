@@ -1,6 +1,8 @@
 import fs from "fs/promises";
 import path from "path";
-import { pathToFileURL } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { build } from "vite";
 import crypto from "crypto";
 import { spawn } from "child_process";
@@ -282,20 +284,21 @@ async function processRouterInoImages(html, outputDir, config) {
   const hasImagesInHtml = html.includes('data-routerino-image="true"');
   if (hasImagesInHtml && !config.binaryPaths) {
     try {
-      console.log(
-        "[Routerino Forge] Image components found in HTML, setting up binaries..."
-      );
       const binaryInfo = await ensureBinariesAvailable(config);
       config.binaryPaths = {
         ffmpeg: binaryInfo.ffmpegPath,
         ffprobe: binaryInfo.ffprobePath,
       };
-      console.log(
-        `[Routerino Forge] Binary setup complete: ${binaryInfo.type}${binaryInfo.type === "bundled" ? ` (${binaryInfo.platformKey})` : ""}`
-      );
     } catch (error) {
-      console.error("[Routerino Forge] Binary setup failed:", error.message);
-      throw new Error(`Cannot process images: ${error.message}`);
+      // Warn once and return HTML unmodified — images will still work
+      // using their original src, just without responsive variants or LQIP
+      if (!config._binaryWarningShown) {
+        console.warn(
+          `[Routerino Image] ffmpeg/ffprobe not available, skipping image optimization (${error.message})`
+        );
+        config._binaryWarningShown = true;
+      }
+      return { html, stats };
     }
   }
 
