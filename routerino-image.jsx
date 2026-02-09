@@ -185,6 +185,17 @@ export function Image(props) {
     dimensionProps.height = imageDimensions.height;
   }
 
+  // Protective default styles: ensure width/height HTML attributes act as CLS
+  // hints only, never overriding CSS-driven layouts (Tailwind classes, etc.).
+  // height:auto lets constrained-width images scale proportionally.
+  // max-width:100% prevents images from exceeding their container.
+  // User's style prop is spread last so it can override any default.
+  const imgStyle = {
+    maxWidth: "100%",
+    height: "auto",
+    ...style,
+  };
+
   // --- Render paths (after all hooks) ---
 
   // In development, skip responsive images entirely to avoid 404s
@@ -197,7 +208,7 @@ export function Image(props) {
         decoding={decoding}
         fetchPriority={fetchPriority}
         className={className}
-        style={style}
+        style={imgStyle}
         {...dimensionProps}
         {...rest}
       />
@@ -222,7 +233,7 @@ export function Image(props) {
           decoding="async"
           fetchPriority={fetchPriority}
           className={className}
-          style={style}
+          style={imgStyle}
           {...dimensionProps}
           {...rest}
         />
@@ -246,7 +257,7 @@ export function Image(props) {
         decoding={decoding}
         fetchPriority={fetchPriority}
         className={className}
-        style={style}
+        style={imgStyle}
         {...dimensionProps}
         {...rest}
       />

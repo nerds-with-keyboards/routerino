@@ -439,7 +439,13 @@ async function processRouterInoImages(html, outputDir, config) {
 }
 
 /**
- * Transform a picture element to include LQIP background and update srcsets
+ * Transform a picture element to include LQIP background and update srcsets.
+ *
+ * The LQIP placeholder is applied as a background-image on the <picture>
+ * element itself, with the blurred placeholder visible behind the <img>.
+ * No wrapper div or <style> block is injected — only inline styles on the
+ * existing <picture> and <img> elements — so the DOM structure matches what
+ * the React Image component renders on the client, avoiding hydration mismatches.
  */
 async function transformPictureWithLQIP(
   pictureHTML,
@@ -447,38 +453,33 @@ async function transformPictureWithLQIP(
   imageData,
   config
 ) {
-  // Create unique class for LQIP styling
-  const uniqueClass = `routerino-img-${Math.random().toString(36).substring(2, 11)}`;
-
-  // LQIP background styles
-  const lqipStyle = `
-    .${uniqueClass} {
-      position: relative;
-      display: block;
-      max-width: 100%;
-    }
-    .${uniqueClass} img {
-      ${imageData.width && imageData.height ? `aspect-ratio: ${imageData.width / imageData.height};` : ""}
-      max-width: 100%;
-      height: auto;
-      width: auto;
-    }
-    .${uniqueClass}::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-image: url('${imageData.placeholder}');
-      background-size: cover;
-      background-position: center;
-      filter: blur(${config.blur}px);
-      z-index: -1;
-      ${imageData.width && imageData.height ? `aspect-ratio: ${imageData.width / imageData.height};` : ""}
-    }
-  `;
-
-  // Update srcsets to point to generated responsive images
   let updatedPicture = pictureHTML;
 
+  // Build LQIP inline styles for the <picture> element
+  const pictureStyles = [
+    "display:block",
+    `background-image:url('${imageData.placeholder}')`,
+    "background-size:cover",
+    "background-position:center",
+    `filter:blur(${config.blur}px)`,
+  ];
+
+  // Add LQIP styles to the <picture> element
+  updatedPicture = updatedPicture.replace(
+    /(<picture)([^>]*>)/i,
+    (match, tag, rest) => {
+      if (rest.includes("style=")) {
+        // Append to existing style
+        return match.replace(
+          /style=["']([^"']*)/i,
+          `style="${pictureStyles.join(";")};$1`
+        );
+      }
+      return `${tag} style="${pictureStyles.join(";")}"${rest}`;
+    }
+  );
+
+  // Update srcsets to point to generated responsive images
   // Update WebP source srcset using actual generated paths
   const webpSrcSet = Object.entries(imageData.variants)
     .map(([width, paths]) => `${paths.webp} ${width}w`)
@@ -508,7 +509,7 @@ async function transformPictureWithLQIP(
     );
   }
 
-  // Add opacity: 0 and width/height attributes to img tag for CLS prevention
+  // Add width/height attributes and ensure protective styles on <img>
   updatedPicture = updatedPicture.replace(
     /<img([^>]*?)\/?>/i,
     (match, attributes) => {
@@ -530,22 +531,11 @@ async function transformPictureWithLQIP(
         }
       }
 
-      // Add opacity: 0 to existing style or create new style attribute
-      if (attributes.includes("style=")) {
-        newMatch = newMatch.replace(
-          /style=["']([^"']*)/i,
-          'style="opacity: 0; $1'
-        );
-      } else {
-        newMatch = newMatch.replace("<img", '<img style="opacity: 0"');
-      }
-
       return newMatch;
     }
   );
 
-  // Wrap the picture in a div with LQIP styling
-  return `<style>${lqipStyle}</style><div class="${uniqueClass}">${updatedPicture}</div>`;
+  return updatedPicture;
 }
 
 export function routerinoForge(options = {}) {
