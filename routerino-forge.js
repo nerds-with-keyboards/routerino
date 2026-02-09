@@ -1358,7 +1358,7 @@ async function extractZip(zipPath, destDir) {
 }
 
 async function extractBinariesForPlatform(platformKey) {
-  const binDir = path.join(__dirname, "..", "bin");
+  const binDir = path.join(__dirname, "bin");
 
   // Check if already extracted
   const ffmpegPath = path.join(binDir, "ffmpeg", platformKey, "ffmpeg");
@@ -1374,7 +1374,6 @@ async function extractBinariesForPlatform(platformKey) {
   // Extract ffmpeg
   const ffmpegZipPath = path.join(
     __dirname,
-    "..",
     "bin",
     `ffmpeg-6.1-${platformKey}.zip`
   );
@@ -1384,7 +1383,6 @@ async function extractBinariesForPlatform(platformKey) {
   // Extract ffprobe
   const ffprobeZipPath = path.join(
     __dirname,
-    "..",
     "bin",
     `ffprobe-6.1-${platformKey}.zip`
   );
@@ -1420,7 +1418,7 @@ async function ensureBinariesAvailable(config) {
     );
   }
 
-  const binDir = path.join(__dirname, "..", "bin");
+  const binDir = path.join(__dirname, "bin");
   const ffmpegPath = path.join(binDir, "ffmpeg", platformKey, "ffmpeg");
   const ffprobePath = path.join(binDir, "ffprobe", platformKey, "ffprobe");
 
