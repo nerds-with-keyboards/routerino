@@ -129,8 +129,7 @@ function extractParams({ routePattern, currentRoute }) {
  * ```jsx
  * <ErrorBoundary
  *   fallback={<div>Something went wrong</div>}
- *   errorTitleString="Error | My Site"
- *   usePrerenderTags={true}
+ *   errorTitleString="Application Error: unable to render page"
  * >
  *   <MyComponent />
  * </ErrorBoundary>
@@ -228,7 +227,7 @@ export function Routerino({
   touchIconUrl = null,
   debug = false,
 }) {
-  // Pre-compute title strings
+  // Compute title strings
   const errorTitleString = `${errorTitle}${separator}${title}`;
   const notFoundTitleString = `${notFoundTitle}${separator}${title}`;
   try {

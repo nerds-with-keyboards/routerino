@@ -119,8 +119,8 @@ async function generateResponsiveImages(
 
     const results = {
       placeholder,
-      width: dimensions?.width || 0,
-      height: dimensions?.height || 0,
+      width: dimensions?.width ?? null,
+      height: dimensions?.height ?? null,
       variants: {},
     };
 
