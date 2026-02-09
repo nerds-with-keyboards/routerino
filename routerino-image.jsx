@@ -76,8 +76,19 @@ export function Image(props) {
   } = props || {};
 
   const isServer = typeof window === "undefined";
-  const isDevelopment =
+
+  // Detect real browser dev environment vs SSG with a mocked window.
+  // During SSG, routerino-forge mocks `window` with hostname "localhost",
+  // but its `document.createElement` returns plain objects, not real DOM nodes.
+  // Checking `instanceof HTMLElement` distinguishes a real browser from a mock.
+  const isRealBrowser =
     !isServer &&
+    typeof document !== "undefined" &&
+    typeof HTMLElement !== "undefined" &&
+    document.createElement("div") instanceof HTMLElement;
+
+  const isDevelopment =
+    isRealBrowser &&
     (window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1");
 
@@ -95,7 +106,7 @@ export function Image(props) {
   const [imageDimensions, setImageDimensions] = useState(null);
 
   useEffect(() => {
-    if (isServer || isDevelopment || !src) return;
+    if (!isRealBrowser || isDevelopment || !src) return;
 
     const img = new window.Image();
     img.onload = () => {
@@ -105,7 +116,7 @@ export function Image(props) {
       });
     };
     img.src = src;
-  }, [src, isServer, isDevelopment]);
+  }, [src, isRealBrowser, isDevelopment]);
 
   // Memoize applicableWidths so the reference is stable and doesn't
   // cause the downstream useEffect to re-run on every render
@@ -118,7 +129,7 @@ export function Image(props) {
   const [availableWidths, setAvailableWidths] = useState(null);
 
   useEffect(() => {
-    if (isServer || isDevelopment) return;
+    if (!isRealBrowser || isDevelopment) return;
 
     let cancelled = false;
 
@@ -160,7 +171,7 @@ export function Image(props) {
     return () => {
       cancelled = true;
     };
-  }, [src, applicableWidths, isServer, isDevelopment]);
+  }, [src, applicableWidths, isRealBrowser, isDevelopment]);
 
   // Resolve final widths: use availableWidths once known, else applicableWidths
   const finalWidths = availableWidths ?? applicableWidths;
