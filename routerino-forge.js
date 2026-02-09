@@ -105,10 +105,16 @@ async function generateResponsiveImages(
       inputFileName.match(/\.(jpe?g|png)$/i)?.[0] || ".jpg";
 
     // Get dimensions using ffprobe
-    const dimensions = await getImageDimensionsWithFfprobe(
-      inputPath,
-      config
-    ).catch(() => null);
+    let dimensions = null;
+    try {
+      dimensions = await getImageDimensionsWithFfprobe(inputPath, config);
+    } catch (error) {
+      if (config.verbose) {
+        console.warn(
+          `[Routerino Image] Failed to get dimensions for ${inputPath}: ${error.message}`
+        );
+      }
+    }
 
     // Generate placeholder (LQIP)
     const placeholder = await generatePlaceholder(
@@ -116,6 +122,22 @@ async function generateResponsiveImages(
       config.placeholderSize,
       config
     );
+
+    // Validate dimensions and log issues
+    if (dimensions) {
+      if (dimensions.width <= 0 || dimensions.height <= 0) {
+        if (config.verbose) {
+          console.warn(
+            `[Routerino Image] Invalid dimensions for ${inputPath}: ${dimensions.width}x${dimensions.height}`
+          );
+        }
+        dimensions = null;
+      } else if (config.verbose) {
+        console.log(
+          `[Routerino Image] Detected dimensions for ${inputPath}: ${dimensions.width}x${dimensions.height}`
+        );
+      }
+    }
 
     const results = {
       placeholder,
@@ -125,9 +147,20 @@ async function generateResponsiveImages(
     };
 
     // Filter widths to only include those applicable to this image
-    const applicableWidths = config.widths.filter(
-      (width) => !dimensions || dimensions.width >= width
-    );
+    // Prevent upscaling by only generating widths that don't exceed the original
+    const applicableWidths = dimensions
+      ? config.widths.filter((width) => width <= dimensions.width)
+      : config.widths; // Fallback: generate all widths if dimensions unknown
+
+    if (dimensions && applicableWidths.length === 0) {
+      if (config.verbose) {
+        console.warn(
+          `[Routerino Image] Original image ${inputPath} (${dimensions.width}px) is smaller than the smallest configured width (${config.widths[0]}px)`
+        );
+      }
+      // Add the original width as a variant to prevent complete failure
+      applicableWidths.push(dimensions.width);
+    }
 
     // Generate responsive variants for applicable widths only
     for (const width of applicableWidths) {
@@ -337,6 +370,11 @@ async function processRouterInoImages(html, outputDir, config) {
         fileStats.size < DEFAULT_IMAGE_CONFIG.minSize ||
         fileStats.size > DEFAULT_IMAGE_CONFIG.maxSize
       ) {
+        if (config.verbose) {
+          console.warn(
+            `[Routerino Image] Skipping ${originalSrc}: size ${fileStats.size} bytes (min: ${DEFAULT_IMAGE_CONFIG.minSize}, max: ${DEFAULT_IMAGE_CONFIG.maxSize})`
+          );
+        }
         stats.skipped++;
         continue;
       }
@@ -365,6 +403,11 @@ async function processRouterInoImages(html, outputDir, config) {
         });
 
         if (!imageData) {
+          if (config.verbose) {
+            console.warn(
+              `[Routerino Image] Failed to process ${originalSrc}: no image data returned`
+            );
+          }
           stats.skipped++;
           continue;
         }
@@ -411,8 +454,14 @@ async function transformPictureWithLQIP(
   const lqipStyle = `
     .${uniqueClass} {
       position: relative;
-      display: inline-block;
+      display: block;
+      max-width: 100%;
+    }
+    .${uniqueClass} img {
       ${imageData.width && imageData.height ? `aspect-ratio: ${imageData.width / imageData.height};` : ""}
+      max-width: 100%;
+      height: auto;
+      width: auto;
     }
     .${uniqueClass}::before {
       content: '';
@@ -423,6 +472,7 @@ async function transformPictureWithLQIP(
       background-position: center;
       filter: blur(${config.blur}px);
       z-index: -1;
+      ${imageData.width && imageData.height ? `aspect-ratio: ${imageData.width / imageData.height};` : ""}
     }
   `;
 
@@ -458,16 +508,39 @@ async function transformPictureWithLQIP(
     );
   }
 
-  // Add opacity: 0 to img tag
+  // Add opacity: 0 and width/height attributes to img tag for CLS prevention
   updatedPicture = updatedPicture.replace(
     /<img([^>]*?)\/?>/i,
     (match, attributes) => {
+      let newMatch = match;
+
+      // Add width/height attributes if dimensions are available and not already present
+      if (imageData.width && imageData.height) {
+        if (!attributes.includes("width=")) {
+          newMatch = newMatch.replace(
+            "<img",
+            `<img width="${imageData.width}"`
+          );
+        }
+        if (!attributes.includes("height=")) {
+          newMatch = newMatch.replace(
+            "<img",
+            `<img height="${imageData.height}"`
+          );
+        }
+      }
+
       // Add opacity: 0 to existing style or create new style attribute
       if (attributes.includes("style=")) {
-        return match.replace(/style=["']([^"']*)/i, 'style="opacity: 0; $1');
+        newMatch = newMatch.replace(
+          /style=["']([^"']*)/i,
+          'style="opacity: 0; $1'
+        );
       } else {
-        return `<img${attributes} style="opacity: 0"/>`;
+        newMatch = newMatch.replace("<img", '<img style="opacity: 0"');
       }
+
+      return newMatch;
     }
   );
 
