@@ -1,8 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { fileURLToPath, pathToFileURL } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { pathToFileURL } from "url";
 import { build } from "vite";
 import crypto from "crypto";
 import { spawn } from "child_process";
@@ -317,17 +315,17 @@ async function processRouterInoImages(html, outputDir, config) {
   const hasImagesInHtml = html.includes('data-routerino-image="true"');
   if (hasImagesInHtml && !config.binaryPaths) {
     try {
-      const binaryInfo = await ensureBinariesAvailable(config);
+      const binaryInfo = await ensureBinariesAvailable();
       config.binaryPaths = {
         ffmpeg: binaryInfo.ffmpegPath,
         ffprobe: binaryInfo.ffprobePath,
       };
-    } catch (error) {
+    } catch {
       // Warn once and return HTML unmodified — images will still work
       // using their original src, just without responsive variants or LQIP
       if (!config._binaryWarningShown) {
         console.warn(
-          `[Routerino Image] ffmpeg/ffprobe not available, skipping image optimization (${error.message})`
+          `[Routerino Image] ffmpeg/ffprobe not available, skipping image optimization. Install ffmpeg to enable: https://ffmpeg.org/download.html`
         );
         config._binaryWarningShown = true;
       }
@@ -550,7 +548,6 @@ export function routerinoForge(options = {}) {
     useTrailingSlash: options.useTrailingSlash ?? true, // Default to trailing slashes
     ssgCacheDir:
       options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
-    preferBundledBinaries: options.preferBundledBinaries ?? false, // Prefer bundled ffmpeg/ffprobe over system
   };
 
   // Normalize baseUrl: strip trailing slashes to ensure correct canonical composition
@@ -1383,20 +1380,7 @@ Sitemap: ${config.baseUrl}/sitemap.xml`;
   }
 }
 
-// Binary fallback system for ffmpeg/ffprobe
-function getPlatformKey() {
-  const platform = process.platform; // linux
-  const arch = process.arch; // x64, arm64
-
-  const mappings = {
-    "linux-x64": "linux-64",
-    "linux-arm64": "linux-arm-64",
-  };
-
-  const key = `${platform}-${arch}`;
-  return mappings[key] || key;
-}
-
+// Binary availability check for ffmpeg/ffprobe
 async function testBinary(binaryPath) {
   return new Promise((resolve) => {
     const test = spawn(binaryPath, ["-version"], { stdio: "ignore" });
@@ -1411,95 +1395,15 @@ async function testBinary(binaryPath) {
   });
 }
 
-async function extractZip(zipPath, destDir) {
-  const { execSync } = await import("child_process");
-  await fs.mkdir(destDir, { recursive: true });
-
-  try {
-    // Use unzip command (available on most systems)
-    execSync(`unzip -q -o "${zipPath}" -d "${destDir}"`, { stdio: "ignore" });
-  } catch (error) {
-    throw new Error(`Failed to extract ${zipPath}: ${error.message}`);
-  }
-}
-
-async function extractBinariesForPlatform(platformKey) {
-  const binDir = path.join(__dirname, "bin");
-
-  // Check if already extracted
-  const ffmpegPath = path.join(binDir, "ffmpeg", platformKey, "ffmpeg");
-  if (
-    await fs
-      .access(ffmpegPath)
-      .then(() => true)
-      .catch(() => false)
-  ) {
-    return; // Already extracted
-  }
-
-  // Extract ffmpeg
-  const ffmpegZipPath = path.join(
-    __dirname,
-    "bin",
-    `ffmpeg-6.1-${platformKey}.zip`
-  );
-  const ffmpegDir = path.join(binDir, "ffmpeg", platformKey);
-  await extractZip(ffmpegZipPath, ffmpegDir);
-
-  // Extract ffprobe
-  const ffprobeZipPath = path.join(
-    __dirname,
-    "bin",
-    `ffprobe-6.1-${platformKey}.zip`
-  );
-  const ffprobeDir = path.join(binDir, "ffprobe", platformKey);
-  await extractZip(ffprobeZipPath, ffprobeDir);
-
-  // Set executable permissions
-  const ffprobePath = path.join(ffprobeDir, "ffprobe");
-  await fs.chmod(ffmpegPath, "755");
-  await fs.chmod(ffprobePath, "755");
-}
-
-async function ensureBinariesAvailable(config) {
-  const platformKey = getPlatformKey();
-
-  // Try system binaries first (unless preferBundledBinaries is true)
-  if (!config.preferBundledBinaries) {
-    if ((await testBinary("ffmpeg")) && (await testBinary("ffprobe"))) {
-      return {
-        type: "system",
-        ffmpegPath: "ffmpeg",
-        ffprobePath: "ffprobe",
-      };
-    }
-  }
-
-  // Extract and test bundled binaries
-  try {
-    await extractBinariesForPlatform(platformKey);
-  } catch (error) {
-    throw new Error(
-      `Failed to extract binaries for ${platformKey}: ${error.message}`
-    );
-  }
-
-  const binDir = path.join(__dirname, "bin");
-  const ffmpegPath = path.join(binDir, "ffmpeg", platformKey, "ffmpeg");
-  const ffprobePath = path.join(binDir, "ffprobe", platformKey, "ffprobe");
-
-  if ((await testBinary(ffmpegPath)) && (await testBinary(ffprobePath))) {
+async function ensureBinariesAvailable() {
+  if ((await testBinary("ffmpeg")) && (await testBinary("ffprobe"))) {
     return {
-      type: "bundled",
-      platformKey,
-      ffmpegPath,
-      ffprobePath,
+      ffmpegPath: "ffmpeg",
+      ffprobePath: "ffprobe",
     };
   }
 
-  throw new Error(
-    `No working ffmpeg/ffprobe binaries found for platform ${platformKey}`
-  );
+  throw new Error("ffmpeg/ffprobe not found in PATH");
 }
 
 export default routerinoForge;

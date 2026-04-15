@@ -915,11 +915,11 @@ routerinoForge({
 - Smart sizing: Uses aspect-ratio only to prevent layout shift without forcing dimensions
 - Hides images initially with `opacity: 0` to prevent broken image icons during load
 
-**Note:** Image optimization requires `ffmpeg` to be installed. On Linux CI/CD environments, Routerino provides bundled ffmpeg/ffprobe binaries as a fallback when system binaries are not available. On macOS, ffmpeg is commonly available via Homebrew (either installed directly or as a dependency). On Windows, you must install ffmpeg manually. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Debian/Ubuntu), or `choco install ffmpeg` (Windows).
+**Note:** Image optimization requires `ffmpeg` to be installed on your system. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Debian/Ubuntu), or `choco install ffmpeg` (Windows). Without ffmpeg, the Image component still works but falls back to the original image without optimization. A warning is shown during build if ffmpeg is not found but Image components are used.
 
 ##### CI/CD Setup for Image Optimization
 
-Routerino provides bundled ffmpeg binaries for Linux CI/CD environments that don't have ffmpeg pre-installed. For macOS, ffmpeg is typically available via Homebrew. For Windows or other environments without ffmpeg, you'll need to install it manually. Here are examples for setups that require manual installation:
+For CI/CD environments without ffmpeg pre-installed, you'll need to install it as part of your build process. Here are examples:
 
 ###### GitHub Actions
 
