@@ -366,10 +366,13 @@ export function Routerino({
           }
 
           // replicate a browser reload (by scrolling to top)
-          window.scrollTo({
-            top: 0,
-            behavior: "auto",
-          });
+          // skip if href contains a hash to allow hash-based scrolling
+          if (!target.hash) {
+            window.scrollTo({
+              top: 0,
+              behavior: "auto",
+            });
+          }
         } else if (debug) {
           console.debug(
             "%c[Routerino]%c target link does not share an origin, standard browser link handling applies",
