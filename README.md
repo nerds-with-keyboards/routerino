@@ -91,6 +91,7 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
 - Enhanced User Experience
   - Support for sharing and social preview metadata
   - Snappy page transitions with automatic scroll reset, eliminating the jarring experience of landing mid-page when navigating
+  - Hash link support: SPA navigation to `/page#section` correctly scrolls to the target element, mimicking native browser behavior
 
 ## Installation
 
@@ -811,6 +812,20 @@ This creates an engaging Twitter preview with a large image, title, and descript
 - Ensure your site is mobile-friendly and loads quickly for better search engine rankings.
 
 By following these practices, you'll improve your site's SEO performance and social media presence when using Routerino.
+
+### Hash Links
+
+Routerino supports standard `<a href="/page#section">` links for SPA navigation — after React renders the new page, it finds the element with the matching `id` and scrolls it into view.
+
+**Sticky headers**: If your site has a fixed header, use the CSS [`scroll-margin-top`](https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-margin-top) property to offset the scroll target so content isn't hidden behind the header:
+
+```css
+[id] {
+  scroll-margin-top: 80px; /* match your header height */
+}
+```
+
+This works for SPA navigation, native browser hash navigation, and direct page loads — no extra props or router changes needed.
 
 ## Sitemap and robots.txt Generation
 

@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.5] - 2026-04-14
+## [2.4.0] - 2026-05-20
 
 ### Added
 
-- Scroll to hash target after SPA navigation by waiting for React to render, then finding and scrolling the element (or falling back to scroll-to-top if not found)
+- Hash link support: SPA navigation to `/page#section` now waits for React to render, then finds the matching element by `id` and scrolls it into view (falls back to scroll-to-top if not found)
+- README: Documented hash link behavior and `scroll-margin-top` CSS solution for sticky headers
 
 ## [2.3.4] - 2025-12-20
 
