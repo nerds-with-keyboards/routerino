@@ -366,8 +366,19 @@ export function Routerino({
           }
 
           // replicate a browser reload (by scrolling to top)
-          // skip if href contains a hash to allow hash-based scrolling
-          if (!target.hash) {
+          // if the link includes a hash, wait for React to render then
+          // scroll to the target element (or fall back to scrolling to top)
+          if (target.hash) {
+            const id = decodeURIComponent(target.hash.slice(1));
+            setTimeout(() => {
+              const element = document.getElementById(id);
+              if (element) {
+                element.scrollIntoView({ behavior: "auto" });
+              } else {
+                window.scrollTo({ top: 0, behavior: "auto" });
+              }
+            }, 0);
+          } else {
             window.scrollTo({
               top: 0,
               behavior: "auto",

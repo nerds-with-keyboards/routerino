@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.5] - 2026-04-14
 
-### Fixed
+### Added
 
-- Routerino: Skip scroll-to-top on hash links to allow hash-based scrolling (e.g., `/page#section`)
+- Scroll to hash target after SPA navigation by waiting for React to render, then finding and scrolling the element (or falling back to scroll-to-top if not found)
 
 ## [2.3.4] - 2025-12-20
 
