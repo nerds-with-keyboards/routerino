@@ -300,7 +300,9 @@ Default: `false`
 
 ##### `baseUrl`: string;
 
-The base URL to use for canonical tags and og:url meta tags. If not provided, uses `window.location.origin`. This is useful when you want to specify the production URL regardless of the current environment.
+The base URL to use for canonical tags and og:url meta tags. If not provided, uses `window.location.origin`.
+
+This is useful when your site is accessible from multiple domains (for example, both example.com and example.net point to the same app). Set it to the preferred domain and all canonical and og:url tags will consistently point there. Also helpful for pinning to the production URL in development or staging environments.
 
 **Important:** The baseUrl must NOT end with a trailing slash (`/`). Correct example: `"https://example.com"`
 
@@ -716,6 +718,8 @@ With Prerender (SPA):
 ```
 
 You can override the default with `useTrailingSlash={false}` if you prefer URLs without trailing slashes. Either way, Routerino ensures search engines see consistent, canonical URLs.
+
+**Multi-domain deployments**: If your site is served from multiple domains, set `baseUrl` to the preferred domain to keep all canonical and og:url tags pointing to one place. For example, `<Routerino baseUrl="https://example.com" routes={routes} />` ensures search engines see one canonical domain even when the same page is reachable at example.net.
 
 ### Sitemap Generation
 
