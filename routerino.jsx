@@ -129,8 +129,7 @@ function extractParams({ routePattern, currentRoute }) {
  * ```jsx
  * <ErrorBoundary
  *   fallback={<div>Something went wrong</div>}
- *   errorTitleString="Error | My Site"
- *   usePrerenderTags={true}
+ *   errorTitleString="Application Error: unable to render page"
  * >
  *   <MyComponent />
  * </ErrorBoundary>
@@ -228,7 +227,7 @@ export function Routerino({
   touchIconUrl = null,
   debug = false,
 }) {
-  // Pre-compute title strings
+  // Compute title strings
   const errorTitleString = `${errorTitle}${separator}${title}`;
   const notFoundTitleString = `${notFoundTitle}${separator}${title}`;
   try {
@@ -367,10 +366,24 @@ export function Routerino({
           }
 
           // replicate a browser reload (by scrolling to top)
-          window.scrollTo({
-            top: 0,
-            behavior: "auto",
-          });
+          // if the link includes a hash, wait for React to render then
+          // scroll to the target element (or fall back to scrolling to top)
+          if (target.hash) {
+            const id = decodeURIComponent(target.hash.slice(1));
+            setTimeout(() => {
+              const element = document.getElementById(id);
+              if (element) {
+                element.scrollIntoView({ behavior: "auto" });
+              } else {
+                window.scrollTo({ top: 0, behavior: "auto" });
+              }
+            }, 0);
+          } else {
+            window.scrollTo({
+              top: 0,
+              behavior: "auto",
+            });
+          }
         } else if (debug) {
           console.debug(
             "%c[Routerino]%c target link does not share an origin, standard browser link handling applies",

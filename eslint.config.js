@@ -1,6 +1,7 @@
 import globals from "globals";
 import pluginJs from "@eslint/js";
 import pluginReact from "eslint-plugin-react";
+import pluginReactRefresh from "eslint-plugin-react-refresh";
 
 export default [
   { files: ["**/*.{js,mjs,cjs,jsx}"] },
@@ -35,6 +36,22 @@ export default [
     rules: {
       "react/react-in-jsx-scope": "off",
       "react/no-unescaped-entities": ["error", { forbid: [">", "}"] }],
+    },
+  },
+  // Enable Fast Refresh checks globally
+  {
+    plugins: {
+      "react-refresh": pluginReactRefresh,
+    },
+    rules: {
+      "react-refresh/only-export-components": "error",
+    },
+  },
+  // Disable Fast Refresh checks for router files (they need multiple exports for SSG)
+  {
+    files: ["**/routes.jsx", "**/App.jsx", "**/routerino.jsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
     },
   },
   {

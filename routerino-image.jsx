@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 
 /**
@@ -26,6 +26,9 @@ import PropTypes from "prop-types";
 const DEFAULT_WIDTHS = [480, 800, 1200, 1920];
 const DEFAULT_SIZES =
   "(max-width: 480px) 100vw, (max-width: 800px) 800px, (max-width: 1200px) 1200px, 1920px";
+
+// Module-level cache for HEAD request results so remounts don't re-fetch
+const variantCache = new Map();
 
 // Smart priority detection for common patterns
 function shouldUsePriority(src, className = "") {
@@ -64,96 +67,32 @@ export function Image(props) {
     sizes = DEFAULT_SIZES,
     className = "",
     style = {},
+    width: explicitWidth,
+    height: explicitHeight,
     loading: explicitLoading,
     decoding = "async",
     fetchpriority: explicitFetchPriority,
     ...rest
   } = props || {};
 
-  // In development, skip responsive images entirely to avoid 404s
+  const isServer = typeof window === "undefined";
+
+  // Detect real browser dev environment vs SSG with a mocked window.
+  // During SSG, routerino-forge mocks `window` with hostname "localhost",
+  // but its `document.createElement` returns plain objects, not real DOM nodes.
+  // Checking `instanceof HTMLElement` distinguishes a real browser from a mock.
+  const isRealBrowser =
+    !isServer &&
+    typeof document !== "undefined" &&
+    typeof HTMLElement !== "undefined" &&
+    document.createElement("div") instanceof HTMLElement;
+
   const isDevelopment =
-    typeof window !== "undefined" &&
+    isRealBrowser &&
     (window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1");
 
-  if (isDevelopment) {
-    return (
-      <img
-        src={src}
-        alt={alt}
-        loading={explicitLoading || "lazy"}
-        decoding={decoding}
-        fetchPriority={explicitFetchPriority}
-        className={className}
-        style={style}
-        {...rest}
-      />
-    );
-  }
-
-  // Production mode: full responsive image functionality
-  // Detect image dimensions to filter applicable widths
-  const [imageDimensions, setImageDimensions] = useState(null);
-
-  // Skip dimension detection when not needed
-  const shouldDetectDimensions = src && typeof window !== "undefined";
-
-  useEffect(() => {
-    if (!shouldDetectDimensions) return;
-
-    const img = new Image();
-    img.onload = () => {
-      setImageDimensions({
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-      });
-    };
-    img.src = src;
-  }, [src, shouldDetectDimensions]);
-
-  // Filter widths to only include applicable ones (image width >= target width)
-  const applicableWidths = imageDimensions
-    ? widths.filter((width) => imageDimensions.width >= width)
-    : widths; // Fallback to all widths during loading
-
-  // Check which responsive variants actually exist at runtime
-  const [availableWidths, setAvailableWidths] = useState(applicableWidths);
-
-  useEffect(() => {
-    const checkAvailableVariants = async () => {
-      if (typeof window === "undefined") {
-        setAvailableWidths(applicableWidths);
-        return;
-      }
-
-      const base = src.replace(/\.(jpe?g|png|webp)$/i, "");
-      const ext = src.match(/\.(jpe?g|png|webp)$/i)?.[0] || ".jpg";
-
-      const existingWidths = [];
-      for (const width of applicableWidths) {
-        const variantUrl = `${base}-${width}w${ext}`;
-        try {
-          const response = await fetch(variantUrl, { method: "HEAD" });
-          if (response.ok) {
-            existingWidths.push(width);
-          }
-        } catch {
-          // Variant doesn't exist, skip it
-        }
-      }
-
-      // Always include at least the smallest width if no variants exist
-      if (existingWidths.length === 0 && applicableWidths.length > 0) {
-        existingWidths.push(Math.min(...applicableWidths));
-      }
-
-      setAvailableWidths(existingWidths);
-    };
-
-    checkAvailableVariants();
-  }, [src, applicableWidths]);
-
-  // Smart priority detection if not explicitly set
+  // Smart priority detection if not explicitly set (used by all render paths)
   const autoPriority = priority ?? shouldUsePriority(src, className);
 
   // Lighthouse-optimized loading attributes
@@ -161,12 +100,151 @@ export function Image(props) {
   const fetchPriority =
     explicitFetchPriority || (autoPriority ? "high" : undefined);
 
-  // Generate srcsets for different formats using available widths only
-  const srcSetWebP = generateSrcSet(src, availableWidths, "webp");
-  const srcSetOriginal = generateSrcSet(src, availableWidths);
+  // --- All hooks are called unconditionally, before any early returns ---
 
-  // For SSG: This will be processed by routerino-forge.js to include LQIP
-  // The data-routerino-image attribute signals to the forge to process this
+  // Detect natural image dimensions (client-only, production-only)
+  const [imageDimensions, setImageDimensions] = useState(null);
+
+  useEffect(() => {
+    if (!isRealBrowser || isDevelopment || !src) return;
+
+    const img = new window.Image();
+    img.onload = () => {
+      setImageDimensions({
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      });
+    };
+    img.src = src;
+  }, [src, isRealBrowser, isDevelopment]);
+
+  // Memoize applicableWidths so the reference is stable and doesn't
+  // cause the downstream useEffect to re-run on every render
+  const applicableWidths = useMemo(() => {
+    if (!imageDimensions) return widths;
+    return widths.filter((w) => imageDimensions.width >= w);
+  }, [imageDimensions, widths]);
+
+  // Check which responsive variants actually exist at runtime (with caching)
+  const [availableWidths, setAvailableWidths] = useState(null);
+
+  useEffect(() => {
+    if (!isRealBrowser || isDevelopment) return;
+
+    let cancelled = false;
+
+    const checkAvailableVariants = async () => {
+      const base = src.replace(/\.(jpe?g|png|webp)$/i, "");
+      const ext = src.match(/\.(jpe?g|png|webp)$/i)?.[0] || ".jpg";
+
+      const existingWidths = [];
+      for (const width of applicableWidths) {
+        const variantUrl = `${base}-${width}w${ext}`;
+
+        // Check module-level cache first
+        if (variantCache.has(variantUrl)) {
+          if (variantCache.get(variantUrl)) {
+            existingWidths.push(width);
+          }
+          continue;
+        }
+
+        try {
+          const response = await fetch(variantUrl, { method: "HEAD" });
+          variantCache.set(variantUrl, response.ok);
+          if (response.ok) {
+            existingWidths.push(width);
+          }
+        } catch {
+          variantCache.set(variantUrl, false);
+        }
+      }
+
+      if (cancelled) return;
+      setAvailableWidths(
+        existingWidths.length > 0 ? existingWidths : applicableWidths
+      );
+    };
+
+    checkAvailableVariants();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [src, applicableWidths, isRealBrowser, isDevelopment]);
+
+  // Resolve final widths: use availableWidths once known, else applicableWidths
+  const finalWidths = availableWidths ?? applicableWidths;
+
+  // Dimension attributes for CLS prevention
+  const dimensionProps = {};
+  if (explicitWidth != null) dimensionProps.width = explicitWidth;
+  if (explicitHeight != null) dimensionProps.height = explicitHeight;
+  if (imageDimensions && explicitWidth == null && explicitHeight == null) {
+    dimensionProps.width = imageDimensions.width;
+    dimensionProps.height = imageDimensions.height;
+  }
+
+  // Protective default styles: ensure width/height HTML attributes act as CLS
+  // hints only, never overriding CSS-driven layouts (Tailwind classes, etc.).
+  // height:auto lets constrained-width images scale proportionally.
+  // max-width:100% prevents images from exceeding their container.
+  // User's style prop is spread last so it can override any default.
+  const imgStyle = {
+    maxWidth: "100%",
+    height: "auto",
+    ...style,
+  };
+
+  // --- Render paths (after all hooks) ---
+
+  // In development, skip responsive images entirely to avoid 404s
+  if (isDevelopment) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        loading={loading}
+        decoding={decoding}
+        fetchPriority={fetchPriority}
+        className={className}
+        style={imgStyle}
+        {...dimensionProps}
+        {...rest}
+      />
+    );
+  }
+
+  // Server-side render path
+  if (isServer) {
+    return (
+      <picture data-routerino-image="true" data-original-src={src}>
+        <source
+          srcSet={generateSrcSet(src, widths, "webp")}
+          type="image/webp"
+          sizes={sizes}
+        />
+        <img
+          src={src}
+          alt={alt}
+          srcSet={generateSrcSet(src, widths)}
+          sizes={sizes}
+          loading={loading}
+          decoding="async"
+          fetchPriority={fetchPriority}
+          className={className}
+          style={imgStyle}
+          {...dimensionProps}
+          {...rest}
+        />
+      </picture>
+    );
+  }
+
+  // Production client render
+  const srcSetWebP = generateSrcSet(src, finalWidths, "webp");
+  const srcSetOriginal = generateSrcSet(src, finalWidths);
+
   return (
     <picture data-routerino-image="true" data-original-src={src}>
       <source srcSet={srcSetWebP} type="image/webp" sizes={sizes} />
@@ -179,7 +257,8 @@ export function Image(props) {
         decoding={decoding}
         fetchPriority={fetchPriority}
         className={className}
-        style={style}
+        style={imgStyle}
+        {...dimensionProps}
         {...rest}
       />
     </picture>
@@ -201,6 +280,10 @@ Image.propTypes = {
   className: PropTypes.string,
   /** Inline styles */
   style: PropTypes.object,
+  /** Explicit width for CLS prevention */
+  width: PropTypes.number,
+  /** Explicit height for CLS prevention */
+  height: PropTypes.number,
   /** Loading behavior (auto-set based on priority) */
   loading: PropTypes.oneOf(["lazy", "eager"]),
   /** Decode timing */

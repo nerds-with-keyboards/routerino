@@ -91,6 +91,7 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
 - Enhanced User Experience
   - Support for sharing and social preview metadata
   - Snappy page transitions with automatic scroll reset, eliminating the jarring experience of landing mid-page when navigating
+  - Hash link support: SPA navigation to `/page#section` correctly scrolls to the target element, mimicking native browser behavior
 
 ## Installation
 
@@ -812,6 +813,20 @@ This creates an engaging Twitter preview with a large image, title, and descript
 
 By following these practices, you'll improve your site's SEO performance and social media presence when using Routerino.
 
+### Hash Links
+
+Routerino supports standard `<a href="/page#section">` links for SPA navigation — after React renders the new page, it finds the element with the matching `id` and scrolls it into view.
+
+**Sticky headers**: If your site has a fixed header, use the CSS [`scroll-margin-top`](https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-margin-top) property to offset the scroll target so content isn't hidden behind the header:
+
+```css
+[id] {
+  scroll-margin-top: 80px; /* match your header height */
+}
+```
+
+This works for SPA navigation, native browser hash navigation, and direct page loads — no extra props or router changes needed.
+
 ## Sitemap and robots.txt Generation
 
 When using Routerino Forge for static site generation, `sitemap.xml` and `robots.txt` files are automatically generated during the build process:
@@ -915,11 +930,11 @@ routerinoForge({
 - Smart sizing: Uses aspect-ratio only to prevent layout shift without forcing dimensions
 - Hides images initially with `opacity: 0` to prevent broken image icons during load
 
-**Note:** Image optimization requires `ffmpeg` to be installed. Without it, images work normally but without blur placeholders. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Ubuntu), or `choco install ffmpeg` (Windows).
+**Note:** Image optimization requires `ffmpeg` to be installed on your system. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Debian/Ubuntu), or `choco install ffmpeg` (Windows). Without ffmpeg, the Image component still works but falls back to the original image without optimization. A warning is shown during build if ffmpeg is not found but Image components are used.
 
 ##### CI/CD Setup for Image Optimization
 
-To enable image optimization in your CI/CD pipeline, you need to install ffmpeg. Here are examples for the most common setups:
+For CI/CD environments without ffmpeg pre-installed, you'll need to install it as part of your build process. Here are examples:
 
 ###### GitHub Actions
 

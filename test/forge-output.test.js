@@ -400,18 +400,15 @@ describe("Routerino Forge Build Output", () => {
     it("should process <Image> components with LQIP and responsive images", () => {
       const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
 
-      // Check for the Image component wrapper
-      expect(html).toContain('<div class="routerino-img-');
-
-      // Check that LQIP styles are present
-      expect(html).toContain("::before");
-      expect(html).toMatch(/background-image:\s*url\('data:image\/png;base64/);
-      expect(html).toContain("filter: blur(4px)");
-      expect(html).toContain("z-index: -1"); // Background is behind
-      expect(html).toContain("aspect-ratio:"); // Prevent layout shift
+      // LQIP is applied as inline styles on the <picture> element (no wrapper div)
+      expect(html).not.toContain('<div class="routerino-img-');
+      expect(html).toMatch(/background-image:url\('data:image\/png;base64/);
+      expect(html).toMatch(/filter:blur\(4px\)/);
+      expect(html).toMatch(/background-size:cover/);
 
       // Check that picture element is present with data attributes
-      expect(html).toContain('<picture data-routerino-image="true"');
+      // (style attribute may appear before data attributes in the output)
+      expect(html).toContain('data-routerino-image="true"');
       expect(html).toContain('data-original-src="/test-image.jpg"');
 
       // Check for WebP source
@@ -425,8 +422,15 @@ describe("Routerino Forge Build Output", () => {
       expect(imgTag).toContain('src="/test-image.jpg"');
       expect(imgTag).toContain('alt="Test Image"');
       expect(imgTag).toContain('loading="eager"'); // Priority detected
-      expect(imgTag).toContain('fetchPriority="high"');
-      expect(imgTag).toContain('style="opacity: 0"'); // Prevent flash
+      // React SSR renders this as camelCase fetchPriority
+      expect(imgTag).toMatch(/fetch[Pp]riority="high"/);
+
+      // img should have protective default styles from the Image component
+      // (max-width:100%;height:auto) and should NOT have opacity:0
+      expect(imgTag).toMatch(/max-width:\s*100%/);
+      expect(imgTag).toMatch(/height:\s*auto/);
+      expect(imgTag).not.toContain("opacity: 0");
+      expect(imgTag).not.toContain("opacity:0");
     });
 
     it("should generate responsive image files", () => {
