@@ -815,7 +815,7 @@ By following these practices, you'll improve your site's SEO performance and soc
 
 ### Hash Links
 
-Routerino supports standard `<a href="/page#section">` links for SPA navigation — after React renders the new page, it finds the element with the matching `id` and scrolls it into view.
+Routerino supports standard `<a href="/page#section">` links for SPA navigation. After React renders the new page, it finds the element with the matching `id` and scrolls it into view.
 
 **Sticky headers**: If your site has a fixed header, use the CSS [`scroll-margin-top`](https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-margin-top) property to offset the scroll target so content isn't hidden behind the header:
 
