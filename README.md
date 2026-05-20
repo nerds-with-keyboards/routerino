@@ -1,6 +1,6 @@
 # Routerino
 
-> A lightweight, SEO-optimized React router for modern websites and applications
+> A lightweight, SEO-optimized React router & SSG for modern websites and applications
 
 For teams who want SPA simplicity with search-friendly static HTML, Open Graph previews, and **no framework lock-in.**
 
