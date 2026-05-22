@@ -7,6 +7,71 @@ import {
 } from "react";
 import PropTypes from "prop-types";
 
+// File extension skip list
+const SKIPPED_FILE_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".ppt",
+  ".pptx",
+  ".odt",
+  ".ods",
+  ".odp",
+  ".rtf",
+  ".csv",
+  ".txt",
+  ".md",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".svg",
+  ".webp",
+  ".avif",
+  ".ico",
+  ".bmp",
+  ".tiff",
+  ".tif",
+  ".mp4",
+  ".webm",
+  ".ogv",
+  ".mov",
+  ".avi",
+  ".mkv",
+  ".flv",
+  ".mp3",
+  ".wav",
+  ".ogg",
+  ".flac",
+  ".aac",
+  ".m4a",
+  ".wma",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".eot",
+  ".zip",
+  ".tar",
+  ".gz",
+  ".bz2",
+  ".7z",
+  ".rar",
+  ".xz",
+  ".zst",
+  ".epub",
+  ".mobi",
+  ".json",
+  ".xml",
+  ".yml",
+  ".yaml",
+  ".css",
+  ".js",
+  ".map",
+  ".wasm",
+];
+
 // ============================================
 // Context & Hooks
 // ============================================
@@ -61,12 +126,17 @@ export function useRouterino() {
  * @property {string} [media] - The media attribute of the tag
  * @property {string} [hrefLang] - The hrefLang attribute of the tag
  * @property {string} [target] - The target attribute of the tag
+ * @property {string} [innerHTML] - Inner HTML content for tags that require body content (e.g., <script>, <style>)
  */
-export function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
+export function updateHeadTag({
+  tag = "meta",
+  soft = false,
+  innerHTML,
+  ...attrs
+}) {
   // first, get an array of the attribute names
   const attrKeys = Object.keys(attrs);
 
-  // do a quick input check
   if (attrKeys.length < 1) {
     return console.error(
       `[Routerino] updateHeadTag() received no attributes to set for ${tag} tag`
@@ -101,6 +171,11 @@ export function updateHeadTag({ tag = "meta", soft = false, ...attrs }) {
 
   // next, set the tag attributes
   attrKeys.forEach((attr) => tagToUpdate.setAttribute(attr, attrs[attr]));
+
+  // set innerHTML if provided (for tags like <script>, <style>)
+  if (innerHTML !== undefined) {
+    tagToUpdate.innerHTML = innerHTML;
+  }
 
   // finally, append the tag
   document.querySelector("head").appendChild(tagToUpdate);
@@ -226,10 +301,13 @@ export function Routerino({
   imageUrl = null,
   touchIconUrl = null,
   debug = false,
+  ignorePatterns = [],
 }) {
   // Compute title strings
-  const errorTitleString = `${errorTitle}${separator}${title}`;
-  const notFoundTitleString = `${notFoundTitle}${separator}${title}`;
+  const errorTitleString = [errorTitle, title].filter(Boolean).join(separator);
+  const notFoundTitleString = [notFoundTitle, title]
+    .filter(Boolean)
+    .join(separator);
   try {
     // Development-only checks
     if (debug) {
@@ -283,6 +361,36 @@ export function Routerino({
               ""
             );
           }
+          return;
+        }
+
+        // Skip if another handler already prevented this event
+        if (event.defaultPrevented) {
+          return;
+        }
+
+        // Skip non-left clicks (right-click, middle-click, etc.)
+        if (event.button !== 0) {
+          return;
+        }
+
+        // Skip if modifier keys are held (user wants new tab/window)
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+          return;
+        }
+
+        // Skip if link targets a new window/tab
+        if (target.getAttribute("target") === "_blank") {
+          return;
+        }
+
+        // Skip if link has a download attribute
+        if (target.hasAttribute("download")) {
+          return;
+        }
+
+        // Skip if link has rel="external"
+        if (target.getAttribute("rel") === "external") {
           return;
         }
 
@@ -350,6 +458,38 @@ export function Routerino({
         }
         // check for links to be updated without reloading (same origin)
         if (targetUrl && window.location.origin === targetUrl.origin) {
+          // Skip if pathname ends with a non-HTML file extension
+          const pathname = targetUrl.pathname.toLowerCase();
+          if (SKIPPED_FILE_EXTENSIONS.some((ext) => pathname.endsWith(ext))) {
+            if (debug) {
+              console.debug(
+                "%c[Routerino]%c skipping file extension link:",
+                "color: #6b7280; font-weight: bold",
+                "",
+                href
+              );
+            }
+            return;
+          }
+
+          // Skip if href matches any user-configured ignore pattern
+          if (
+            ignorePatterns.length > 0 &&
+            ignorePatterns.some((pattern) =>
+              new RegExp(pattern, "i").test(href)
+            )
+          ) {
+            if (debug) {
+              console.debug(
+                "%c[Routerino]%c skipping ignored link pattern:",
+                "color: #6b7280; font-weight: bold",
+                "",
+                href
+              );
+            }
+            return;
+          }
+
           if (debug) {
             console.debug(
               "%c[Routerino]%c target link is same origin, will use push-state transitioning",
@@ -413,7 +553,7 @@ export function Routerino({
         document.removeEventListener("click", handleClick);
         window.removeEventListener("popstate", handlePopState);
       };
-    }, [href]);
+    }, [href, ignorePatterns]);
 
     // START LOCATING MATCH
     let currentRoute = window?.location?.pathname ?? "/";
@@ -536,19 +676,12 @@ export function Routerino({
     const canonicalUrl = `${baseUrl ?? window?.location?.origin ?? ""}${canonicalPath}`;
 
     // set the title, og:title
-    if (match.title) {
+    if (match.title || title) {
       // calculate the title
-      const fullTitle = `${match.title}${separator}${title}`;
+      const fullTitle = [match.title, title].filter(Boolean).join(separator);
 
       // set the doc title
       document.title = fullTitle;
-
-      // Set canonical URL
-      updateHeadTag({
-        tag: "link",
-        rel: "canonical",
-        href: canonicalUrl,
-      });
 
       // create the og:title IFF user didn't supply their own
       if (!match.tags?.find(({ property }) => property === "og:title")) {
@@ -557,14 +690,21 @@ export function Routerino({
           content: fullTitle,
         });
       }
+    }
 
-      // Set og:url to canonical URL
-      if (!match.tags?.find(({ property }) => property === "og:url")) {
-        updateHeadTag({
-          property: "og:url",
-          content: canonicalUrl,
-        });
-      }
+    // Set canonical URL
+    updateHeadTag({
+      tag: "link",
+      rel: "canonical",
+      href: canonicalUrl,
+    });
+
+    // Set og:url to canonical URL
+    if (!match.tags?.find(({ property }) => property === "og:url")) {
+      updateHeadTag({
+        property: "og:url",
+        content: canonicalUrl,
+      });
     }
 
     // set the description
@@ -758,6 +898,7 @@ Routerino.propTypes = {
   imageUrl: PropTypes.string,
   touchIconUrl: PropTypes.string,
   debug: PropTypes.bool,
+  ignorePatterns: PropTypes.arrayOf(PropTypes.string),
 };
 
 // Convenience exports

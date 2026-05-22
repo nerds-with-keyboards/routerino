@@ -125,6 +125,28 @@ export const routes = [
       { property: "og:type", content: "website" },
       { name: "author", content: "Test Author" },
       { property: "article:published_time", content: "2024-01-15" },
+      {
+        tag: "script",
+        type: "application/ld+json",
+        innerHTML: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Home",
+              item: "https://example.com/",
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "About",
+              item: "https://example.com/about/",
+            },
+          ],
+        }),
+      },
     ],
   },
   {

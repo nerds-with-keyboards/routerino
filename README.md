@@ -129,7 +129,18 @@ export const routes = [
 />;
 ```
 
-Links are just standard HTML anchor tags. No need to use special `<Link>` components—you can use whatever components or design system you like. For example: <a href="/some-page/">a link</a> is perfectly valid. This is very handy for markdown-based content. With standard link support in Routerino, you won't need to [transform your markdown content with custom React components](https://github.com/remarkjs/react-markdown?tab=readme-ov-file#appendix-b-components). Routerino handles same-origin anchor clicks. Cross-origin links and non-HTTP schemes (e.g., mailto:, tel:) are handled by the browser as usual.
+Links are just standard HTML anchor tags. No need to use special `<Link>` components—you can use whatever components or design system you like. For example: <a href="/some-page/">a link</a> is perfectly valid. This is very handy for markdown-based content. With standard link support in Routerino, you won't need to [transform your markdown content with custom React components](https://github.com/remarkjs/react-markdown?tab=readme-ov-file#appendix-b-components).
+
+Routerino handles same-origin anchor clicks via SPA navigation. The browser handles the rest natively, including:
+
+- **Cross-origin links** (different domain)
+- **Non-HTTP schemes** (mailto:, tel:, javascript:, etc.)
+- **Modified clicks** (Ctrl/Cmd+click, Shift+click, Alt+click, right-click)
+- **`target="_blank"`** links
+- **`download`** attribute links
+- **`rel="external"`** links
+- **File extension links** — PDFs, ZIPs, images, fonts, videos, JSON, XML, and 50+ other file types are recognized automatically
+- **Custom patterns** — use the [`ignorePatterns`](#ignorepatterns-string) prop for additional exclusions (e.g., `/api/`, `/legacy/`)
 
 ### Programmatic Navigation
 
@@ -224,6 +235,7 @@ All of these are optional, so it's easy to get started with nothing but a bare-b
 | [imageUrl](#imageurl-string)                   | string          | Default image URL for sharing     | `null`                        |
 | [touchIconUrl](#touchiconurl-string)           | string          | Image URL for PWA homescreen icon | `null`                        |
 | [debug](#debug-boolean)                        | boolean         | Enable debug mode                 | `false`                       |
+| [ignorePatterns](#ignorepatterns-string)       | string[]        | URL patterns to skip SPA routing  | `[]`                          |
 
 ##### `title`: string;
 
@@ -340,6 +352,21 @@ Example debug output:
 
 Default: `false`
 
+##### `ignorePatterns`: string[];
+
+An array of regex pattern strings to match against link hrefs. Any same-origin link matching one of these patterns will **not** be intercepted by the SPA router — the browser will handle the navigation natively instead.
+
+Patterns are tested case-insensitively against the full resolved href (including origin).
+
+```jsx
+// Skip API endpoints and a legacy section
+<Routerino routes={routes} ignorePatterns={["/api/", "/admin/legacy/"]} />
+```
+
+Routerino also has a built-in list of file extensions that are automatically skipped: `.pdf`, `.zip`, `.docx`, `.png`, `.jpg`, `.svg`, `.mp4`, `.json`, `.xml`, `.csv`, `.txt`, `.ico`, `.woff2`, `.woff`, `.ttf`, `.mp3`, `.wav`, `.epub`, `.map`, `.css`, `.js`, `.wasm`, and many more. The `ignorePatterns` prop is for additional custom patterns beyond these defaults.
+
+Default: `[]`
+
 #### RouteConfig props
 
 There is a default RouteConfig that will be loaded if you don't specify any routes. The default route is a basic template that can confirm your app is working and routing is good to go.
@@ -403,6 +430,31 @@ An array of HeadTag objects that can be added to the route to manage meta tags, 
 - `hrefLang` (string): The "hrefLang" attribute of the tag. Specifies the language of the linked resource.
 
 - `target` (string): The "target" attribute of the tag. Defines where to open the linked resource.
+
+- `innerHTML` (string): Inner HTML content for tags that require a closing tag, such as `<script>` and `<style>`. When provided, the tag is rendered as `<tag attrs>innerHTML</tag>` instead of a self-closing element. This enables structured data (JSON-LD), inline CSS, and other tag-body content.
+
+##### Structured Data Example
+
+```jsx
+{
+  path: "/about/",
+  element: <AboutPage />,
+  tags: [{
+    tag: "script",
+    type: "application/ld+json",
+    innerHTML: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://example.com/" },
+        { "@type": "ListItem", "position": 2, "name": "About", "item": "https://example.com/about/" },
+      ],
+    }),
+  }],
+}
+```
+
+This works both at runtime (via `updateHeadTag`) and during static site generation (via the forge plugin).
 
 ### Using the `useRouterino` Hook
 
@@ -812,7 +864,7 @@ This creates an engaging Twitter preview with a large image, title, and descript
 ### Additional SEO Considerations
 
 - Use semantic HTML elements in your components for better content structure.
-- Implement structured data (JSON-LD) where applicable to enhance rich snippets in search results.
+- Implement structured data (JSON-LD) where applicable to enhance rich snippets in search results. Use the `innerHTML` property on a `<script type="application/ld+json">` head tag (see the [Structured Data Example](#structured-data-example) above).
 - Ensure your site is mobile-friendly and loads quickly for better search engine rankings.
 
 By following these practices, you'll improve your site's SEO performance and social media presence when using Routerino.

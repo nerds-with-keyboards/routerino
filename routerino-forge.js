@@ -1229,13 +1229,20 @@ function generateMetaTags(route, config, urlPath) {
   if (route.tags && Array.isArray(route.tags)) {
     route.tags.forEach((tag) => {
       const tagName = tag.tag || "meta";
+      const innerHTML = tag.innerHTML;
       const attrs = Object.entries(tag)
-        .filter(([key]) => key !== "tag" && key !== "soft")
+        .filter(
+          ([key]) => key !== "tag" && key !== "soft" && key !== "innerHTML"
+        )
         .map(([key, value]) => formatMetaAttribute(key, value))
         .join(" ");
 
-      if (attrs) {
-        tags.push(`<${tagName} ${attrs}>`);
+      if (attrs || innerHTML !== undefined) {
+        if (innerHTML !== undefined) {
+          tags.push(`<${tagName} ${attrs}>${innerHTML}</${tagName}>`);
+        } else {
+          tags.push(`<${tagName} ${attrs}>`);
+        }
       }
     });
   }

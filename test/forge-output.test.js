@@ -394,6 +394,19 @@ describe("Routerino Forge Build Output", () => {
         '<meta property="article:published_time" content="2024-01-15">'
       );
     });
+
+    it("should include structured data tags with innerHTML", () => {
+      const html = fs.readFileSync(
+        path.join(distDir, "about", "index.html"),
+        "utf8"
+      );
+
+      expect(html).toContain('<script type="application/ld+json">');
+      expect(html).toContain('"@context":"https://schema.org"');
+      expect(html).toContain('"@type":"BreadcrumbList"');
+      expect(html).toContain('"itemListElement"');
+      expect(html).toContain("</script>");
+    });
   });
 
   describe("Image Component Processing", () => {

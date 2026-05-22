@@ -77,6 +77,95 @@ describe("useRouterino hook", () => {
     expect(metaTag.getAttribute("content")).toBe("value");
   });
 
+  it("should create a tag with innerHTML for structured data", () => {
+    const StructuredDataComponent = () => {
+      const { updateHeadTag } = useRouterino();
+      return (
+        <button
+          onClick={() =>
+            updateHeadTag({
+              tag: "script",
+              type: "application/ld+json",
+              innerHTML: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: "Test Site",
+                url: "https://example.com/",
+              }),
+            })
+          }
+        >
+          Add Structured Data
+        </button>
+      );
+    };
+
+    const routes = [
+      { path: "/test/:id", element: <StructuredDataComponent /> },
+    ];
+
+    render(<Routerino routes={routes} />);
+
+    const button = screen.getByText("Add Structured Data");
+    button.click();
+
+    const scriptTag = document.querySelector(
+      'script[type="application/ld+json"]'
+    );
+    expect(scriptTag).toBeTruthy();
+    const data = JSON.parse(scriptTag.innerHTML);
+    expect(data["@type"]).toBe("WebSite");
+    expect(data.name).toBe("Test Site");
+  });
+
+  it("should respect soft mode when tag with innerHTML already exists", () => {
+    // Pre-create a script tag in the head
+    const existingScript = document.createElement("script");
+    existingScript.type = "application/ld+json";
+    existingScript.innerHTML = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Original",
+    });
+    document.head.appendChild(existingScript);
+
+    const OverwriteComponent = () => {
+      const { updateHeadTag } = useRouterino();
+      return (
+        <button
+          onClick={() =>
+            updateHeadTag({
+              tag: "script",
+              type: "application/ld+json",
+              soft: true,
+              innerHTML: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: "Overwritten",
+              }),
+            })
+          }
+        >
+          Try Overwrite
+        </button>
+      );
+    };
+
+    const routes = [{ path: "/test/:id", element: <OverwriteComponent /> }];
+
+    render(<Routerino routes={routes} />);
+
+    const button = screen.getByText("Try Overwrite");
+    button.click();
+
+    const scriptTags = document.querySelectorAll(
+      'script[type="application/ld+json"]'
+    );
+    expect(scriptTags.length).toBe(1);
+    const data = JSON.parse(scriptTags[0].innerHTML);
+    expect(data.name).toBe("Original");
+  });
+
   it("should throw error when used outside Routerino", () => {
     // Mock console.error to avoid test output noise
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
