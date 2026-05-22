@@ -16,7 +16,9 @@ export interface ImageProps
 }
 
 export interface HeadTag {
+  /** The HTML tag name to update (default: "meta") */
   tag?: string;
+  /** Whether to skip the update of an existing tag if already exists (default: false) */
   soft?: boolean;
   name?: string;
   property?: string;
@@ -32,6 +34,8 @@ export interface HeadTag {
   media?: string;
   hrefLang?: string;
   target?: string;
+  /** Inner HTML content for tags that require body content (e.g., &lt;script&gt;, &lt;style&gt;) */
+  innerHTML?: string;
   [attribute: string]: string | number | boolean | object | undefined;
 }
 
@@ -64,6 +68,14 @@ export interface RouterinoProps {
   imageUrl?: string;
   touchIconUrl?: string;
   debug?: boolean;
+  /**
+   * Array of regex pattern strings to match against link hrefs.
+   * Matching links will NOT be intercepted by the SPA router and
+   * will be handled natively by the browser instead.
+   * Patterns are case-insensitive.
+   * @example ignorePatterns={["/api/", "/admin/legacy/"]}
+   */
+  ignorePatterns?: string[];
 }
 
 export interface ErrorBoundaryProps {

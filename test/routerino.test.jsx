@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Routerino, { useRouterino } from "../routerino.jsx";
 
@@ -166,14 +166,409 @@ describe("Routerino", () => {
     });
   });
 
+  describe("Link Interception Guards", () => {
+    it("does not intercept right-clicks", () => {
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/about">Go to About</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Go to About");
+
+      fireEvent.click(link, { button: 2 });
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept ctrl+click", () => {
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/about">Go to About</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Go to About");
+
+      fireEvent.click(link, { ctrlKey: true });
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept meta+click (cmd+click on Mac)", () => {
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/about">Go to About</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Go to About");
+
+      fireEvent.click(link, { metaKey: true });
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept shift+click", () => {
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/about">Go to About</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Go to About");
+
+      fireEvent.click(link, { shiftKey: true });
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept alt+click", () => {
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/about">Go to About</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Go to About");
+
+      fireEvent.click(link, { altKey: true });
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links with target=_blank", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/about" target="_blank">
+                Go to About
+              </a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Go to About");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links with download attribute", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/files/report.pdf" download>
+                Download
+              </a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Download");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links with rel=external", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/about" rel="external">
+                Go to About
+              </a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Go to About");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links to PDF files", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/files/report.pdf">View PDF</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("View PDF");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links to ZIP files", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/files/archive.zip">Download ZIP</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Download ZIP");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links to image files", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/images/photo.png">View Image</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("View Image");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links to JSON files", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/data/config.json">View JSON</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("View JSON");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links to XML files", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/feeds/rss.xml">RSS Feed</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("RSS Feed");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links to font files", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/fonts/custom.woff2">Font File</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Font File");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links matching ignorePatterns", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/api/users">API Users</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} ignorePatterns={["/api/"]} />);
+      const link = screen.getByText("API Users");
+
+      await user.click(link);
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("does not intercept links matching regex in ignorePatterns", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/docs/some-file.PDF">View PDF (uppercase)</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("View PDF (uppercase)");
+
+      await user.click(link);
+
+      // The built-in SKIPPED_FILE_EXTENSIONS check is case-insensitive
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+
+    it("still intercepts normal same-origin links", async () => {
+      const user = userEvent.setup();
+      const pushStateSpy = vi.spyOn(window.history, "pushState");
+      const routes = [
+        {
+          path: "/",
+          element: (
+            <div>
+              <a href="/about">Go to About</a>
+            </div>
+          ),
+        },
+      ];
+
+      render(<Routerino routes={routes} />);
+      const link = screen.getByText("Go to About");
+
+      await user.click(link);
+
+      expect(pushStateSpy).toHaveBeenCalled();
+      pushStateSpy.mockRestore();
+    });
+  });
+
   describe("Title Management", () => {
-    it("sets document title from route with separator and empty global title", () => {
+    it("sets document title from route title only when global title is empty", () => {
       const routes = [
         { path: "/", element: <div>Home</div>, title: "Home Page" },
       ];
 
       render(<Routerino routes={routes} title="" />);
-      expect(document.title).toBe("Home Page |");
+      expect(document.title).toBe("Home Page");
     });
 
     it("applies separator and global title", () => {
@@ -183,15 +578,36 @@ describe("Routerino", () => {
       expect(document.title).toBe("Home | My Site");
     });
 
-    it("does not update title when route has no title", () => {
+    it("falls back to global title when route has no title", () => {
       const routes = [{ path: "/", element: <div>Home</div> }];
 
-      // Set initial title
+      render(<Routerino routes={routes} title="My Site" />);
+      expect(document.title).toBe("My Site");
+    });
+
+    it("does not update title when neither route nor global title are set", () => {
+      const routes = [{ path: "/", element: <div>Home</div> }];
+
       document.title = "Initial Title";
 
-      render(<Routerino routes={routes} title="My Site" />);
-      // Title should remain unchanged since route has no title
+      render(<Routerino routes={routes} title="" />);
       expect(document.title).toBe("Initial Title");
+    });
+
+    it("omits separator when only route title is set", () => {
+      const routes = [
+        { path: "/", element: <div>Home</div>, title: "About Us" },
+      ];
+
+      render(<Routerino routes={routes} title="" />);
+      expect(document.title).toBe("About Us");
+    });
+
+    it("omits separator when only global title is set", () => {
+      const routes = [{ path: "/", element: <div>Home</div> }];
+
+      render(<Routerino routes={routes} title="My Site" />);
+      expect(document.title).toBe("My Site");
     });
   });
 });

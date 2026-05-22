@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-05-22
+
+### Changed
+
+- Title logic: Separator is now conditionally included in `document.title`. When route title is empty, the global title is used as fallback with no separator. When global title is empty, only the route title is shown without trailing separator. Error/404 pages follow the same rule.
+
+### Added
+
+- SPA click guards: Routerino now skips interception for:
+  - Non-left clicks (right-click, middle-click)
+  - Modified clicks (Ctrl/Cmd+click, Shift+click, Alt+click)
+  - Links with `target="_blank"`
+  - Links with the `download` attribute
+  - Links with `rel="external"`
+  - Events where `defaultPrevented` is already `true`
+- File extension skip list: Same-origin links to common file types (`.pdf`, `.zip`, `.png`, `.jpg`, `.mp4`, `.json`, `.xml`, `.csv`, `.txt`, `.woff2`, `.ttf`, `.epub`, `.wasm`, and many more) are now handled natively by the browser instead of being intercepted by the SPA router
+- `ignorePatterns` prop: New prop accepting an array of regex pattern strings. Any same-origin link whose href matches a pattern will bypass the SPA router and be handled natively by the browser
+- New `ignorePatterns` TypeScript definition
+- New `ignorePatterns` PropTypes validation
+- Comprehensive test coverage for all click guards, file extension skips, and ignore patterns
+- `innerHTML` support in `HeadTag`: New `innerHTML` property enables tags with body content (e.g., `<script type="application/ld+json">`) in both runtime `updateHeadTag` and SSG forge plugin. Enables structured data (JSON-LD), inline styles, and other non-self-closing head tags.
+
 ## [2.4.0] - 2026-05-20
 
 ### Added
