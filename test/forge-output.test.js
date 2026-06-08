@@ -409,55 +409,6 @@ describe("Routerino Forge Build Output", () => {
     });
   });
 
-  describe("Image Component Processing", () => {
-    it("should process <Image> components with LQIP and responsive images", () => {
-      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
-
-      // LQIP is applied as inline styles on the <picture> element (no wrapper div)
-      expect(html).not.toContain('<div class="routerino-img-');
-      expect(html).toMatch(/background-image:url\('data:image\/png;base64/);
-      expect(html).toMatch(/filter:blur\(4px\)/);
-      expect(html).toMatch(/background-size:cover/);
-
-      // Check that picture element is present with data attributes
-      // (style attribute may appear before data attributes in the output)
-      expect(html).toContain('data-routerino-image="true"');
-      expect(html).toContain('data-original-src="/test-image.jpg"');
-
-      // Check for WebP source
-      expect(html).toContain('type="image/webp"');
-      expect(html).toMatch(/srcSet="[^"]*\.webp/);
-
-      // Check that img has priority loading (hero-image class triggers this)
-      const imgMatch = html.match(/<img[^>]*>/);
-      expect(imgMatch).toBeTruthy();
-      const imgTag = imgMatch[0];
-      expect(imgTag).toContain('src="/test-image.jpg"');
-      expect(imgTag).toContain('alt="Test Image"');
-      expect(imgTag).toContain('loading="eager"'); // Priority detected
-      // React SSR renders this as camelCase fetchPriority
-      expect(imgTag).toMatch(/fetch[Pp]riority="high"/);
-
-      // img should have protective default styles from the Image component
-      // (max-width:100%;height:auto) and should NOT have opacity:0
-      expect(imgTag).toMatch(/max-width:\s*100%/);
-      expect(imgTag).toMatch(/height:\s*auto/);
-      expect(imgTag).not.toContain("opacity: 0");
-      expect(imgTag).not.toContain("opacity:0");
-    });
-
-    it("should generate responsive image files", () => {
-      // Check that responsive images were actually generated
-      expect(fs.existsSync(path.join(distDir, "test-image-480w.jpg"))).toBe(
-        true
-      );
-      expect(fs.existsSync(path.join(distDir, "test-image-480w.webp"))).toBe(
-        true
-      );
-      // Note: Other widths may not be generated if original image is smaller
-    });
-  });
-
   describe("HTML Structure", () => {
     it("should maintain proper HTML5 structure", () => {
       const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
@@ -533,16 +484,16 @@ describe("Routerino Forge Build Output", () => {
 
   describe("Build Output Messages", () => {
     it("should correctly count static vs dynamic routes", () => {
-      // Should report 8 routes total (7 static + 1 dynamic)
-      expect(buildOutput).toContain("Found 8 routes (7 static, 1 dynamic)");
+      // Should report 9 routes total (8 static + 1 dynamic)
+      expect(buildOutput).toContain("Found 9 routes (8 static, 1 dynamic)");
 
-      // Should report generating 13 HTML files (7 routes) + 404
+      // Should report generating 15 HTML files (8 routes) + 404
       expect(buildOutput).toContain(
-        "Generated 13 HTML files (7 routes) + 404.html"
+        "Generated 15 HTML files (8 routes) + 404.html"
       );
 
-      // Should report 7 URLs in sitemap (dynamic routes excluded)
-      expect(buildOutput).toContain("Generated sitemap.xml with 7 URLs");
+      // Should report 8 URLs in sitemap (dynamic routes excluded)
+      expect(buildOutput).toContain("Generated sitemap.xml with 8 URLs");
     });
   });
 
@@ -578,11 +529,49 @@ describe("Routerino Forge Build Output", () => {
     });
   });
 
-  describe("Build Output Messages", () => {
-    it("should show Image component processing stats in build output", () => {
-      expect(buildOutput).toMatch(
-        /\[Routerino Image\].*Processed \d+ <Image> components/
+  describe("Non-blocking CSS", () => {
+    it("should transform CSS links to non-blocking by default", () => {
+      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+
+      expect(html).toContain('media="print"');
+      expect(html).toContain("this.media='all'");
+      expect(html).toContain("<noscript><link rel=");
+      expect(html).toContain('<link rel="preload" as="style" href="');
+    });
+
+    it("should preserve non-blocking CSS in nested route pages", () => {
+      const html = fs.readFileSync(
+        path.join(distDir, "about", "index.html"),
+        "utf8"
       );
+
+      expect(html).toContain('media="print"');
+      expect(html).toContain("this.media='all'");
+      expect(html).toContain("<noscript><link rel=");
+    });
+  });
+
+  describe("render() fallback when App component throws", () => {
+    it("should generate HTML for a route whose component throws during SSR", () => {
+      // The /throw/ route has a component that throws in SSR mode.
+      // After the fix, the build should NOT crash and an HTML file
+      // should be generated (falling back to route-only rendering).
+      expect(fs.existsSync(path.join(distDir, "throw.html"))).toBe(true);
+      expect(fs.existsSync(path.join(distDir, "throw", "index.html"))).toBe(
+        true
+      );
+
+      const html = fs.readFileSync(
+        path.join(distDir, "throw", "index.html"),
+        "utf8"
+      );
+
+      // The throwing component renders null/empty on the server,
+      // so the HTML should at minimum contain the page structure
+      expect(html).toContain(
+        "<title>Throwing Page | Routerino Test App</title>"
+      );
+      expect(html).toContain('<div id="root">');
     });
   });
 });

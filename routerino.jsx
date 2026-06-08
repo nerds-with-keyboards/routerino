@@ -134,6 +134,12 @@ export function updateHeadTag({
   innerHTML,
   ...attrs
 }) {
+  // Handle React conventions: map children to innerHTML if passed as a head tag property
+  if (innerHTML === undefined && attrs.children !== undefined) {
+    innerHTML = attrs.children;
+    delete attrs.children;
+  }
+
   // first, get an array of the attribute names
   const attrKeys = Object.keys(attrs);
 
@@ -152,8 +158,10 @@ export function updateHeadTag({
   // 2. iterate to find the first match (while excluding the content attribute)
   for (let i = 0; i < attrKeys.length; i++) {
     if (attrKeys[i] !== "content") {
+      const attrValue = String(attrs[attrKeys[i]]);
+      const escaped = attrValue.replace(/\\/g, "\\\\").replace(/]/g, "\\]");
       tagToUpdate = document.querySelector(
-        `${tag}[${attrKeys[i]}='${attrs[attrKeys[i]]}']`
+        `${tag}[${attrKeys[i]}='${escaped}']`
       );
     }
     if (tagToUpdate) break;
@@ -223,9 +231,9 @@ export class ErrorBoundary extends Component {
       console.group(
         "%c[Routerino]%c Error Boundary Caught an Error",
         "color: #ff6b6b; font-weight: bold",
-        "",
-        error
+        ""
       );
+      console.error(error);
       console.error("[Routerino] Component Stack:", errorInfo.componentStack);
       if (this.props.routePath)
         console.error("[Routerino] Failed Route:", this.props.routePath);
@@ -902,5 +910,5 @@ Routerino.propTypes = {
 };
 
 // Convenience exports
-export { Image } from "./routerino-image.jsx";
+
 export default Routerino;

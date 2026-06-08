@@ -1,6 +1,6 @@
 {
   "name": "routerino",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "A lightweight, SEO-optimized React router for modern web applications",
   "repository": {
     "type": "git",
@@ -22,7 +22,6 @@
     "dist",
     "types",
     "routerino-forge.js",
-    "routerino-image.jsx",
     "prerender",
     "docs"
   ],
@@ -37,10 +36,6 @@
     },
     "./forge": {
       "import": "./routerino-forge.js"
-    },
-    "./image": {
-      "types": "./types/routerino.d.ts",
-      "import": "./routerino-image.jsx"
     }
   },
   "scripts": {
@@ -51,7 +46,7 @@
     "test:integration": "npm run build && npm run test:app",
     "test:react-versions": "node test-react-versions.js",
     "test:node-versions": "node test-node-versions.js",
-    "prepublishOnly": "vite build",
+    "prepublishOnly": "npm run lint && vitest run && vite build",
     "lint": "eslint --fix . --max-warnings=0",
     "lint:fix": "eslint --fix .",
     "fix:entities": "find demo-prerender demo-static -name '*.jsx' -exec sed -i '' 's/\"/{\\\"}/g; s/'\"'\"'/{\\\"'\"'\"'}/g' {} +",

@@ -2,8 +2,6 @@ import fs from "fs/promises";
 import path from "path";
 import { pathToFileURL } from "url";
 import { build } from "vite";
-import crypto from "crypto";
-import { spawn } from "child_process";
 
 /**
  * Routerino Forge - Static Site Generation for React with Vite
@@ -17,527 +15,8 @@ import { spawn } from "child_process";
 const isDynamicRoute = (path) =>
   path.split("/").some((segment) => segment.startsWith(":"));
 
-// Helper to check if an image should be processed
-const shouldProcessImage = (src) =>
-  !src.startsWith("http") && !src.startsWith("data:") && !src.endsWith(".svg");
-
-// Default configuration for Image component processing
-const DEFAULT_IMAGE_CONFIG = {
-  widths: [480, 800, 1200, 1920],
-  formats: ["webp"],
-  placeholderSize: 20,
-  blur: 4,
-  maxSize: 10485760, // 10MB
-  minSize: 1024, // 1KB
-  cacheDir: "node_modules/.cache/routerino-forge",
-};
-
-// Get image dimensions using ffprobe
-function getImageDimensionsWithFfprobe(inputPath, config) {
-  return new Promise((resolve, reject) => {
-    const args = [
-      "-v",
-      "error",
-      "-select_streams",
-      "v:0",
-      "-show_entries",
-      "stream=width,height",
-      "-of",
-      "json",
-      inputPath,
-    ];
-
-    const ffprobe = spawn(config.binaryPaths.ffprobe, args);
-
-    let output = "";
-    let errorOutput = "";
-
-    ffprobe.stdout.on("data", (chunk) => {
-      output += chunk.toString();
-    });
-
-    ffprobe.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-    });
-
-    ffprobe.on("error", (err) => {
-      reject(new Error(`Failed to spawn ffprobe: ${err.message}`));
-    });
-
-    ffprobe.on("close", (code) => {
-      if (code !== 0) {
-        return reject(
-          new Error(`ffprobe exited with code ${code}. Error: ${errorOutput}`)
-        );
-      }
-
-      try {
-        const result = JSON.parse(output);
-        const stream = result.streams?.[0];
-        if (stream?.width && stream?.height) {
-          resolve({ width: stream.width, height: stream.height });
-        } else {
-          reject(new Error("Could not extract dimensions from ffprobe output"));
-        }
-      } catch (error) {
-        reject(new Error(`Failed to parse ffprobe output: ${error.message}`));
-      }
-    });
-  });
-}
-
-/**
- * Generate responsive image variants using ffmpeg
- * Creates WebP versions at multiple widths + LQIP placeholder
- */
-async function generateResponsiveImages(
-  inputPath,
-  outputDir,
-  config = DEFAULT_IMAGE_CONFIG
-) {
-  try {
-    // Get base name for generating variants
-    const inputFileName = path.basename(inputPath);
-    const base = inputFileName.replace(/\.(jpe?g|png)$/i, "");
-    const originalExtension =
-      inputFileName.match(/\.(jpe?g|png)$/i)?.[0] || ".jpg";
-
-    // Get dimensions using ffprobe
-    let dimensions = null;
-    try {
-      dimensions = await getImageDimensionsWithFfprobe(inputPath, config);
-    } catch (error) {
-      if (config.verbose) {
-        console.warn(
-          `[Routerino Image] Failed to get dimensions for ${inputPath}: ${error.message}`
-        );
-      }
-    }
-
-    // Generate placeholder (LQIP)
-    const placeholder = await generatePlaceholder(
-      inputPath,
-      config.placeholderSize,
-      config
-    );
-
-    // Validate dimensions and log issues
-    if (dimensions) {
-      if (dimensions.width <= 0 || dimensions.height <= 0) {
-        if (config.verbose) {
-          console.warn(
-            `[Routerino Image] Invalid dimensions for ${inputPath}: ${dimensions.width}x${dimensions.height}`
-          );
-        }
-        dimensions = null;
-      } else if (config.verbose) {
-        console.log(
-          `[Routerino Image] Detected dimensions for ${inputPath}: ${dimensions.width}x${dimensions.height}`
-        );
-      }
-    }
-
-    const results = {
-      placeholder,
-      width: dimensions?.width ?? null,
-      height: dimensions?.height ?? null,
-      variants: {},
-    };
-
-    // Filter widths to only include those applicable to this image
-    // Prevent upscaling by only generating widths that don't exceed the original
-    const applicableWidths = dimensions
-      ? config.widths.filter((width) => width <= dimensions.width)
-      : config.widths; // Fallback: generate all widths if dimensions unknown
-
-    if (dimensions && applicableWidths.length === 0) {
-      if (config.verbose) {
-        console.warn(
-          `[Routerino Image] Original image ${inputPath} (${dimensions.width}px) is smaller than the smallest configured width (${config.widths[0]}px)`
-        );
-      }
-      // Add the original width as a variant to prevent complete failure
-      applicableWidths.push(dimensions.width);
-    }
-
-    // Generate responsive variants for applicable widths only
-    for (const width of applicableWidths) {
-      // Generate WebP version in output directory
-      const webpPath = path.join(outputDir, `${base}-${width}w.webp`);
-      await generateImageVariant(inputPath, webpPath, width, "webp", config);
-
-      // Generate original format version in output directory
-      const originalPath = path.join(
-        outputDir,
-        `${base}-${width}w${originalExtension}`
-      );
-      await generateImageVariant(
-        inputPath,
-        originalPath,
-        width,
-        originalExtension.slice(1),
-        config
-      );
-
-      results.variants[width] = {
-        webp: `/${base}-${width}w.webp`, // Web-relative paths
-        original: `/${base}-${width}w${originalExtension}`,
-      };
-    }
-
-    return results;
-  } catch (error) {
-    console.warn(
-      `[Routerino Image] Could not process ${inputPath}:`,
-      error.message
-    );
-    return null;
-  }
-}
-
-/**
- * Generate a single image variant at specified width
- */
-async function generateImageVariant(
-  inputPath,
-  outputPath,
-  width,
-  format,
-  config
-) {
-  return new Promise((resolve, reject) => {
-    // Build ffmpeg command based on format
-    const args = ["-i", inputPath, "-vf", `scale=${width}:-2`];
-
-    if (format === "webp") {
-      args.push("-c:v", "libwebp", "-q:v", "80");
-    } else {
-      args.push("-q:v", "2"); // High quality JPEG
-    }
-
-    args.push("-y", outputPath); // Overwrite existing files
-
-    const ffmpeg = spawn(config.binaryPaths.ffmpeg, args);
-    let errorOutput = "";
-
-    ffmpeg.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-    });
-
-    ffmpeg.on("error", (err) => {
-      reject(new Error(`Failed to spawn ffmpeg: ${err.message}`));
-    });
-
-    ffmpeg.on("close", (code) => {
-      if (code !== 0) {
-        return reject(
-          new Error(`ffmpeg exited with code ${code}. Error: ${errorOutput}`)
-        );
-      }
-      resolve(outputPath);
-    });
-  });
-}
-
-/**
- * Generate LQIP placeholder using ffmpeg
- */
-async function generatePlaceholder(inputPath, targetHeight = 20, config) {
-  return new Promise((resolve, reject) => {
-    const args = [
-      "-i",
-      inputPath,
-      "-vf",
-      `scale=-1:${targetHeight}`,
-      "-f",
-      "image2pipe",
-      "-vcodec",
-      "png",
-      "-loglevel",
-      "error",
-      "pipe:1",
-    ];
-
-    const ffmpeg = spawn(config.binaryPaths.ffmpeg, args);
-    let chunks = [];
-    let errorOutput = "";
-
-    ffmpeg.stdout.on("data", (chunk) => chunks.push(chunk));
-    ffmpeg.stderr.on("data", (data) => (errorOutput += data.toString()));
-
-    ffmpeg.on("error", (err) => {
-      reject(new Error(`Failed to spawn ffmpeg: ${err.message}`));
-    });
-
-    ffmpeg.on("close", (code) => {
-      if (code !== 0) {
-        return reject(
-          new Error(`ffmpeg exited with code ${code}. Error: ${errorOutput}`)
-        );
-      }
-      const buffer = Buffer.concat(chunks);
-      const base64 = buffer.toString("base64");
-      resolve(`data:image/png;base64,${base64}`);
-    });
-  });
-}
-
-// Get cache key for responsive image processing
-async function getImageCacheKey(imagePath, config = DEFAULT_IMAGE_CONFIG) {
-  try {
-    const stats = await fs.stat(imagePath);
-    const hash = crypto.createHash("md5");
-    hash.update(imagePath);
-    hash.update(stats.mtime.toISOString());
-    hash.update(stats.size.toString());
-    hash.update(JSON.stringify(config.widths));
-    hash.update("routerino-image-v1"); // Version the cache format
-    return hash.digest("hex");
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Process <Image> components in HTML to add responsive images + LQIP
- * Only processes elements with data-routerino-image="true"
- */
-async function processRouterInoImages(html, outputDir, config) {
-  const stats = {
-    processed: 0,
-    skipped: 0,
-    totalSize: 0,
-    generated: 0,
-    errors: [],
-  };
-
-  // Lazy binary setup: check if HTML contains Image components and setup binaries if needed
-  const hasImagesInHtml = html.includes('data-routerino-image="true"');
-  if (hasImagesInHtml && !config.binaryPaths) {
-    try {
-      const binaryInfo = await ensureBinariesAvailable();
-      config.binaryPaths = {
-        ffmpeg: binaryInfo.ffmpegPath,
-        ffprobe: binaryInfo.ffprobePath,
-      };
-    } catch {
-      // Warn once and return HTML unmodified — images will still work
-      // using their original src, just without responsive variants or LQIP
-      if (!config._binaryWarningShown) {
-        console.warn(
-          `[Routerino Image] ffmpeg/ffprobe not available, skipping image optimization. Install ffmpeg to enable: https://ffmpeg.org/download.html`
-        );
-        config._binaryWarningShown = true;
-      }
-      return { html, stats };
-    }
-  }
-
-  // Ensure cache directory exists
-  const cacheDir = path.resolve(DEFAULT_IMAGE_CONFIG.cacheDir);
-  await fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
-
-  // Find all <picture> elements with data-routerino-image attribute
-  const pictureRegex =
-    /<picture[^>]*data-routerino-image="true"[^>]*data-original-src="([^"]+)"[^>]*>(.*?)<\/picture>/gis;
-  let processedHTML = html;
-  let match;
-
-  while ((match = pictureRegex.exec(html)) !== null) {
-    const [fullMatch, originalSrc] = match;
-
-    // Skip external URLs, data URLs, and SVGs
-    if (!shouldProcessImage(originalSrc)) {
-      stats.skipped++;
-      continue;
-    }
-
-    try {
-      // Resolve image path with security check
-      const imagePath = path.resolve(outputDir, originalSrc.replace(/^\//, ""));
-      const resolvedOutputDir = path.resolve(outputDir);
-
-      if (!imagePath.startsWith(resolvedOutputDir)) {
-        stats.skipped++;
-        continue;
-      }
-
-      // Check if file exists and size
-      const fileStats = await fs.stat(imagePath);
-      if (
-        fileStats.size < DEFAULT_IMAGE_CONFIG.minSize ||
-        fileStats.size > DEFAULT_IMAGE_CONFIG.maxSize
-      ) {
-        if (config.verbose) {
-          console.warn(
-            `[Routerino Image] Skipping ${originalSrc}: size ${fileStats.size} bytes (min: ${DEFAULT_IMAGE_CONFIG.minSize}, max: ${DEFAULT_IMAGE_CONFIG.maxSize})`
-          );
-        }
-        stats.skipped++;
-        continue;
-      }
-
-      stats.totalSize += fileStats.size;
-
-      // Check cache
-      const cacheKey = await getImageCacheKey(imagePath);
-      if (!cacheKey) {
-        stats.skipped++;
-        continue;
-      }
-
-      const cacheFile = path.join(cacheDir, `${cacheKey}.json`);
-      let imageData;
-
-      try {
-        // Try to read from cache
-        const cached = JSON.parse(await fs.readFile(cacheFile, "utf-8"));
-        imageData = cached;
-      } catch {
-        // Generate responsive images + placeholder
-        imageData = await generateResponsiveImages(imagePath, outputDir, {
-          ...DEFAULT_IMAGE_CONFIG,
-          ...config,
-        });
-
-        if (!imageData) {
-          if (config.verbose) {
-            console.warn(
-              `[Routerino Image] Failed to process ${originalSrc}: no image data returned`
-            );
-          }
-          stats.skipped++;
-          continue;
-        }
-
-        // Save to cache
-        await fs
-          .writeFile(cacheFile, JSON.stringify(imageData))
-          .catch(() => {});
-        stats.generated++;
-      }
-
-      // Transform the picture element with LQIP
-      const transformedPicture = await transformPictureWithLQIP(
-        fullMatch,
-        originalSrc,
-        imageData,
-        DEFAULT_IMAGE_CONFIG
-      );
-
-      processedHTML = processedHTML.replace(fullMatch, transformedPicture);
-      stats.processed++;
-    } catch (error) {
-      stats.errors.push({ src: originalSrc, error: error.message });
-      stats.skipped++;
-    }
-  }
-
-  return { html: processedHTML, stats };
-}
-
-/**
- * Transform a picture element to include LQIP background and update srcsets.
- *
- * The LQIP placeholder is applied as a background-image on the <picture>
- * element itself, with the blurred placeholder visible behind the <img>.
- * No wrapper div or <style> block is injected — only inline styles on the
- * existing <picture> and <img> elements — so the DOM structure matches what
- * the React Image component renders on the client, avoiding hydration mismatches.
- */
-async function transformPictureWithLQIP(
-  pictureHTML,
-  originalSrc,
-  imageData,
-  config
-) {
-  let updatedPicture = pictureHTML;
-
-  // Build LQIP inline styles for the <picture> element
-  const pictureStyles = [
-    "display:block",
-    `background-image:url('${imageData.placeholder}')`,
-    "background-size:cover",
-    "background-position:center",
-    `filter:blur(${config.blur}px)`,
-  ];
-
-  // Add LQIP styles to the <picture> element
-  updatedPicture = updatedPicture.replace(
-    /(<picture)([^>]*>)/i,
-    (match, tag, rest) => {
-      if (rest.includes("style=")) {
-        // Append to existing style
-        return match.replace(
-          /style=["']([^"']*)/i,
-          `style="${pictureStyles.join(";")};$1`
-        );
-      }
-      return `${tag} style="${pictureStyles.join(";")}"${rest}`;
-    }
-  );
-
-  // Update srcsets to point to generated responsive images
-  // Update WebP source srcset using actual generated paths
-  const webpSrcSet = Object.entries(imageData.variants)
-    .map(([width, paths]) => `${paths.webp} ${width}w`)
-    .join(", ");
-
-  if (webpSrcSet) {
-    updatedPicture = updatedPicture.replace(
-      /(<source[^>]*srcSet=")([^"]*)"([^>]*type="image\/webp"[^>]*)/i,
-      `$1${webpSrcSet}"$3`
-    );
-  }
-
-  // Update original format srcset using actual generated paths
-  const originalSrcSet = Object.entries(imageData.variants)
-    .map(([width, paths]) => `${paths.original} ${width}w`)
-    .join(", ");
-
-  if (originalSrcSet) {
-    updatedPicture = updatedPicture.replace(
-      /(<img[^>]*srcSet=")([^"]*)/i,
-      `$1${originalSrcSet}`
-    );
-    // Also update any other source elements that aren't WebP
-    updatedPicture = updatedPicture.replace(
-      /(<source(?![^>]*type="image\/webp")[^>]*srcSet=")([^"]*)/i,
-      `$1${originalSrcSet}`
-    );
-  }
-
-  // Add width/height attributes and ensure protective styles on <img>
-  updatedPicture = updatedPicture.replace(
-    /<img([^>]*?)\/?>/i,
-    (match, attributes) => {
-      let newMatch = match;
-
-      // Add width/height attributes if dimensions are available and not already present
-      if (imageData.width && imageData.height) {
-        if (!attributes.includes("width=")) {
-          newMatch = newMatch.replace(
-            "<img",
-            `<img width="${imageData.width}"`
-          );
-        }
-        if (!attributes.includes("height=")) {
-          newMatch = newMatch.replace(
-            "<img",
-            `<img height="${imageData.height}"`
-          );
-        }
-      }
-
-      return newMatch;
-    }
-  );
-
-  return updatedPicture;
-}
-
 export function routerinoForge(options = {}) {
-  // Configuration with defaults - simplified, no image optimization config needed
+  // Configuration with defaults
   const config = {
     routes: options.routes || "./src/routes.jsx",
     template: options.template || "index.html", // Default to source index.html
@@ -548,6 +27,7 @@ export function routerinoForge(options = {}) {
     useTrailingSlash: options.useTrailingSlash ?? true, // Default to trailing slashes
     ssgCacheDir:
       options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
+    nonBlockingCss: options.nonBlockingCss ?? true,
   };
 
   // Normalize baseUrl: strip trailing slashes to ensure correct canonical composition
@@ -572,6 +52,15 @@ export function routerinoForge(options = {}) {
 
     configResolved(resolvedConfig) {
       viteConfig = resolvedConfig;
+    },
+
+    transformIndexHtml(html) {
+      if (!config.nonBlockingCss) return html;
+      return html.replace(
+        /<link rel="stylesheet"[^>]*href="(\/[^"]+\.css)"[^>]*\/?>/g,
+        (_, href) =>
+          `<link rel="preload" as="style" href="${href}">\n    <link rel="stylesheet" href="${href}" media="print" onload="this.media='all'">\n    <noscript><link rel="stylesheet" href="${href}"></noscript>`
+      );
     },
 
     async closeBundle() {
@@ -698,6 +187,8 @@ function mockWindow(url, baseUrl) {
       querySelectorAll: () => []
     }
   };
+  // Signal to the Image component that we're running in SSG mode
+  global.document.__ROUTERINO_SSG__ = true;
 }
 
 export function render(url, baseUrl) {
@@ -737,18 +228,14 @@ export function render(url, baseUrl) {
     }
   }
   
-  // Original behavior: render just the route element
-  // Need to find the route again if App path wasn't taken
-  const route = App ? null : routes.find(r => {
+  // Fall back to route-only rendering when App is not defined or
+  // the App render threw (cleanup of mocks already done in catch block)
+  const route = routes.find(r => {
     if (r.path === url) return true;
     if (r.path === '/' && url === '/') return true;
     if (isDynamicRoute(r.path)) return false;
     return r.path === url;
   });
-  
-  // If we get here and App was defined, it means the App render failed
-  // Return early to avoid duplicate rendering
-  if (App) return;
   
   if (!route) {
     if (notFoundTemplate) {
@@ -886,7 +373,7 @@ export function render(url, baseUrl) {
         }
 
         // Generate static HTML for each route
-        const imageStats = await generateStaticPages({
+        await generateStaticPages({
           routes,
           template,
           outputDir: path.resolve(viteConfig.root, config.outputDir),
@@ -918,37 +405,6 @@ export function render(url, baseUrl) {
         console.log(
           `[Routerino Forge] ✓ Generated ${fileCount} HTML files (${staticRoutes.length} routes) + 404.html`
         );
-
-        // Display Image component processing stats
-        if (imageStats && imageStats.processed > 0) {
-          const totalSizeMB = (imageStats.totalSize / 1024 / 1024).toFixed(2);
-          console.log(
-            `[Routerino Image] ✓ Processed ${imageStats.processed} <Image> components (${totalSizeMB}MB total)`
-          );
-
-          if (imageStats.generated > 0) {
-            console.log(
-              `[Routerino Image] ✓ Generated ${imageStats.generated} responsive image sets`
-            );
-          }
-
-          if (config.verbose && imageStats.skipped > 0) {
-            console.log(
-              `[Routerino Image] Skipped ${imageStats.skipped} images (external URLs, SVGs, or size limits)`
-            );
-          }
-
-          if (imageStats.errors.length > 0) {
-            console.warn(
-              `[Routerino Image] ${imageStats.errors.length} images had processing errors`
-            );
-            if (config.verbose) {
-              imageStats.errors.forEach(({ src, error }) => {
-                console.warn(`[Routerino Image]   - ${src}: ${error}`);
-              });
-            }
-          }
-        }
       } catch (error) {
         console.error(
           "[Routerino Forge] Failed to generate static pages:",
@@ -994,14 +450,6 @@ async function generateStaticPages({
   config,
   render,
 }) {
-  const allImageStats = {
-    processed: 0,
-    skipped: 0,
-    totalSize: 0,
-    placeholderSize: 0,
-    errors: [],
-  };
-
   for (const route of routes) {
     // Skip dynamic routes with parameters
     if (isDynamicRoute(route.path)) {
@@ -1113,23 +561,6 @@ async function generateStaticPages({
           );
         }
 
-        // Process <Image> components in HTML
-        const { html: processedHTML, stats } = await processRouterInoImages(
-          html,
-          outputDir,
-          config
-        );
-        html = processedHTML;
-
-        // Accumulate stats
-        if (stats) {
-          allImageStats.processed += stats.processed;
-          allImageStats.skipped += stats.skipped;
-          allImageStats.totalSize += stats.totalSize;
-          allImageStats.placeholderSize += stats.placeholderSize;
-          allImageStats.errors.push(...stats.errors);
-        }
-
         // Ensure directory exists
         await fs.mkdir(path.dirname(file.path), { recursive: true });
 
@@ -1147,8 +578,6 @@ async function generateStaticPages({
       );
     }
   }
-
-  return allImageStats;
 }
 
 // Helper to safely handle meta tag content
@@ -1308,14 +737,6 @@ async function generate404Page({ template, outputDir, config, render }) {
       );
     }
 
-    // Process <Image> components in 404 page
-    const { html: processedHTML } = await processRouterInoImages(
-      html,
-      outputDir,
-      config
-    );
-    html = processedHTML;
-
     // Write 404.html
     const filePath = path.join(outputDir, "404.html");
     await fs.writeFile(filePath, html);
@@ -1385,32 +806,6 @@ Sitemap: ${config.baseUrl}/sitemap.xml`;
       console.log(`[Routerino Forge] Output: ${robotsPath}`);
     }
   }
-}
-
-// Binary availability check for ffmpeg/ffprobe
-async function testBinary(binaryPath) {
-  return new Promise((resolve) => {
-    const test = spawn(binaryPath, ["-version"], { stdio: "ignore" });
-    test.on("close", (code) => resolve(code === 0));
-    test.on("error", () => resolve(false));
-
-    // Timeout after 5 seconds
-    setTimeout(() => {
-      test.kill();
-      resolve(false);
-    }, 5000);
-  });
-}
-
-async function ensureBinariesAvailable() {
-  if ((await testBinary("ffmpeg")) && (await testBinary("ffprobe"))) {
-    return {
-      ffmpegPath: "ffmpeg",
-      ffprobePath: "ffprobe",
-    };
-  }
-
-  throw new Error("ffmpeg/ffprobe not found in PATH");
 }
 
 export default routerinoForge;

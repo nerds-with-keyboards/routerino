@@ -86,7 +86,7 @@ This simple configuration automatically handles routing, meta tags, and SEO opti
   - Generate static HTML files for each route with proper meta tags
   - Implement SEO best practices out-of-the-box
   - Optimize for Googlebot with pre-rendering support
-  - Image Component: Optimized images with automatic responsive generation, WebP format, and LQIP (Low Quality Image Placeholders)
+  - Delegate image optimization to `vite-plugin-image-optimizer`
 
 - Enhanced User Experience
   - Support for sharing and social preview metadata
@@ -500,168 +500,6 @@ Please note that the `updateHeadTag` function requires at least one attribute to
 
 See [HeadTag props](#headtag-props) for arguments and some common tag attributes.
 
-## Image Component
-
-Routerino includes an optimized Image component that automatically generates responsive images with WebP format, Low Quality Image Placeholders (LQIP), and smart loading attributes. No configuration required - it works out of the box!
-
-### Optimization
-
-The Image component provides powerful performance optimizations with no configuration:
-
-- Responsive Images: Automatic generation of multiple sizes (480, 800, 1200, 1920px), configurable if needed
-- Modern Formats: WebP with fallback for maximum compatibility
-- LQIP: Low Quality Image Placeholders prevent layout shift during loading
-- Smart Loading: `lazy` by default, `eager` for hero/LCP images (auto-detected)
-- Performance: `fetchpriority="high"` for above-the-fold images
-- Accessibility: Required `alt` attributes enforced
-
-### Usage
-
-Import the Image component:
-
-```jsx
-import { Image } from "routerino/image";
-```
-
-### Image Props
-
-| Prop            | Type                        | Required | Description                                                |
-| --------------- | --------------------------- | -------- | ---------------------------------------------------------- |
-| `src`           | string                      | ✅       | Image source URL                                           |
-| `alt`           | string                      | ✅       | Alt text for accessibility                                 |
-| `priority`      | boolean                     | ❌       | Override lazy loading for hero/LCP images                  |
-| `widths`        | number[]                    | ❌       | Custom responsive widths (default: [480, 800, 1200, 1920]) |
-| `sizes`         | string                      | ❌       | Responsive sizes attribute (has smart default)             |
-| `className`     | string                      | ❌       | CSS classes (Tailwind/DaisyUI ready)                       |
-| `style`         | object                      | ❌       | Inline styles                                              |
-| `loading`       | "lazy" \| "eager"           | ❌       | Loading behavior (auto-set based on priority)              |
-| `decoding`      | "sync" \| "async" \| "auto" | ❌       | Decode timing (default: "async")                           |
-| `fetchpriority` | "high" \| "low" \| "auto"   | ❌       | Fetch priority (auto-set based on priority)                |
-
-### Image Usage Examples
-
-#### Basic Usage
-
-```jsx
-import { Image } from 'routerino/image';
-
-// Hero image - automatically gets priority
-<Image src="/hero.jpg" alt="Hero banner" className="w-full h-screen object-cover" />
-
-// Regular image - lazy loaded by default
-<Image src="/product.jpg" alt="Amazing product" className="rounded-xl shadow-lg" />
-
-// Explicit priority control
-<Image src="/above-fold.jpg" alt="Important image" priority={true} />
-
-// Custom responsive breakpoints
-<Image
-  src="/gallery.jpg"
-  alt="Gallery image"
-  widths={[320, 640, 1280]}
-  className="w-full"
-/>
-```
-
-#### Generated HTML Output
-
-The Image component generates optimized HTML during static site generation:
-
-```html
-<style>
-  .routerino-img-abc123 {
-    position: relative;
-    display: inline-block;
-    aspect-ratio: 1.5; /* Prevents layout shift */
-  }
-  .routerino-img-abc123::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url("data:image/png;base64,..."); /* LQIP */
-    background-size: cover;
-    background-position: center;
-    filter: blur(4px);
-    z-index: -1;
-  }
-</style>
-<div class="routerino-img-abc123">
-  <picture>
-    <source
-      srcset="
-        /hero-480w.webp   480w,
-        /hero-800w.webp   800w,
-        /hero-1200w.webp 1200w,
-        /hero-1920w.webp 1920w
-      "
-      type="image/webp"
-      sizes="(max-width: 480px) 100vw, (max-width: 800px) 800px, (max-width: 1200px) 1200px, 1920px"
-    />
-    <img
-      src="/hero.jpg"
-      alt="Hero banner"
-      srcset="
-        /hero-480w.jpg   480w,
-        /hero-800w.jpg   800w,
-        /hero-1200w.jpg 1200w,
-        /hero-1920w.jpg 1920w
-      "
-      sizes="(max-width: 480px) 100vw, (max-width: 800px) 800px, (max-width: 1200px) 1200px, 1920px"
-      loading="eager"
-      decoding="async"
-      fetchpriority="high"
-      class="w-full h-screen object-cover"
-      style="opacity: 0"
-    />
-  </picture>
-</div>
-```
-
-#### Smart Priority Detection
-
-The Image component automatically detects hero/LCP images:
-
-```jsx
-// These automatically get priority={true}
-<Image src="/hero.jpg" className="hero" />
-<Image src="/banner.jpg" className="w-full h-screen" />
-<Image src="/hero-background.jpg" />  // Detected by filename
-```
-
-#### Tailwind/DaisyUI Integration
-
-Works perfectly with your favorite CSS frameworks:
-
-```jsx
-<Image
-  src="/photo.jpg"
-  alt="Beautiful photo"
-  className="w-full max-w-md mx-auto rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300"
-/>
-```
-
-### Requirements
-
-- **FFmpeg**: Required for image processing during build
-- **Static Site Generation**: Only works with Routerino Forge SSG
-- **Local Images**: External URLs are not processed
-
-Install FFmpeg:
-
-```sh
-# macOS
-brew install ffmpeg
-
-# Ubuntu/Debian
-sudo apt install ffmpeg
-
-# Windows (via Chocolatey)
-choco install ffmpeg
-```
-
 ## TypeScript Support
 
 Routerino includes TypeScript definitions out of the box. The types are automatically available when you import Routerino.
@@ -900,6 +738,37 @@ These files are generated automatically when you build with the Routerino Forge 
 ✓ Generated 42 static pages + 404.html
 ```
 
+## Image Optimization
+
+Routerino delegates image optimization to [`vite-plugin-image-optimizer`](https://github.com/FatehAK/vite-plugin-image-optimizer). Install it and add it to your Vite config **before** `routerinoForge`:
+
+```bash
+npm install --save-dev vite-plugin-image-optimizer sharp
+```
+
+```js
+// vite.config.js
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
+import { routerinoForge } from "routerino/forge";
+
+export default defineConfig({
+  plugins: [
+    react(),
+    ViteImageOptimizer({
+      jpg: { quality: 80 },
+      jpeg: { quality: 80 },
+      png: { quality: 80 },
+      webp: { quality: 80 },
+    }),
+    routerinoForge({ baseUrl: "https://example.com" }),
+  ],
+});
+```
+
+Use standard HTML `<img>` tags in your components — the plugin optimizes source images in `public/` and imported assets during the Vite build. No special component or props needed.
+
 ## Static Site Generation
 
 Routerino provides static site generation (SSG), creating fully-rendered HTML files at build time with "just clean JSX elements that render identically on server and client."
@@ -926,7 +795,7 @@ export default defineConfig({
       // useTrailingSlash: true, // Set to false for /about instead of /about/
       // verbose: false,
       // ssgCacheDir: "node_modules/.cache/routerino-forge", // SSG cache directory
-      // optimizeImages: true, // Enable image optimization (see below)
+      // verbose: false,
     }),
   ],
 });
@@ -955,119 +824,8 @@ export default defineConfig({
 - Creates a 404.html page
 - Skips dynamic routes (with `:param` syntax)
 - SEO optimized: Complete HTML with meta tags
-- Image optimization: Automatic blur placeholders (LQIP)
+- Image optimization: Automatic responsive variants + blur placeholders (LQIP) — now delegated to [`vite-plugin-image-optimizer`](https://github.com/FatehAK/vite-plugin-image-optimizer)
 - Easy configuration: Works out of the box with Vite and minimal setup
-
-#### Image Optimization
-
-Routerino Forge can automatically optimize images in your static builds for faster loading:
-
-```js
-routerinoForge({
-  optimizeImages: true, // Enable with defaults
-  // Or configure in detail:
-  optimizeImages: {
-    enabled: true,
-    placeholderSize: 20, // Size of blur placeholder (20x20 pixels)
-    blur: 4, // Blur radius for placeholder
-    maxSize: 10485760, // Maximum image size to process (10MB)
-    minSize: 1024, // Minimum image size to process (1KB)
-    cacheDir: "node_modules/.cache/routerino-forge", // Cache directory
-  },
-});
-```
-
-**What it does:**
-
-- Generates tiny blur placeholders for images (base64 encoded)
-- Caches processed images to speed up subsequent builds
-- Preserves original images while enhancing loading performance
-- Skips external images (http/https), data URIs, and SVGs
-- Smart sizing: Uses aspect-ratio only to prevent layout shift without forcing dimensions
-- Hides images initially with `opacity: 0` to prevent broken image icons during load
-
-**Note:** Image optimization requires `ffmpeg` to be installed on your system. Install with `brew install ffmpeg` (Mac), `apt install ffmpeg` (Debian/Ubuntu), or `choco install ffmpeg` (Windows). Without ffmpeg, the Image component still works but falls back to the original image without optimization. A warning is shown during build if ffmpeg is not found but Image components are used.
-
-##### CI/CD Setup for Image Optimization
-
-For CI/CD environments without ffmpeg pre-installed, you'll need to install it as part of your build process. Here are examples:
-
-###### GitHub Actions
-
-Add the `setup-ffmpeg` action to your workflow:
-
-```yaml
-name: Build and Deploy
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      # Install ffmpeg for image optimization
-      - name: Setup FFmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
-        with:
-          ffmpeg-version: release
-
-      - run: npm ci
-      - run: npm run build
-
-      # Deploy to GitHub Pages (optional)
-      - uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-```
-
-###### Docker
-
-For containerized deployments, install ffmpeg in your Dockerfile:
-
-```dockerfile
-FROM node:20-alpine
-
-# Install ffmpeg
-RUN apk add --no-cache ffmpeg
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-RUN npm ci
-
-# Copy source and build
-COPY . .
-RUN npm run build
-
-# Production stage with nginx
-FROM nginx:alpine
-COPY --from=0 /app/dist /usr/share/nginx/html
-```
-
-###### Netlify
-
-Netlify builds run on Ubuntu images, so you can install ffmpeg using apt-get in your build command.
-
-In your netlify.toml:
-
-```
-[build]
-  command = "apt-get update && apt-get install -y ffmpeg && npm ci && npm run build"
-  publish = "dist"
-```
 
 #### Routes Configuration
 

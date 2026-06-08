@@ -1,5 +1,4 @@
 /* eslint-disable react/prop-types */
-import { Image } from "../../../routerino-image.jsx";
 
 // Test components
 const HomePage = ({ featured = "Latest News" }) => (
@@ -7,7 +6,7 @@ const HomePage = ({ featured = "Latest News" }) => (
     <h1>Home Page</h1>
     <p>Welcome to the test app!</p>
     <p>Featured: {featured}</p>
-    <Image src="/test-image.jpg" alt="Test Image" className="hero-image" />
+    <img src="/test-image.jpg" alt="Test Image" className="hero-image" />
     <nav>
       <a href="/about/">About</a> | <a href="/products/">Products</a> |{" "}
       <a href="/contact/">Contact</a>
@@ -19,7 +18,7 @@ const AboutPage = () => (
   <div>
     <h1>About Us</h1>
     <p>This is the about page of our test application.</p>
-    <Image
+    <img
       src="/test-image.jpg"
       alt="About us image"
       className="w-full max-w-md mx-auto rounded-lg shadow-lg"
@@ -60,9 +59,27 @@ const ContactPage = () => (
     <h1>Contact Us</h1>
     <p>Get in touch with us!</p>
     <p>Email: test@example.com</p>
+    <img
+      src="/test-png.png"
+      alt="Contact team photo"
+      className="w-full max-w-md mx-auto"
+    />
     <a href="/">Back to Home</a>
   </div>
 );
+
+// Route with a component that throws during SSR — tests Bug 1 fallback
+const ThrowingPage = () => {
+  if (typeof window === "undefined") {
+    throw new Error("Simulated SSR render failure");
+  }
+  return (
+    <div>
+      <h1>Should Not Render</h1>
+      <p>This should only appear client-side</p>
+    </div>
+  );
+};
 
 // Deep nested pages for testing
 const DocsPage = () => (
@@ -185,6 +202,12 @@ export const routes = [
     element: <ApiReferencePage />,
     title: "API Reference",
     description: "Complete API documentation",
+  },
+  {
+    path: "/throw/",
+    element: <ThrowingPage />,
+    title: "Throwing Page",
+    description: "This route throws during SSR",
   },
 ];
 

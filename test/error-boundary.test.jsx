@@ -66,15 +66,17 @@ describe("Error Boundary", () => {
 
     render(<Routerino routes={routes} debug={true} />);
 
-    // Check that console.group was called with the error boundary message (with styling)
+    // Check that console.group was called with the error boundary message
     expect(consoleGroupSpy).toHaveBeenCalledWith(
       "%c[Routerino]%c Error Boundary Caught an Error",
       "color: #ff6b6b; font-weight: bold",
-      "",
-      expect.any(Error)
+      ""
     );
 
-    // Check that the error was logged (React logs the error first)
+    // Check that the error itself was logged
+    expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
+
+    // Check that the failing route was reported
     expect(consoleSpy).toHaveBeenCalledWith("[Routerino] Failed Route:", "/");
   });
 

@@ -1,18 +1,53 @@
 import React from "react";
 
-// Image component types
-export interface ImageProps
-  extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src" | "alt"> {
-  /** Image source URL (required) */
-  src: string;
-  /** Alt text for accessibility (required) */
-  alt: string;
-  /** Override lazy loading for hero/LCP images */
-  priority?: boolean;
-  /** Responsive widths to generate (defaults to [480, 800, 1200, 1920]) */
-  widths?: number[];
-  /** Responsive sizes attribute (has smart default) */
-  sizes?: string;
+export interface HeadTag {
+  /**
+   * Your production URL for canonical / sitemap generation (no trailing slash).
+   * @example "https://example.com"
+   */
+  baseUrl?: string;
+  /**
+   * Path to your routes file.
+   * @default "./src/routes.jsx"
+   */
+  routes?: string;
+  /**
+   * HTML template file to inject SSG content into.
+   * @default "index.html"
+   */
+  template?: string;
+  /**
+   * Vite build output directory.
+   * @default "dist"
+   */
+  outputDir?: string;
+  /**
+   * Whether to generate sitemap.xml.
+   * @default true
+   */
+  generateSitemap?: boolean;
+  /**
+   * Whether to use trailing slashes in canonical URLs.
+   * @default true
+   */
+  useTrailingSlash?: boolean;
+  /**
+   * Enable verbose build output.
+   * @default false
+   */
+  verbose?: boolean;
+  /**
+   * SSG build cache directory.
+   * @default "node_modules/.cache/routerino-forge/ssg"
+   */
+  ssgCacheDir?: string;
+  /**
+   * Transform CSS `<link>` tags to load asynchronously (non-blocking).
+   * Converts stylesheets to use `media="print"` with `onload` swap,
+   * `<link rel="preload">` hint, and `<noscript>` fallback.
+   * @default true
+   */
+  nonBlockingCss?: boolean;
 }
 
 export interface HeadTag {
@@ -119,8 +154,10 @@ export class ErrorBoundary extends React.Component<
 // Named export (recommended)
 export function Routerino(props: RouterinoProps): JSX.Element;
 
-// Image component exports
-export function Image(props: ImageProps): JSX.Element;
+// Forge plugin Vite plugin constructor
+export function routerinoForge(
+  options?: RouterinoForgeOptions
+): Record<string, any>;
 
 // Default export for backward compatibility
 export default Routerino;
