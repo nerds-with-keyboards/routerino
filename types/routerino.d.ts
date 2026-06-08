@@ -41,13 +41,6 @@ export interface HeadTag {
    * @default "node_modules/.cache/routerino-forge/ssg"
    */
   ssgCacheDir?: string;
-  /**
-   * Transform CSS `<link>` tags to load asynchronously (non-blocking).
-   * Converts stylesheets to use `media="print"` with `onload` swap,
-   * `<link rel="preload">` hint, and `<noscript>` fallback.
-   * @default true
-   */
-  nonBlockingCss?: boolean;
 }
 
 export interface HeadTag {

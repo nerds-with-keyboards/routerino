@@ -27,7 +27,6 @@ export function routerinoForge(options = {}) {
     useTrailingSlash: options.useTrailingSlash ?? true, // Default to trailing slashes
     ssgCacheDir:
       options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
-    nonBlockingCss: options.nonBlockingCss ?? true,
   };
 
   // Normalize baseUrl: strip trailing slashes to ensure correct canonical composition
@@ -52,15 +51,6 @@ export function routerinoForge(options = {}) {
 
     configResolved(resolvedConfig) {
       viteConfig = resolvedConfig;
-    },
-
-    transformIndexHtml(html) {
-      if (!config.nonBlockingCss) return html;
-      return html.replace(
-        /<link rel="stylesheet"[^>]*href="(\/[^"]+\.css)"[^>]*\/?>/g,
-        (_, href) =>
-          `<link rel="preload" as="style" href="${href}">\n    <link rel="stylesheet" href="${href}" media="print" onload="this.media='all'">\n    <noscript><link rel="stylesheet" href="${href}"></noscript>`
-      );
     },
 
     async closeBundle() {

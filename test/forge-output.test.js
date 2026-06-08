@@ -529,28 +529,6 @@ describe("Routerino Forge Build Output", () => {
     });
   });
 
-  describe("Non-blocking CSS", () => {
-    it("should transform CSS links to non-blocking by default", () => {
-      const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
-
-      expect(html).toContain('media="print"');
-      expect(html).toContain("this.media='all'");
-      expect(html).toContain("<noscript><link rel=");
-      expect(html).toContain('<link rel="preload" as="style" href="');
-    });
-
-    it("should preserve non-blocking CSS in nested route pages", () => {
-      const html = fs.readFileSync(
-        path.join(distDir, "about", "index.html"),
-        "utf8"
-      );
-
-      expect(html).toContain('media="print"');
-      expect(html).toContain("this.media='all'");
-      expect(html).toContain("<noscript><link rel=");
-    });
-  });
-
   describe("render() fallback when App component throws", () => {
     it("should generate HTML for a route whose component throws during SSR", () => {
       // The /throw/ route has a component that throws in SSR mode.

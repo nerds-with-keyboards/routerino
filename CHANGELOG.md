@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1] - 2026-06-08
+
+### Removed
+
+- `nonBlockingCss` option removed. The `transformIndexHtml` hook that converted `<link rel="stylesheet">` into `media="print" onload` swap caused CLS (Cumulative Layout Shift) worse than the render-blocking savings. Stylesheets now load normally by default.
+
 ## [2.6.0] - 2026-06-08
 
 ### Removed
@@ -12,8 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `<Image>` component removed. Standard `<img>` tags with [`vite-plugin-image-optimizer`](https://github.com/FatehAK/vite-plugin-image-optimizer) are now recommended for image processing. All forge image optimization code (`processRouterInoImages`, ffmpeg integration, LQIP, responsive variant generation) has been removed. See `## Image Optimization` in README for migration guide.
 
 ### Added
-
-- `nonBlockingCss` option for `routerinoForge` (default: `true`): Transforms `<link rel="stylesheet">` tags into non-blocking CSS loading with preload hints, `media="print" onload` pattern, and `<noscript>` fallback. Can be disabled by setting `nonBlockingCss: false`
 
 ### Fixed
 
