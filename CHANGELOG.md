@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-06-08
+
+### Removed
+
+- `<Image>` component removed. Standard `<img>` tags with [`vite-plugin-image-optimizer`](https://github.com/FatehAK/vite-plugin-image-optimizer) are now recommended for image processing. All forge image optimization code (`processRouterInoImages`, ffmpeg integration, LQIP, responsive variant generation) has been removed. See `## Image Optimization` in README for migration guide.
+
+### Added
+
+- `nonBlockingCss` option for `routerinoForge` (default: `true`): Transforms `<link rel="stylesheet">` tags into non-blocking CSS loading with preload hints, `media="print" onload` pattern, and `<noscript>` fallback. Can be disabled by setting `nonBlockingCss: false`
+
+### Fixed
+
+- `render()` returned `undefined` when `App` component threw during SSR, causing build crashes. Now falls back to route-only rendering gracefully
+- `updateHeadTag()` selector crash when tag attribute values contain `]` (e.g., JSON-LD array brackets). Values are now CSS-escaped. `children` is automatically mapped to `innerHTML` to prevent React JSX conventions from leaking into CSS selectors
+- `ErrorBoundary` properly logs component errors with full stack traces when `<ErrorBoundary debug={true}>` or `<Routerino debug={true}>`
+
 ## [2.5.0] - 2026-05-22
 
 ### Changed

@@ -1,3 +1,4 @@
+import "./styles.css";
 import Routerino from "routerino";
 import { routes, notFoundTemplate } from "./routes";
 
