@@ -2,7 +2,7 @@
 
 > React routing with built-in SEO. No framework, no lock-in.
 
-**Live demos:** [raymondsseptic.com](https://raymondsseptic.com) · [kissimmeekastawayvilla.com](https://kissimmeekastawayvilla.com) · [nerdswithkeyboards.com](https://nerdswithkeyboards.com)· [logbook-ed.com](https://logbook-ed.com)
+**Live demos:** [raymondsseptic.com](https://raymondsseptic.com) · [kissimmeekastawayvilla.com](https://kissimmeekastawayvilla.com) · [nerdswithkeyboards.com](https://nerdswithkeyboards.com) · [logbook-ed.com](https://logbook-ed.com)
 
 ---
 
