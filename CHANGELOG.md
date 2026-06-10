@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.2] - 2026-06-10
+
+### Changed
+
+- README completely reorganized: streamlined from ~1,400 lines to ~200 lines for quick scanning
+- Detailed guides split into dedicated `docs/` files: Getting Started, SEO Guide, Accessibility, Image Optimization, Vendoring, and Additional Resources
+- Package description and keywords updated for clarity
+
+### Added
+
+- New `docs/` directory with focused guides: `getting-started.md`, `seo-guide.md`, `accessibility.md`, `image-optimization.md`, `vendoring.md`, `additional-resources.md`
+
 ## [2.6.1] - 2026-06-08
 
 ### Removed
