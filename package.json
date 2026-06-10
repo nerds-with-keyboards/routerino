@@ -1,7 +1,7 @@
 {
   "name": "routerino",
   "version": "2.6.1",
-  "description": "A lightweight, SEO-optimized React router for modern web applications",
+  "description": "The React router that Google can read. Built-in SSG, meta tags, sitemaps, and canonical URLs — zero dependencies, no framework lock-in.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nerds-with-keyboards/routerino.git"
@@ -11,7 +11,17 @@
     "react",
     "seo",
     "prerender",
-    "react router"
+    "ssg",
+    "static-site",
+    "static-site-generator",
+    "vite",
+    "vite-plugin",
+    "meta-tags",
+    "open-graph",
+    "sitemap",
+    "seo-friendly",
+    "jamstack",
+    "zero-dependency"
   ],
   "license": "MIT",
   "bugs": {
