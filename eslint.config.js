@@ -1,6 +1,6 @@
 import globals from "globals";
 import pluginJs from "@eslint/js";
-import pluginReact from "eslint-plugin-react";
+import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginReactRefresh from "eslint-plugin-react-refresh";
 
 export default [
@@ -17,25 +17,27 @@ export default [
   },
   {
     languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
       globals: {
         ...globals.browser,
         ...globals.node,
       },
     },
   },
-  {
-    settings: {
-      react: {
-        version: "^18.0.0",
-      },
-    },
-  },
   pluginJs.configs.recommended,
-  pluginReact.configs.flat.recommended,
   {
+    plugins: {
+      "react-hooks": pluginReactHooks,
+    },
     rules: {
-      "react/react-in-jsx-scope": "off",
-      "react/no-unescaped-entities": ["error", { forbid: [">", "}"] }],
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "error",
     },
   },
   // Enable Fast Refresh checks globally
@@ -52,25 +54,6 @@ export default [
     files: ["**/routes.jsx", "**/App.jsx", "**/routerino.jsx"],
     rules: {
       "react-refresh/only-export-components": "off",
-    },
-  },
-  {
-    files: ["test/**/*.{js,jsx}"],
-    rules: {
-      "react/prop-types": "off",
-    },
-  },
-  {
-    files: [
-      "demo-prerender/**/*.{js,jsx}",
-      "demo-static/**/*.{js,jsx}",
-      "example-basic/**/*.{js,jsx}",
-      "example-prerender/**/*.{js,jsx}",
-      "example-vite-static/**/*.{js,jsx}",
-    ],
-    rules: {
-      "react/no-unescaped-entities": "off",
-      "react/prop-types": "off",
     },
   },
 ];

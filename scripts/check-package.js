@@ -115,7 +115,20 @@ async function verifyPackedFiles() {
       `npm pack failed: ${result.stderr || result.stdout}`
     );
 
-    const [packageResult] = JSON.parse(result.stdout);
+    const packOutput = JSON.parse(result.stdout);
+    const packageResults = Array.isArray(packOutput)
+      ? packOutput
+      : Array.isArray(packOutput.files)
+        ? [packOutput]
+        : Object.values(packOutput);
+    const packageResult = packageResults.find((entry) =>
+      Array.isArray(entry?.files)
+    );
+    assert(packageResult, "npm pack returned no package metadata");
+    assert(
+      Array.isArray(packageResult.files),
+      "npm pack returned package metadata without a file list"
+    );
     const packedFiles = new Set(
       packageResult.files.map((file) => file.path.replaceAll("\\", "/"))
     );

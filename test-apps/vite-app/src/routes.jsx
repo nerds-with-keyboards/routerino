@@ -1,5 +1,3 @@
-/* eslint-disable react/prop-types */
-
 // Test components
 const HomePage = ({ featured = "Latest News" }) => (
   <div>

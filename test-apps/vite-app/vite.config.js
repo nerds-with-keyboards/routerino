@@ -13,7 +13,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      routerino: path.resolve(__dirname, "../../dist/routerino.js"),
+      routerino: path.resolve(import.meta.dirname, "../../dist/routerino.js"),
     },
   },
 });

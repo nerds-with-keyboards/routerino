@@ -343,7 +343,9 @@ export function Routerino({
   const notFoundTitleString = [notFoundTitle, title]
     .filter(Boolean)
     .join(separator);
-  try {
+
+  // Hooks must run outside the protected render block so their order is stable.
+  {
     // Development-only checks
     if (debug) {
       // Check for duplicate routes
@@ -366,11 +368,13 @@ export function Routerino({
       }
     }
 
-    // we use this state to track the URL internally and control React updates
-    const [href, setHref] = useState(window?.location?.href ?? "/");
+    // We use this state only to trigger React updates after the URL changes.
+    const [, setHref] = useState(() =>
+      typeof window === "undefined" ? "/" : (window.location?.href ?? "/")
+    );
 
-    // this useEffect manages reload-free page transitions via
-    // the browser's history.pushState and window.scrollTo APIs
+    // This effect manages reload-free page transitions via
+    // the browser's history.pushState and window.scrollTo APIs.
     useEffect(() => {
       // skip in non-browser contexts
       if (typeof window === "undefined" || typeof document === "undefined")
@@ -588,8 +592,10 @@ export function Routerino({
         document.removeEventListener("click", handleClick);
         window.removeEventListener("popstate", handlePopState);
       };
-    }, [href, ignorePatterns]);
+    }, [debug, ignorePatterns]);
+  }
 
+  try {
     // START LOCATING MATCH
     let currentRoute = window?.location?.pathname ?? "/";
     // use the root route for index.html requests

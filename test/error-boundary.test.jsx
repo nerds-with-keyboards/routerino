@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import React from "react";
 import Routerino from "../routerino.jsx";
 
 describe("Error Boundary", () => {
