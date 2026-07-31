@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import React from "react";
 import { render } from "@testing-library/react";
 import Routerino from "../routerino.jsx";
 

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.4] - 2026-08-01
+
+### Changed
+
+- Updated development dependencies to their current releases, including ESLint 10, Vite 8, jsdom 30, React 19.2.8, and the associated test tooling
+- Updated the development toolchain to Node.js 24 and npm 12 while retaining packed-package compatibility tests for Node.js 18, 20, 22, and 24
+- Expanded the optional Vite peer range through Vite 8 and updated the standalone SSG fixtures to Vite 8
+- Replaced the legacy React ESLint plugin with the official React Hooks plugin
+
+### Fixed
+
+- Removed the vulnerable `brace-expansion`/`minimatch` development dependency chain reported by `npm audit`
+- Updated package verification to support npm 10 through npm 12 `npm pack --json` output formats
+- Kept navigation hooks outside Routerino's protected render block to satisfy the current React Hooks rules without changing route behavior
+- Replaced deprecated Vite config `__dirname` usage with `import.meta.dirname`
+
+### Removed
+
+- Unused image-optimizer and Sharp dependencies from the SSG fixture
+
 ## [2.6.3] - 2026-07-31
 
 ### Added

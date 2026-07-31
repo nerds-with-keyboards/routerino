@@ -6,7 +6,7 @@ import { resolve } from "path";
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, "routerino.jsx"),
+      entry: resolve(import.meta.dirname, "routerino.jsx"),
       //   formats: ["es", "cjs", "umd"],
       name: "routerino",
       //   fileName: (format) => `routerino.${format}.js`,

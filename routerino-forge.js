@@ -569,7 +569,8 @@ export function render(url, baseUrl) {
         } catch (e) {
           console.error("[Routerino Forge] Template read error:", e);
           throw new Error(
-            `Failed to read template at ${templatePath}. Make sure the build has completed and created the HTML file.`
+            `Failed to read template at ${templatePath}. Make sure the build has completed and created the HTML file.`,
+            { cause: e }
           );
         }
 
