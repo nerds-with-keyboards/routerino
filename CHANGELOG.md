@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Route navigation resets a route-level error boundary instead of leaving later routes on the previous fallback
 - Forge escapes generated HTML/XML metadata, preserves rendered replacement-token text, and fails the Vite build when a required route, 404 page, template, or SSG render fails
 - Forge validates its production `baseUrl`, route paths, and output collisions, then builds into and cleans only a unique cache leaf inside the project
+- Release integration builds now use the repository toolchain deterministically instead of resolving ignored dependencies from inside test fixtures
 - TypeScript declarations now describe `HeadTag` correctly and provide accurate types for the `routerino/forge` subpath
 
 ### Removed
