@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.join(__dirname, "..");
 const testAppDir = path.join(__dirname, "..", "test-apps", "vite-app");
 const distDir = path.join(testAppDir, "dist");
 
@@ -14,8 +15,8 @@ describe("Routerino Forge Build Output", () => {
   beforeAll(() => {
     // Build the test app once before all tests
     console.log("Building test app with Routerino Forge...");
-    buildOutput = execSync("npm run build", {
-      cwd: testAppDir,
+    buildOutput = execSync("npm run test:app", {
+      cwd: projectRoot,
       encoding: "utf8",
     });
   });

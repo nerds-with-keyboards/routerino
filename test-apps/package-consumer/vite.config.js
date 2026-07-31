@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
-import { routerinoForge } from "../../routerino-forge.js";
+import { routerinoForge } from "routerino/forge";
 
 export default defineConfig({
   plugins: [
@@ -11,9 +10,4 @@ export default defineConfig({
       routes: "./src/App.jsx",
     }),
   ],
-  resolve: {
-    alias: {
-      routerino: path.resolve(__dirname, "../../dist/routerino.js"),
-    },
-  },
 });

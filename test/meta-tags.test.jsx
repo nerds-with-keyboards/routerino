@@ -97,6 +97,40 @@ describe("Meta Tag Management", () => {
     );
   });
 
+  it("resolves a relative global imageUrl against baseUrl", () => {
+    const routes = [{ path: "/", element: <div>Home</div> }];
+
+    render(
+      <Routerino
+        routes={routes}
+        baseUrl="https://example.com"
+        imageUrl="/images/global.jpg"
+      />
+    );
+
+    const ogImageTag = document.querySelector('meta[property="og:image"]');
+    expect(ogImageTag.getAttribute("content")).toBe(
+      "https://example.com/images/global.jpg"
+    );
+  });
+
+  it("resolves a relative route imageUrl against the browser origin", () => {
+    const routes = [
+      {
+        path: "/",
+        element: <div>Home</div>,
+        imageUrl: "/images/route.jpg",
+      },
+    ];
+
+    render(<Routerino routes={routes} />);
+
+    const ogImageTag = document.querySelector('meta[property="og:image"]');
+    expect(ogImageTag.getAttribute("content")).toBe(
+      "http://localhost/images/route.jpg"
+    );
+  });
+
   it("prioritizes route imageUrl over global imageUrl", () => {
     const routes = [
       {
@@ -109,6 +143,7 @@ describe("Meta Tag Management", () => {
     render(
       <Routerino
         routes={routes}
+        baseUrl="https://different.example.com"
         imageUrl="https://example.com/global-image.jpg"
       />
     );

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import Routerino from "../routerino.jsx";
 
@@ -102,5 +102,24 @@ describe("Error Boundary", () => {
     render(<Routerino routes={routes} />);
 
     expect(screen.getByText("Normal content")).toBeTruthy();
+  });
+
+  it("recovers when navigation moves from a failed route to a healthy route", () => {
+    window.location = new URL("http://localhost/broken");
+    const ErrorComponent = () => {
+      throw new Error("Test component error");
+    };
+    const routes = [
+      { path: "/broken", element: <ErrorComponent /> },
+      { path: "/working", element: <div>Working route</div> },
+    ];
+
+    render(<Routerino routes={routes} />);
+    expect(screen.getByText(/Page failed to load/)).toBeTruthy();
+
+    window.location = new URL("http://localhost/working");
+    fireEvent.popState(window);
+
+    expect(screen.getByText("Working route")).toBeTruthy();
   });
 });

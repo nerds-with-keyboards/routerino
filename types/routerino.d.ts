@@ -1,47 +1,4 @@
-import React from "react";
-
-export interface HeadTag {
-  /**
-   * Your production URL for canonical / sitemap generation (no trailing slash).
-   * @example "https://example.com"
-   */
-  baseUrl?: string;
-  /**
-   * Path to your routes file.
-   * @default "./src/routes.jsx"
-   */
-  routes?: string;
-  /**
-   * HTML template file to inject SSG content into.
-   * @default "index.html"
-   */
-  template?: string;
-  /**
-   * Vite build output directory.
-   * @default "dist"
-   */
-  outputDir?: string;
-  /**
-   * Whether to generate sitemap.xml.
-   * @default true
-   */
-  generateSitemap?: boolean;
-  /**
-   * Whether to use trailing slashes in canonical URLs.
-   * @default true
-   */
-  useTrailingSlash?: boolean;
-  /**
-   * Enable verbose build output.
-   * @default false
-   */
-  verbose?: boolean;
-  /**
-   * SSG build cache directory.
-   * @default "node_modules/.cache/routerino-forge/ssg"
-   */
-  ssgCacheDir?: string;
-}
+import type * as React from "react";
 
 export interface HeadTag {
   /** The HTML tag name to update (default: "meta") */
@@ -64,12 +21,14 @@ export interface HeadTag {
   target?: string;
   /** Inner HTML content for tags that require body content (e.g., &lt;script&gt;, &lt;style&gt;) */
   innerHTML?: string;
-  [attribute: string]: string | number | boolean | object | undefined;
+  /** React-style alias accepted by updateHeadTag and mapped to innerHTML. */
+  children?: string;
+  [attribute: string]: string | number | boolean | undefined;
 }
 
 export interface RouteConfig {
   path: `/${string}`;
-  element: React.ReactNode;
+  element: React.ReactElement;
   title?: string;
   description?: string;
   tags?: HeadTag[];
@@ -134,6 +93,8 @@ export interface RouterinoContextValue {
 
 export function useRouterino(): RouterinoContextValue;
 
+export function updateHeadTag(tag: HeadTag): void;
+
 export class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
@@ -145,12 +106,7 @@ export class ErrorBoundary extends React.Component<
 }
 
 // Named export (recommended)
-export function Routerino(props: RouterinoProps): JSX.Element;
-
-// Forge plugin Vite plugin constructor
-export function routerinoForge(
-  options?: RouterinoForgeOptions
-): Record<string, any>;
+export function Routerino(props: RouterinoProps): React.ReactElement | null;
 
 // Default export for backward compatibility
 export default Routerino;

@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.join(__dirname, "..");
 const testAppDir = path.join(
   __dirname,
   "..",
@@ -17,8 +18,8 @@ describe("Routerino Forge with useTrailingSlash: false", () => {
   beforeAll(() => {
     // Build the test app once before all tests
     console.log("Building test app with useTrailingSlash: false...");
-    execSync("npm run build", {
-      cwd: testAppDir,
+    execSync("npm run test:app:no-trailing", {
+      cwd: projectRoot,
       encoding: "utf8",
     });
   });
