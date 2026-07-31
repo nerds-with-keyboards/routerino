@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.3] - 2026-07-31
+
+### Added
+
+- Package-contract checks for formatting, lint, tests, build output, and packed exports without relying on local Git hooks
+- Packed-package compatibility builds across Node.js 18, 20, 22, and 24 and Vite 4 through 7
+- Regression coverage for runtime and Forge social images, metadata escaping, route error recovery, failed renders, production URL validation, safe route output paths, isolated cache cleanup, output collisions, custom templates, and 404 probing
+
+### Fixed
+
+- Runtime and Forge `og:image` values now resolve root-relative URLs while preserving already-absolute URLs
+- Route navigation resets a route-level error boundary instead of leaving later routes on the previous fallback
+- Forge escapes generated HTML/XML metadata, preserves rendered replacement-token text, and fails the Vite build when a required route, 404 page, template, or SSG render fails
+- Forge validates its production `baseUrl`, route paths, and output collisions, then builds into and cleans only a unique cache leaf inside the project
+- TypeScript declarations now describe `HeadTag` correctly and provide accurate types for the `routerino/forge` subpath
+
+### Removed
+
+- Husky and lint-staged lifecycle setup; deterministic package/build checks are now the release gate
+
 ## [2.6.2] - 2026-06-10
 
 ### Changed

@@ -25,13 +25,14 @@ npm install
 npm install routerino
 ```
 
-## Full React Example
+## Full React + Forge Example
 
-This example includes the full React configuration. It can replace `src/main.jsx`:
+Keep the route data and app shell together so Forge renders the same tree that
+the browser hydrates.
+
+`src/App.jsx`:
 
 ```jsx
-import React from "react";
-import { createRoot } from "react-dom/client";
 import Routerino from "routerino";
 
 export const routes = [
@@ -63,30 +64,78 @@ export const routes = [
   },
 ];
 
-const App = () => (
-  <main>
-    <nav>
-      <a href="/">Home</a>
-    </nav>
+export default function App() {
+  return (
+    <main>
+      <nav>
+        <a href="/">Home</a>
+      </nav>
 
-    <Routerino
-      title="Example.com"
-      notFoundTitle="Sorry, but this page does not exist."
-      errorTitle="Yikes! Something went wrong."
-      routes={routes}
-    />
+      <Routerino
+        title="Example.com"
+        notFoundTitle="Sorry, but this page does not exist."
+        errorTitle="Yikes! Something went wrong."
+        routes={routes}
+      />
 
-    <footer>
-      <p>
-        Learn more <a href="/about/">about us</a> or{" "}
-        <a href="/contact/">contact us</a> today.
-      </p>
-    </footer>
-  </main>
+      <footer>
+        <p>
+          Learn more <a href="/about/">about us</a> or{" "}
+          <a href="/contact/">contact us</a> today.
+        </p>
+      </footer>
+    </main>
+  );
+}
+```
+
+`src/main.jsx`:
+
+```jsx
+import React from "react";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import App from "./App.jsx";
+
+const root = document.getElementById("root");
+const app = (
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
 );
 
-createRoot(document.getElementById("root")).render(<App />);
+if (root.hasChildNodes()) {
+  hydrateRoot(root, app);
+} else {
+  createRoot(root).render(app);
+}
 ```
+
+`vite.config.js`:
+
+```js
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { routerinoForge } from "routerino/forge";
+
+export default defineConfig({
+  plugins: [
+    react(),
+    routerinoForge({
+      baseUrl: "https://example.com",
+      routes: "./src/App.jsx",
+    }),
+  ],
+});
+```
+
+`baseUrl` must be the production HTTP(S) origin only: it cannot include a path,
+query, hash, or trailing slash. Routes must be statically enumerable at build
+time. Dynamic paths containing `:param` still work in the browser but are
+skipped by Forge.
+
+Forge writes both `about.html` and `about/index.html` for an `/about/` route.
+Both use the canonical URL style selected by `useTrailingSlash`. The build stops
+with an error if Forge cannot render a configured static route or the 404 page.
 
 ## Using Preact
 

@@ -151,7 +151,8 @@ import { ErrorBoundary } from "routerino";
 
 ## Static Site Generation (Routerino Forge)
 
-Add the Vite plugin, export your routes, and build:
+Export the routes and the same app shell that the browser renders, then point
+Forge at that module:
 
 ```js
 // vite.config.js
@@ -163,7 +164,8 @@ export default defineConfig({
   plugins: [
     react(),
     routerinoForge({
-      baseUrl: "https://example.com", // required — no trailing slash
+      baseUrl: "https://example.com",
+      routes: "./src/App.jsx",
     }),
   ],
 });
@@ -171,17 +173,34 @@ export default defineConfig({
 
 **Requirements:**
 
+- `baseUrl` is required and must be an HTTP(S) origin such as
+  `https://example.com` — no path, query, hash, or trailing slash
 - `index.html` must have `<div id="root"></div>`
-- Routes must be **exported** (not defined inline) for the plugin to find them
+- The configured module must export `routes`; exporting its app component as
+  `App` or the default export preserves the full layout and context during SSG
+- Static route paths must begin with `/` and cannot contain empty segments,
+  queries, hashes, backslashes, path traversal, or encoded separators
 - Dynamic routes (with `:param`) are automatically skipped
+
+If the module exports routes but no app component, Forge deliberately renders
+the matched route element by itself. This route-only mode is useful for simple
+sites, but it omits any layout or providers that live outside that element. See
+the [full setup](docs/getting-started.md) for the recommended app structure and
+hydration entry point.
 
 **What you get at build time:**
 
 - Static HTML for every route with full meta tags
-- Dual file generation (`/about.html` + `/about/index.html`) for URL compatibility
+- Dual file generation (`/about.html` + `/about/index.html`) for host
+  compatibility; both copies point to the canonical style selected by
+  `useTrailingSlash`
 - Automatic `sitemap.xml` and `robots.txt`
 - `404.html` at root for custom error pages
 - Canonical URL and `og:url` meta tags on every page
+- Root-relative social images resolved against `baseUrl`; absolute image URLs
+  are preserved
+- A failed route render, 404 render, unsafe route path, invalid configuration,
+  or missing generated file fails the Vite build
 
 ### Generating Routes from Data
 
@@ -253,14 +272,14 @@ export const routes: RouteConfig[] = [
 
 ### `RouteConfig` Object
 
-| Field         | Type        | Required | Description                                         |
-| ------------- | ----------- | -------- | --------------------------------------------------- |
-| `path`        | `string`    | Yes      | Route path. Must start with `/`. Supports `:param`. |
-| `element`     | `ReactNode` | Yes      | Component to render at this route                   |
-| `title`       | `string`    | No       | Page title (site title appended automatically)      |
-| `description` | `string`    | No       | Meta description                                    |
-| `imageUrl`    | `string`    | No       | Social preview image for this route                 |
-| `tags`        | `HeadTag[]` | No       | Additional head tags (OG, JSON-LD, etc.)            |
+| Field         | Type           | Required | Description                                         |
+| ------------- | -------------- | -------- | --------------------------------------------------- |
+| `path`        | `string`       | Yes      | Route path. Must start with `/`. Supports `:param`. |
+| `element`     | `ReactElement` | Yes      | Rendered JSX element, such as `<AboutPage />`       |
+| `title`       | `string`       | No       | Page title (site title appended automatically)      |
+| `description` | `string`       | No       | Meta description                                    |
+| `imageUrl`    | `string`       | No       | Social preview image for this route                 |
+| `tags`        | `HeadTag[]`    | No       | Additional head tags (OG, JSON-LD, etc.)            |
 
 ### `HeadTag` Object
 
@@ -268,15 +287,16 @@ Common attributes: `tag`, `name`, `property`, `content`, `rel`, `href`, `soft`, 
 
 ### `routerinoForge` Options
 
-| Option             | Type      | Default                                 | Description                                      |
-| ------------------ | --------- | --------------------------------------- | ------------------------------------------------ |
-| `baseUrl`          | `string`  | **required**                            | Production URL (no trailing slash)               |
-| `routes`           | `string`  | `"./src/routes.jsx"`                    | Path to routes file                              |
-| `outputDir`        | `string`  | `"dist"`                                | Build output directory                           |
-| `generateSitemap`  | `boolean` | `true`                                  | Generate sitemap.xml and robots.txt              |
-| `useTrailingSlash` | `boolean` | `true`                                  | Set to `false` for `/about` instead of `/about/` |
-| `verbose`          | `boolean` | `false`                                 | Enable detailed build logging                    |
-| `ssgCacheDir`      | `string`  | `"node_modules/.cache/routerino-forge"` | SSG cache directory                              |
+| Option             | Type      | Default                                     | Description                                      |
+| ------------------ | --------- | ------------------------------------------- | ------------------------------------------------ |
+| `baseUrl`          | `string`  | **required**                                | HTTP(S) origin; no path, query, hash, or slash   |
+| `routes`           | `string`  | `"./src/routes.jsx"`                        | Path to routes file                              |
+| `template`         | `string`  | `"index.html"`                              | Built HTML path relative to `outputDir`          |
+| `outputDir`        | `string`  | `"dist"`                                    | Build output directory                           |
+| `generateSitemap`  | `boolean` | `true`                                      | Generate sitemap.xml and robots.txt              |
+| `useTrailingSlash` | `boolean` | `true`                                      | Set to `false` for `/about` instead of `/about/` |
+| `verbose`          | `boolean` | `false`                                     | Enable detailed build logging                    |
+| `ssgCacheDir`      | `string`  | `"node_modules/.cache/routerino-forge/ssg"` | Parent for isolated temporary SSG bundles        |
 
 ## Contributing
 

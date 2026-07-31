@@ -189,6 +189,33 @@ export function updateHeadTag({
   document.querySelector("head").appendChild(tagToUpdate);
 }
 
+/**
+ * Resolve a potentially relative URL against the configured site URL or the
+ * current browser origin. Absolute URLs are returned unchanged.
+ *
+ * @param {string} url - The URL to resolve
+ * @param {string|null} baseUrl - The configured site URL
+ * @returns {string} An absolute URL when a valid base is available
+ */
+function resolveAbsoluteUrl(url, baseUrl) {
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    const fallbackBaseUrl =
+      baseUrl ??
+      (typeof window !== "undefined" ? window.location.origin : null);
+
+    if (!fallbackBaseUrl) return url;
+
+    try {
+      return new URL(url, fallbackBaseUrl).href;
+    } catch {
+      return url;
+    }
+  }
+}
+
 function extractParams({ routePattern, currentRoute }) {
   // For simplicity, we just split by '/' and match :paramName
   let params = {};
@@ -730,10 +757,12 @@ export function Routerino({
 
     // set the og:image
     if (Boolean(imageUrl) || Boolean(match.imageUrl)) {
+      const socialImageUrl = match.imageUrl ?? imageUrl;
+
       // set the og:image tag
       updateHeadTag({
         property: "og:image",
-        content: match.imageUrl ?? imageUrl,
+        content: resolveAbsoluteUrl(socialImageUrl, baseUrl),
       });
     }
 
@@ -790,6 +819,7 @@ export function Routerino({
       return (
         <RouterinoContext.Provider value={routerinoProps}>
           <ErrorBoundary
+            key={currentRoute}
             fallback={errorTemplate}
             errorTitleString={errorTitleString}
             usePrerenderTags={usePrerenderTags}

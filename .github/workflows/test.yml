@@ -7,44 +7,119 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run release checks
+        run: npm run check
+
+      - name: Pack release artifact
+        run: |
+          mkdir package-artifact
+          npm pack --ignore-scripts --pack-destination package-artifact
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: routerino-package
+          path: package-artifact/*.tgz
+
+  react-compatibility:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22, 24]
-        react-config:
-          - name: "React 18"
-            packages: "react@^18.0.0 react-dom@^18.0.0"
-          - name: "React 19"
-            packages: "react@^19.0.0 react-dom@^19.0.0"
+        react-version: [18, 19]
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: "npm"
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Install test app dependencies
-      run: |
-        cd test-apps/vite-app && npm install
-        cd ../vite-app-no-trailing && npm install
+      - name: Install React ${{ matrix.react-version }}
+        run: npm install --no-save react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }}
 
-    - name: Install ${{ matrix.react-config.name }}
-      run: npm install --no-save ${{ matrix.react-config.packages }}
+      - name: Run runtime and Forge unit tests
+        run: npm run test:run -- --exclude test/forge-output.test.js --exclude test/forge-no-trailing.test.js
 
-    - name: Build library
-      run: npm run build
+  node-compatibility:
+    name: Node ${{ matrix.node-version }} / Vite ${{ matrix.vite-version }}
+    needs: quality
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node-version: 18
+            vite-version: 4
+            react-plugin-version: 4
+          - node-version: 20
+            vite-version: 5
+            react-plugin-version: 4
+          - node-version: 20
+            vite-version: 6
+            react-plugin-version: 4
+          - node-version: 20
+            vite-version: 7
+            react-plugin-version: 5
+          - node-version: 22
+            vite-version: 7
+            react-plugin-version: 5
+          - node-version: 24
+            vite-version: 7
+            react-plugin-version: 5
 
-    - name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.react-config.name }})
-      run: npm test -- --run
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Run linter
-      run: npm run lint
-      # Only run linter once to save time
-      if: ${{ matrix.node-version == 20 && matrix.react-config.name == 'React 19' }}
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: routerino-package
+          path: package-artifact
+
+      - name: Install packed package with supported peers
+        working-directory: test-apps/package-consumer
+        run: >-
+          npm install --no-save --no-package-lock
+          ../../package-artifact/routerino-*.tgz
+          react@18 react-dom@18 prop-types@15
+          vite@${{ matrix.vite-version }}
+          @vitejs/plugin-react@${{ matrix.react-plugin-version }}
+
+      - name: Build packed-package consumer
+        working-directory: test-apps/package-consumer
+        run: npm run build
+
+      - name: Verify SSG output
+        working-directory: test-apps/package-consumer
+        run: |
+          test -s dist/index.html
+          test -s dist/about.html
+          test -s dist/404.html
+          test -s dist/sitemap.xml
+          grep -q "Packed package home" dist/index.html
+          grep -q "Packed package about" dist/about.html

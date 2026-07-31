@@ -15,11 +15,239 @@ import { build } from "vite";
 const isDynamicRoute = (path) =>
   path.split("/").some((segment) => segment.startsWith(":"));
 
+function validateBaseUrl(baseUrl) {
+  if (typeof baseUrl !== "string" || baseUrl.length === 0) {
+    throw new Error(
+      '[Routerino Forge] baseUrl is required and must be an absolute HTTP(S) origin, such as "https://example.com".'
+    );
+  }
+
+  const hasWhitespaceOrControl = [...baseUrl].some((character) => {
+    const codePoint = character.codePointAt(0);
+    return character.trim() === "" || codePoint <= 0x1f || codePoint === 0x7f;
+  });
+
+  if (
+    baseUrl !== baseUrl.trim() ||
+    hasWhitespaceOrControl ||
+    !/^https?:\/\/[^/?#]+$/i.test(baseUrl)
+  ) {
+    throw new Error(
+      `[Routerino Forge] Invalid baseUrl "${baseUrl}". Use an absolute HTTP(S) origin with no path, query, hash, or trailing slash.`
+    );
+  }
+
+  let parsedBaseUrl;
+  try {
+    parsedBaseUrl = new URL(baseUrl);
+  } catch {
+    throw new Error(
+      `[Routerino Forge] Invalid baseUrl "${baseUrl}". Use an absolute HTTP(S) origin with no path, query, hash, or trailing slash.`
+    );
+  }
+
+  if (
+    !["http:", "https:"].includes(parsedBaseUrl.protocol) ||
+    parsedBaseUrl.username ||
+    parsedBaseUrl.password ||
+    parsedBaseUrl.pathname !== "/" ||
+    parsedBaseUrl.search ||
+    parsedBaseUrl.hash
+  ) {
+    throw new Error(
+      `[Routerino Forge] Invalid baseUrl "${baseUrl}". Use an absolute HTTP(S) origin with no path, query, hash, or trailing slash.`
+    );
+  }
+}
+
+function validateRoutePath(route, index) {
+  const routePath = route?.path;
+  const routeLabel = routePath === undefined ? `at index ${index}` : routePath;
+
+  if (typeof routePath !== "string" || routePath.length === 0) {
+    throw new Error(
+      `[Routerino Forge] Invalid route path ${routeLabel}: expected a non-empty string.`
+    );
+  }
+
+  if (
+    !routePath.startsWith("/") ||
+    routePath.startsWith("//") ||
+    routePath.includes("\\") ||
+    routePath.includes("?") ||
+    routePath.includes("#") ||
+    routePath.includes("\0")
+  ) {
+    throw new Error(
+      `[Routerino Forge] Unsafe route path "${routePath}". Route paths must be root-relative URL paths without queries, hashes, or backslashes.`
+    );
+  }
+
+  const segments = routePath === "/" ? [] : routePath.slice(1).split("/");
+  if (segments.at(-1) === "") segments.pop();
+
+  for (const segment of segments) {
+    if (segment.length === 0) {
+      throw new Error(
+        `[Routerino Forge] Unsafe route path "${routePath}": empty path segments are not allowed.`
+      );
+    }
+
+    let decodedSegment;
+    try {
+      decodedSegment = decodeURIComponent(segment);
+    } catch {
+      throw new Error(
+        `[Routerino Forge] Unsafe route path "${routePath}": invalid percent encoding.`
+      );
+    }
+
+    if (
+      decodedSegment === "." ||
+      decodedSegment === ".." ||
+      decodedSegment.includes("/") ||
+      decodedSegment.includes("\\") ||
+      decodedSegment.includes("\0")
+    ) {
+      throw new Error(
+        `[Routerino Forge] Unsafe route path "${routePath}": path traversal and encoded separators are not allowed.`
+      );
+    }
+  }
+}
+
+function hasInvalidRouteElement(route) {
+  return (
+    !route.element ||
+    typeof route.element === "boolean" ||
+    typeof route.element === "function" ||
+    typeof route.element === "symbol"
+  );
+}
+
+function resolveOutputPath(outputDir, ...segments) {
+  const outputRoot = path.resolve(outputDir);
+  const outputPath = path.resolve(outputRoot, ...segments);
+  const relativePath = path.relative(outputRoot, outputPath);
+
+  if (
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw new Error(
+      `[Routerino Forge] Refusing to write outside outputDir: ${outputPath}`
+    );
+  }
+
+  return outputPath;
+}
+
+function resolveSsgCacheRoot(projectRoot, cacheDirectory) {
+  const resolvedProjectRoot = path.resolve(projectRoot);
+  return resolveOutputPath(resolvedProjectRoot, cacheDirectory);
+}
+
+function getRouteOutputFiles(routePath, outputDir) {
+  if (routePath === "/") {
+    return [{ path: resolveOutputPath(outputDir, "index.html") }];
+  }
+
+  const relativeRoutePath = routePath.slice(1).replace(/\/$/, "");
+  const routeSegments = relativeRoutePath.split("/");
+  const lastSegment = routeSegments.at(-1);
+  const parentSegments = routeSegments.slice(0, -1);
+  const canonicalPath = `/${relativeRoutePath}`;
+
+  return [
+    {
+      path: resolveOutputPath(
+        outputDir,
+        ...parentSegments,
+        `${lastSegment}.html`
+      ),
+      urlPath: canonicalPath,
+    },
+    {
+      path: resolveOutputPath(outputDir, ...routeSegments, "index.html"),
+      urlPath: `${canonicalPath}/`,
+    },
+  ];
+}
+
+function validateStaticOutputPaths(routes, outputDir) {
+  const outputOwners = new Map();
+
+  const reserveOutput = (filePath, owner) => {
+    const portablePath = path.resolve(filePath).toLowerCase();
+    const existingOwner = outputOwners.get(portablePath);
+
+    if (existingOwner) {
+      throw new Error(
+        `[Routerino Forge] Static output collision: ${owner} and ${existingOwner} both generate ${filePath}`
+      );
+    }
+
+    outputOwners.set(portablePath, owner);
+  };
+
+  reserveOutput(
+    resolveOutputPath(outputDir, "404.html"),
+    "the reserved 404 page"
+  );
+
+  for (const route of routes) {
+    for (const file of getRouteOutputFiles(route.path, outputDir)) {
+      reserveOutput(file.path, `route "${route.path}"`);
+    }
+  }
+}
+
+function getNotFoundProbePath(routes) {
+  const maximumSegmentCount = routes.reduce((maximum, route) => {
+    const segmentCount = route.path.split("/").filter(Boolean).length;
+    return Math.max(maximum, segmentCount);
+  }, 0);
+  const probeSegments = Array.from(
+    { length: maximumSegmentCount + 1 },
+    (_, index) => `__routerino-forge-404-${index + 1}__`
+  );
+
+  return `/${probeSegments.join("/")}`;
+}
+
+async function verifyGeneratedHtmlFiles(routes, outputDir) {
+  const expectedFiles = [resolveOutputPath(outputDir, "404.html")];
+
+  for (const route of routes) {
+    expectedFiles.push(
+      ...getRouteOutputFiles(route.path, outputDir).map((file) => file.path)
+    );
+  }
+
+  for (const filePath of expectedFiles) {
+    let fileStats;
+    try {
+      fileStats = await fs.stat(filePath);
+    } catch {
+      throw new Error(
+        `[Routerino Forge] Expected HTML output was not generated: ${filePath}`
+      );
+    }
+
+    if (!fileStats.isFile() || fileStats.size === 0) {
+      throw new Error(
+        `[Routerino Forge] Expected non-empty HTML output: ${filePath}`
+      );
+    }
+  }
+}
+
 export function routerinoForge(options = {}) {
   // Configuration with defaults
   const config = {
     routes: options.routes || "./src/routes.jsx",
-    template: options.template || "index.html", // Default to source index.html
+    template: options.template || "index.html", // Built HTML path relative to outputDir
     outputDir: options.outputDir || "dist",
     baseUrl: options.baseUrl || "",
     generateSitemap: options.generateSitemap ?? true,
@@ -28,20 +256,6 @@ export function routerinoForge(options = {}) {
     ssgCacheDir:
       options.ssgCacheDir || "node_modules/.cache/routerino-forge/ssg",
   };
-
-  // Normalize baseUrl: strip trailing slashes to ensure correct canonical composition
-  if (typeof config.baseUrl === "string" && config.baseUrl.length > 0) {
-    const normalized = config.baseUrl.replace(/\/+$/, "");
-    if (normalized !== config.baseUrl) {
-      console.warn(
-        "[Routerino Forge] Normalized baseUrl by removing trailing slash:",
-        config.baseUrl,
-        "->",
-        normalized
-      );
-      config.baseUrl = normalized;
-    }
-  }
 
   let viteConfig;
   let hasRun = false;
@@ -60,16 +274,27 @@ export function routerinoForge(options = {}) {
       if (hasRun || viteConfig.build.ssr) return; // Skip if already run or if this IS the SSG build
       hasRun = true;
 
+      validateBaseUrl(config.baseUrl);
+
+      const ssgCacheRoot = resolveSsgCacheRoot(
+        viteConfig.root,
+        config.ssgCacheDir
+      );
+
       let tempEntryPath = null;
+      let ssgOutDir = null;
 
       try {
+        await fs.mkdir(ssgCacheRoot, { recursive: true });
+        ssgOutDir = await fs.mkdtemp(
+          path.join(ssgCacheRoot, "routerino-forge-build-")
+        );
+
         // Step 1: Build bundle for static generation
         let ssgEntryPath = path.resolve(
           viteConfig.root,
           "src/entry-server.jsx"
         );
-        const ssgOutDir = path.resolve(viteConfig.root, config.ssgCacheDir);
-
         // Check if user has custom entry-server, otherwise create temp one
         try {
           await fs.access(ssgEntryPath);
@@ -182,7 +407,7 @@ function mockWindow(url, baseUrl) {
 }
 
 export function render(url, baseUrl) {
-  // Check if we should render the full App or just the route element  
+  // Check if we should render the full App or just the route element
   if (App) {
     // Find the route to render
     const route = routes.find(r => {
@@ -196,10 +421,9 @@ export function render(url, baseUrl) {
     mockWindow(url, baseUrl);
     
     try {
-      
       // Render the App with Routerino SSG-aware
       const html = ReactDOMServer.renderToString(React.createElement(App));
-      
+
       return {
         html,
         title: route?.title,
@@ -207,19 +431,14 @@ export function render(url, baseUrl) {
         imageUrl: route?.imageUrl,
         notFound: !route
       };
-    } catch (error) {
-      console.error(\`[Routerino Forge] Failed to render App for route \${url}:\`, error.message);
-      console.error(\`[Routerino Forge] Stack trace:\`, error.stack);
-      // Fall back to route-only rendering
     } finally {
       // Clean up global mocks
       delete global.window;
       delete global.document;
     }
   }
-  
-  // Fall back to route-only rendering when App is not defined or
-  // the App render threw (cleanup of mocks already done in catch block)
+
+  // Fall back to route-only rendering when App is not defined.
   const route = routes.find(r => {
     if (r.path === url) return true;
     if (r.path === '/' && url === '/') return true;
@@ -235,23 +454,13 @@ export function render(url, baseUrl) {
     return { html: '<div><h1>404 - Page Not Found</h1><p>The page you are looking for does not exist.</p></div>', notFound: true };
   }
   
-  try {
-    const html = ReactDOMServer.renderToString(route.element);
-    return {
-      html,
-      title: route.title,
-      description: route.description,
-      imageUrl: route.imageUrl
-    };
-  } catch (error) {
-    console.error(\`[Routerino Forge] Failed to render route \${route.path}:\`, error.message);
-    return {
-      html: \`<div>Error rendering route: \${error.message}</div>\`,
-      title: route.title,
-      description: route.description,
-      imageUrl: route.imageUrl
-    };
-  }
+  const html = ReactDOMServer.renderToString(route.element);
+  return {
+    html,
+    title: route.title,
+    description: route.description,
+    imageUrl: route.imageUrl
+  };
 }`.trim();
 
           // Ensure temp directory exists
@@ -282,65 +491,74 @@ export function render(url, baseUrl) {
         });
 
         // Step 2: Load the built module
-        const ssgModule = await import(
-          pathToFileURL(path.join(ssgOutDir, "entry-server.mjs")).href
-        );
-        let { render, routes } = ssgModule;
+        const ssgModulePath = path.join(ssgOutDir, "entry-server.mjs");
+        try {
+          await fs.access(ssgModulePath);
+        } catch {
+          throw new Error(
+            `[Routerino Forge] SSG build did not generate ${ssgModulePath}`
+          );
+        }
+        const ssgModule = await import(pathToFileURL(ssgModulePath).href);
+        const { render, routes } = ssgModule;
 
         // Validate routes
         if (!routes || !Array.isArray(routes)) {
           throw new Error(`Routes must be an array. Got: ${typeof routes}`);
         }
 
-        if (routes.length === 0) {
-          console.warn(
-            "[Routerino Forge] No routes found - check your routes export"
+        if (typeof render !== "function") {
+          throw new Error(
+            `SSG entry must export a render function. Got: ${typeof render}`
           );
         }
 
-        // Check for common issues
-        const invalidRoutes = routes.filter((route) => {
-          if (!route.element) {
-            console.warn(
-              `[Routerino Forge] Route ${route.path} has no element property`
-            );
-            return true;
-          }
-          if (typeof route.element === "function") {
-            console.warn(
-              `[Routerino Forge] Route ${route.path} element is a function - should be JSX element like <Component />`
-            );
-            return true;
-          }
-          return false;
-        });
-
-        if (invalidRoutes.length > 0) {
-          console.warn(
-            `[Routerino Forge] ${invalidRoutes.length} routes have issues - see warnings above`
-          );
-        }
+        routes.forEach((route, index) => validateRoutePath(route, index));
 
         // Count only static routes (excluding dynamic routes with parameters)
         const staticRoutes =
           routes?.filter((route) => !isDynamicRoute(route.path)) || [];
+
+        if (routes.length === 0) {
+          throw new Error(
+            "[Routerino Forge] No routes found - check your routes export"
+          );
+        }
+
+        const invalidStaticRoutes = staticRoutes.filter(hasInvalidRouteElement);
+        if (invalidStaticRoutes.length > 0) {
+          throw new Error(
+            `[Routerino Forge] Static routes must provide a renderable JSX element. Invalid routes: ${invalidStaticRoutes
+              .map((route) => route.path)
+              .join(", ")}`
+          );
+        }
+
+        const invalidDynamicRoutes = routes.filter(
+          (route) => isDynamicRoute(route.path) && hasInvalidRouteElement(route)
+        );
+        for (const route of invalidDynamicRoutes) {
+          console.warn(
+            `[Routerino Forge] Dynamic route ${route.path} has an invalid element and will not be statically generated`
+          );
+        }
+
+        const outputDirectory = path.resolve(viteConfig.root, config.outputDir);
+        validateStaticOutputPaths(staticRoutes, outputDirectory);
         console.log(
           `[Routerino Forge] Found ${routes?.length || 0} routes (${staticRoutes.length} static, ${(routes?.length || 0) - staticRoutes.length} dynamic)`
         );
 
-        // Read the built HTML template
-        // If template path doesn't start with outputDir, assume it's meant to be in outputDir
-        let templatePath;
-        if (config.template.includes(config.outputDir)) {
-          templatePath = path.resolve(viteConfig.root, config.template);
-        } else {
-          // Use the built index.html in outputDir
-          templatePath = path.resolve(
-            viteConfig.root,
-            config.outputDir,
-            "index.html"
+        // Read the selected built HTML file from inside outputDir.
+        if (path.isAbsolute(config.template)) {
+          throw new Error(
+            "[Routerino Forge] template must be a path relative to outputDir"
           );
         }
+        const templatePath = resolveOutputPath(
+          outputDirectory,
+          config.template
+        );
 
         let template;
         try {
@@ -357,7 +575,7 @@ export function render(url, baseUrl) {
 
         // Check if template has the root div
         if (!/<div[^>]*\sid=["']root["'][^>]*>/i.test(template)) {
-          console.warn(
+          throw new Error(
             '[Routerino Forge] Template missing <div id="root">. The plugin needs this to inject rendered HTML.'
           );
         }
@@ -366,7 +584,7 @@ export function render(url, baseUrl) {
         await generateStaticPages({
           routes,
           template,
-          outputDir: path.resolve(viteConfig.root, config.outputDir),
+          outputDir: outputDirectory,
           config,
           render, // Pass the render function
         });
@@ -374,16 +592,19 @@ export function render(url, baseUrl) {
         // Generate 404.html page
         await generate404Page({
           template: template,
-          outputDir: path.resolve(viteConfig.root, config.outputDir),
+          outputDir: outputDirectory,
           config,
           render, // Pass the render function
+          routes,
         });
+
+        await verifyGeneratedHtmlFiles(staticRoutes, outputDirectory);
 
         // Generate sitemap if enabled
         if (config.generateSitemap) {
           await generateSitemap(routes, {
             ...config,
-            outputDir: path.resolve(viteConfig.root, config.outputDir),
+            outputDir: outputDirectory,
           });
         }
 
@@ -403,14 +624,15 @@ export function render(url, baseUrl) {
         if (config.verbose) {
           console.error("[Routerino Forge] Stack trace:", error.stack);
         }
-        // Don't throw to allow build to continue
+        throw error;
       } finally {
         // Clean up SSG cache directory
-        const ssgOutDir = path.resolve(viteConfig.root, config.ssgCacheDir);
-        try {
-          await fs.rm(ssgOutDir, { recursive: true, force: true });
-        } catch {
-          // Ignore if it doesn't exist or can't be removed
+        if (ssgOutDir) {
+          try {
+            await fs.rm(ssgOutDir, { recursive: true, force: true });
+          } catch {
+            // Ignore if the dedicated temporary directory is already gone.
+          }
         }
 
         // Clean up temp directory if we created one
@@ -451,51 +673,34 @@ async function generateStaticPages({
 
     try {
       // Use the render function to generate HTML (pass baseUrl for window mocking)
-      const renderResult = render(route.path, config.baseUrl);
+      const renderResult = await render(route.path, config.baseUrl);
 
-      let renderedHTML = "";
-      if (renderResult.notFound) {
-        console.log(`[Routerino Forge] Route not found: ${route.path}`);
-        renderedHTML = `<div data-route="${route.path}" data-not-found="true"><!-- Route not found --></div>`;
-      } else if (!renderResult.html || renderResult.html.trim() === "") {
-        console.warn(
-          `[Routerino Forge] Empty HTML for ${route.path} - check that route.element is a valid React element`
-        );
-        renderedHTML = `<div data-route="${route.path}" data-empty="true"><!-- Empty render result --></div>`;
-      } else {
-        renderedHTML = renderResult.html;
-        console.log(`[Routerino Forge] ✓ Rendered ${route.path}`);
-
-        // Override metadata with render result if available
-        if (renderResult.title) route.title = renderResult.title;
-        if (renderResult.description)
-          route.description = renderResult.description;
-        if (renderResult.imageUrl) route.imageUrl = renderResult.imageUrl;
+      if (!renderResult || typeof renderResult !== "object") {
+        throw new Error("render() did not return a result object");
       }
+
+      if (renderResult.notFound) {
+        throw new Error("render() reported the configured route as not found");
+      }
+
+      if (
+        typeof renderResult.html !== "string" ||
+        renderResult.html.trim() === ""
+      ) {
+        throw new Error("render() did not return a non-empty HTML string");
+      }
+
+      const renderedHTML = renderResult.html;
+      console.log(`[Routerino Forge] ✓ Rendered ${route.path}`);
+
+      // Override metadata with render result if available
+      if (renderResult.title) route.title = renderResult.title;
+      if (renderResult.description)
+        route.description = renderResult.description;
+      if (renderResult.imageUrl) route.imageUrl = renderResult.imageUrl;
 
       // Generate files for both URL patterns (with and without trailing slash)
-      const filesToGenerate = [];
-
-      if (route.path === "/") {
-        // Root only needs index.html
-        filesToGenerate.push({
-          path: path.join(outputDir, "index.html"),
-        });
-      } else {
-        // For all other routes, generate both formats
-        const cleanPath = route.path.replace(/\/$/, ""); // Remove trailing slash if present
-
-        // Determine which version is canonical based on useTrailingSlash
-        filesToGenerate.push({
-          path: path.join(outputDir, `${cleanPath}.html`),
-          urlPath: cleanPath,
-        });
-
-        filesToGenerate.push({
-          path: path.join(outputDir, cleanPath, "index.html"),
-          urlPath: `${cleanPath}/`,
-        });
-      }
+      const filesToGenerate = getRouteOutputFiles(route.path, outputDir);
 
       // Write files with appropriate meta tags
       for (const file of filesToGenerate) {
@@ -517,9 +722,10 @@ async function generateStaticPages({
 
         if (route.title) {
           // Combine route title with existing title (if any)
+          const escapedRouteTitle = escapeHtmlText(route.title);
           const finalTitle = existingTitle
-            ? `${route.title} | ${existingTitle}`
-            : route.title;
+            ? `${escapedRouteTitle} | ${existingTitle}`
+            : escapedRouteTitle;
 
           if (html.includes("<title>")) {
             // Replace existing title tag
@@ -544,9 +750,13 @@ async function generateStaticPages({
         const rootDivRegex =
           /(<div[^>]*\sid=["']root["'][^>]*>)(.*?)(<\/div>)/is;
         if (rootDivRegex.test(html)) {
-          html = html.replace(rootDivRegex, `$1${renderedHTML}$3`);
+          html = html.replace(
+            rootDivRegex,
+            (_match, openingTag, _existingContent, closingTag) =>
+              `${openingTag}${renderedHTML}${closingTag}`
+          );
         } else {
-          console.warn(
+          throw new Error(
             `[Routerino Forge] Could not find <div id="root"> for ${route.path}`
           );
         }
@@ -562,34 +772,49 @@ async function generateStaticPages({
         }
       }
     } catch (error) {
-      console.error(
-        `[Routerino Forge] Failed to generate ${route.path}:`,
-        error
+      throw new Error(
+        `[Routerino Forge] Failed to generate route "${route.path}": ${error.message}`,
+        { cause: error }
       );
     }
   }
 }
 
-// Helper to safely handle meta tag content
-// If content has double quotes, use single quotes for the attribute
-// If content has single quotes, use double quotes for the attribute
-// If it has both, replace double quotes with smart quotes
+function escapeHtmlAttribute(content) {
+  return String(content)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function escapeHtmlText(content) {
+  return escapeHtmlAttribute(content);
+}
+
 function formatMetaAttribute(attrName, content) {
-  if (!content) return "";
+  if (content === undefined || content === null) return "";
 
-  const hasDoubleQuotes = content.includes('"');
-  const hasSingleQuotes = content.includes("'");
+  if (!/^[A-Za-z][A-Za-z0-9:._-]*$/.test(attrName)) {
+    throw new Error(
+      `[Routerino Forge] Invalid HTML attribute name: ${attrName}`
+    );
+  }
 
-  if (hasDoubleQuotes && hasSingleQuotes) {
-    // Replace straight quotes with smart quotes which look better and don't break HTML
-    const safeContent = content.replace(/"/g, '"'); // Replace " with smart quote
-    return `${attrName}="${safeContent}"`;
-  } else if (hasDoubleQuotes) {
-    // Use single quotes for attribute
-    return `${attrName}='${content}'`;
-  } else {
-    // Use double quotes (default)
-    return `${attrName}="${content}"`;
+  return `${attrName}="${escapeHtmlAttribute(content)}"`;
+}
+
+function resolveImageUrl(imageUrl, baseUrl) {
+  const imageUrlString = String(imageUrl);
+
+  try {
+    return new URL(imageUrlString, `${baseUrl}/`).href;
+  } catch (error) {
+    throw new Error(
+      `[Routerino Forge] Invalid imageUrl "${imageUrlString}": ${error.message}`,
+      { cause: error }
+    );
   }
 }
 
@@ -610,7 +835,9 @@ function generateMetaTags(route, config, urlPath) {
   const canonicalUrl = config.baseUrl + canonicalPath;
 
   // Always add canonical URL tag
-  tags.push(`<link rel="canonical" href="${canonicalUrl}">`);
+  tags.push(
+    `<link rel="canonical" ${formatMetaAttribute("href", canonicalUrl)}>`
+  );
 
   if (route.description) {
     tags.push(
@@ -632,13 +859,15 @@ function generateMetaTags(route, config, urlPath) {
   }
 
   // Add og:url with canonical URL
-  tags.push(`<meta property="og:url" content="${canonicalUrl}">`);
+  tags.push(
+    `<meta property="og:url" ${formatMetaAttribute("content", canonicalUrl)}>`
+  );
 
   if (route.imageUrl) {
-    const imageUrl = config.baseUrl
-      ? config.baseUrl + route.imageUrl
-      : route.imageUrl;
-    tags.push(`<meta property="og:image" content="${imageUrl}">`);
+    const imageUrl = resolveImageUrl(route.imageUrl, config.baseUrl);
+    tags.push(
+      `<meta property="og:image" ${formatMetaAttribute("content", imageUrl)}>`
+    );
   }
 
   // Twitter card
@@ -649,11 +878,15 @@ function generateMetaTags(route, config, urlPath) {
     route.tags.forEach((tag) => {
       const tagName = tag.tag || "meta";
       const innerHTML = tag.innerHTML;
+      if (!/^[A-Za-z][A-Za-z0-9:-]*$/.test(tagName)) {
+        throw new Error(`[Routerino Forge] Invalid HTML tag name: ${tagName}`);
+      }
       const attrs = Object.entries(tag)
         .filter(
           ([key]) => key !== "tag" && key !== "soft" && key !== "innerHTML"
         )
         .map(([key, value]) => formatMetaAttribute(key, value))
+        .filter(Boolean)
         .join(" ");
 
       if (attrs || innerHTML !== undefined) {
@@ -670,18 +903,39 @@ function generateMetaTags(route, config, urlPath) {
 }
 
 // Generate 404.html page
-async function generate404Page({ template, outputDir, config, render }) {
+async function generate404Page({
+  template,
+  outputDir,
+  config,
+  render,
+  routes,
+}) {
   console.log("[Routerino Forge] ✓ Generating 404.html");
 
   try {
     // Render a non-existent route to get the notFoundTemplate content
-    const renderResult = render(
-      "/this-route-does-not-exist-404",
+    const renderResult = await render(
+      getNotFoundProbePath(routes),
       config.baseUrl
     );
 
-    // The render function will return the notFoundTemplate HTML (already includes App wrapper if App exists)
-    const renderedHTML = renderResult.html || "404 - Page Not Found";
+    if (!renderResult || typeof renderResult !== "object") {
+      throw new Error("render() did not return a result object");
+    }
+
+    if (
+      typeof renderResult.html !== "string" ||
+      renderResult.html.trim() === ""
+    ) {
+      throw new Error("render() did not return a non-empty HTML string");
+    }
+
+    if (renderResult.notFound !== true) {
+      throw new Error("render() did not report the 404 probe as not found");
+    }
+
+    // The render function returns the notFoundTemplate HTML (already includes App wrapper if App exists)
+    const renderedHTML = renderResult.html;
 
     // Generate meta tags for 404 page
     const metaTags = [];
@@ -720,22 +974,29 @@ async function generate404Page({ template, outputDir, config, render }) {
     // Replace root div content with rendered HTML
     const rootDivRegex = /(<div[^>]*\sid=["']root["'][^>]*>)(.*?)(<\/div>)/is;
     if (rootDivRegex.test(html)) {
-      html = html.replace(rootDivRegex, `$1${renderedHTML}$3`);
+      html = html.replace(
+        rootDivRegex,
+        (_match, openingTag, _existingContent, closingTag) =>
+          `${openingTag}${renderedHTML}${closingTag}`
+      );
     } else {
-      console.warn(
+      throw new Error(
         '[Routerino Forge] Could not find <div id="root"> for 404.html'
       );
     }
 
     // Write 404.html
-    const filePath = path.join(outputDir, "404.html");
+    const filePath = resolveOutputPath(outputDir, "404.html");
     await fs.writeFile(filePath, html);
 
     if (config.verbose) {
       console.log(`[Routerino Forge] Generated: ${filePath}`);
     }
   } catch (error) {
-    console.error("[Routerino Forge] Failed to generate 404.html:", error);
+    throw new Error(
+      `[Routerino Forge] Failed to generate 404.html: ${error.message}`,
+      { cause: error }
+    );
   }
 }
 
@@ -753,7 +1014,7 @@ async function generateSitemap(routes, config) {
         urlPath = config.useTrailingSlash ? cleanPath + "/" : cleanPath;
       }
       const url = config.baseUrl + urlPath;
-      return `  <url>\n    <loc>${url}</loc>\n  </url>`;
+      return `  <url>\n    <loc>${escapeHtmlText(url)}</loc>\n  </url>`;
     })
     .join("\n");
 
@@ -765,7 +1026,7 @@ async function generateSitemap(routes, config) {
 ${urls}
 </urlset>`;
 
-  const sitemapPath = path.join(config.outputDir, "sitemap.xml");
+  const sitemapPath = resolveOutputPath(config.outputDir, "sitemap.xml");
   await fs.writeFile(sitemapPath, sitemap);
 
   console.log(
@@ -777,7 +1038,7 @@ ${urls}
   }
 
   // Generate robots.txt if it doesn't exist
-  const robotsPath = path.join(config.outputDir, "robots.txt");
+  const robotsPath = resolveOutputPath(config.outputDir, "robots.txt");
   try {
     await fs.access(robotsPath);
     if (config.verbose) {
