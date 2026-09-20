@@ -80,12 +80,21 @@ jobs:
           - node-version: 20
             vite-version: 7
             react-plugin-version: 5
+          - node-version: 20
+            vite-version: 8
+            react-plugin-version: 6
           - node-version: 22
             vite-version: 7
             react-plugin-version: 5
+          - node-version: 22
+            vite-version: 8
+            react-plugin-version: 6
           - node-version: 24
             vite-version: 7
             react-plugin-version: 5
+          - node-version: 24
+            vite-version: 8
+            react-plugin-version: 6
 
     steps:
       - uses: actions/checkout@v4

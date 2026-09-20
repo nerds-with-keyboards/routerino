@@ -9,8 +9,11 @@ const compatibilityMatrix = [
   { node: "20", vite: "5" },
   { node: "20", vite: "6" },
   { node: "20", vite: "7" },
+  { node: "20", vite: "8" },
   { node: "22", vite: "7" },
+  { node: "22", vite: "8" },
   { node: "24", vite: "7" },
+  { node: "24", vite: "8" },
 ];
 
 console.log("📋 Current Node.js version:");
