@@ -1,16 +1,14 @@
-# Routerino — The React router that Google can read.
+# Routerino
 
-> React routing with built-in SEO. No framework, no lock-in.
+Routerino is a React router with static HTML generation and built-in SEO support.
 
-**Live demos:** [raymondsseptic.com](https://raymondsseptic.com) · [kissimmeekastawayvilla.com](https://kissimmeekastawayvilla.com) · [nerdswithkeyboards.com](https://nerdswithkeyboards.com) · [logbook-ed.com](https://logbook-ed.com)
-
----
+Live demos: [raymondsseptic.com](https://raymondsseptic.com), [kissimmeekastawayvilla.com](https://kissimmeekastawayvilla.com), [nerdswithkeyboards.com](https://nerdswithkeyboards.com), and [logbook-ed.com](https://logbook-ed.com)
 
 ## Why
 
-React SPAs are fast for users but invisible to search engines. The standard answer — Next.js or Remix — forces a full framework adoption, new conventions, and vendor lock-in for what should be a solved problem: **generating static HTML with proper meta tags at build time.**
+React SPAs do not always give search engines complete HTML to index. Frameworks such as Next.js and Remix solve this, but adopting one also brings its conventions and application structure.
 
-Routerino gives you that. Zero added dependencies, standard `<a>` tags, and a Vite plugin that generates complete static HTML including meta tags, Open Graph tags, canonical URLs, sitemap.xml, and robots.txt. You keep your SPA developer experience. Google gets readable pages.
+Routerino handles routing as a library and provides a Vite plugin for generating static HTML at build time. Generated pages include meta tags, Open Graph tags, canonical URLs, `sitemap.xml`, and `robots.txt`. The client-side application still uses standard `<a>` tags and has no added runtime dependencies.
 
 ## Quick Start
 
@@ -88,7 +86,7 @@ export const routes = [
     imageUrl: "/images/about-og.jpg",
   },
   {
-    path: "/products/:id/", // dynamic route — not statically generated
+    path: "/products/:id/", // Dynamic routes are not statically generated
     element: <ProductPage />,
   },
 ];
@@ -114,7 +112,7 @@ function ProductPage() {
 }
 ```
 
-**Returns:** `currentRoute`, `params`, `routePattern`, `updateHeadTag`
+The hook returns `currentRoute`, `params`, `routePattern`, and `updateHeadTag`.
 
 ### `updateHeadTag`
 
@@ -171,10 +169,10 @@ export default defineConfig({
 });
 ```
 
-**Requirements:**
+### Requirements
 
 - `baseUrl` is required and must be an HTTP(S) origin such as
-  `https://example.com` — no path, query, hash, or trailing slash
+  `https://example.com`, with no path, query, hash, or trailing slash
 - `index.html` must have `<div id="root"></div>`
 - The configured module must export `routes`; exporting its app component as
   `App` or the default export preserves the full layout and context during SSG
@@ -188,7 +186,7 @@ sites, but it omits any layout or providers that live outside that element. See
 the [full setup](docs/getting-started.md) for the recommended app structure and
 hydration entry point.
 
-**What you get at build time:**
+### Build Output
 
 - Static HTML for every route with full meta tags
 - Dual file generation (`/about.html` + `/about/index.html`) for host
@@ -226,7 +224,7 @@ Each generated route gets its own static HTML page with proper meta tags and is 
 
 ## Who Is This For?
 
-Routerino is for React developers building content sites, marketing pages, or JAMstack apps who want full SEO (static HTML, meta tags, sitemaps) without adopting a framework like Next.js or Remix. If you're building a dashboard or an authenticated app, React Router is fine. If you need Google to index your pages, Routerino gives you that at build time with zero new dependencies.
+Routerino is intended for React content sites, marketing pages, and JAMstack applications that need static HTML, meta tags, and sitemaps without adopting a framework such as Next.js or Remix. A dashboard or authenticated application may not need static generation; a general-purpose client-side router may be enough in that case.
 
 ## TypeScript
 
@@ -242,12 +240,12 @@ export const routes: RouteConfig[] = [
 
 ## Documentation
 
-- [Getting Started](docs/getting-started.md) — Full React example, Preact setup
-- [SEO Guide](docs/seo-guide.md) — Canonical URLs, social previews, JSON-LD, hash links
-- [Image Optimization](docs/image-optimization.md) — Delegate to `vite-plugin-image-optimizer`
-- [Accessibility](docs/accessibility.md) — ESLint a11y setup for Lighthouse scores
-- [Vendoring](docs/vendoring.md) — Include Routerino directly in your project
-- [Additional Resources](docs/additional-resources.md) — External SEO/performance links
+- [Getting Started](docs/getting-started.md): Full React example and Preact setup
+- [SEO Guide](docs/seo-guide.md): Canonical URLs, social previews, JSON-LD, and hash links
+- [Image Optimization](docs/image-optimization.md): Using `vite-plugin-image-optimizer`
+- [Accessibility](docs/accessibility.md): ESLint accessibility setup for Lighthouse scores
+- [Vendoring](docs/vendoring.md): Including Routerino directly in your project
+- [Additional Resources](docs/additional-resources.md): External SEO and performance links
 
 ## API Reference
 
@@ -289,7 +287,7 @@ Common attributes: `tag`, `name`, `property`, `content`, `rel`, `href`, `soft`, 
 
 | Option             | Type      | Default                                     | Description                                      |
 | ------------------ | --------- | ------------------------------------------- | ------------------------------------------------ |
-| `baseUrl`          | `string`  | **required**                                | HTTP(S) origin; no path, query, hash, or slash   |
+| `baseUrl`          | `string`  | Required                                    | HTTP(S) origin; no path, query, hash, or slash   |
 | `routes`           | `string`  | `"./src/routes.jsx"`                        | Path to routes file                              |
 | `template`         | `string`  | `"index.html"`                              | Built HTML path relative to `outputDir`          |
 | `outputDir`        | `string`  | `"dist"`                                    | Build output directory                           |
