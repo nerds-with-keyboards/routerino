@@ -1,6 +1,6 @@
 {
   "name": "routerino",
-  "version": "2.6.3",
+  "version": "2.7.0",
   "description": "The React router that Google can read. Built-in SSG, meta tags, sitemaps, and canonical URLs — zero dependencies, no framework lock-in.",
   "repository": {
     "type": "git",
